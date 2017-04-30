@@ -1,0 +1,92 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+    pageEncoding="UTF-8"%>
+<%
+	String path = request.getContextPath();
+%>
+
+<%@ include file="/common/taglibs.jsp"%>
+
+<html>
+<head>
+</head>
+<body>
+<div class="pageContent">
+  <form method="post" action="${path }/combo/comboAction!saveCombo.action" class="pageForm required-validate" onsubmit="return validateCallback(this, navTabAjaxDone);" novalidate="novalidate" class="pageForm required-validate">
+  <input type="hidden" name="navTabId" value="${ navTabId }"/>
+  <div class="pageFormContent" layoutH="86">
+      <div>
+       <input type="hidden" name="combo.id" value="${combo.id}"/>
+	   <input type="hidden" name="combo.isDelete" value="${combo.isDelete}"/>
+	    <input type="hidden" name="combo.createUser" value="${combo.createUser }"/>
+	    <input type="hidden" name="combo.createTime" value="${combo.createTime }"/>
+        <div class="tip"><span>套餐基本信息</span></div>
+			<p class="nowrap">
+				<label>套餐名称：</label>
+				 <input type="text" class="required valid" name="combo.comboName" value="${combo.comboName }"  maxlength="50" size="30" />
+			</p>
+			
+			<p class="nowrap">
+				<label>项目类别：</label> 
+				<%-- <input type="text" class="required valid" name="combo.projectTypes" value="${combo.projectTypes}"  maxlength="50" size="30" /> --%>
+				<select id="projectTypes" name="combo.projectTypes" class="required" rel="iselect" >
+					<option value="PCT_001" ${combo.projectTypes == "PCT_001" ? "selected" : '' }>健康管理-基因</option>
+					<option value="PCT_002" ${combo.projectTypes == "PCT_002" ? "selected" : '' }>健康管理-癌筛</option>
+					<option value="PCT_003" ${combo.projectTypes == "PCT_003" ? "selected" : '' }>分子检测</option>
+					<option value="PCT_004" ${combo.projectTypes == "PCT_004" ? "selected" : '' }>健康管理-无创-生物电</option>
+					<option value="PCT_005" ${combo.projectTypes == "PCT_005" ? "selected" : '' }>健康管理-无创-微磁</option>
+					<option value="PCT_006" ${combo.projectTypes == "PCT_006" ? "selected" : '' }>其他</option>
+				</select>
+			</p>
+			
+			<p class="nowrap">
+				<label>打印方：</label> 
+				<select id="printType" name="combo.printType" class="required" rel="iselect" >
+					<option value="0" ${combo.printType == "0" ? "selected" : '' }>远盟打印</option>
+					<option value="1" ${combo.printType == "1" ? "selected" : '' }>基因公司打印</option>
+					<option value="2" ${combo.printType == "2" ? "selected" : '' }>其他机构打印</option>
+				</select>
+			</p>
+			
+			
+			<p class="nowrap">
+				<label>时效（天）：</label> 
+				<input type="text" name="combo.validityDay" class="required digits valid" maxlength="20" value="${combo.validityDay }"/>
+			</p>
+			
+			<p>
+				<label>产品名称：</label>
+				<input type="text" name="combo.productName" value="${combo.productName }"  maxlength="50" size="40" />
+			</p>
+			
+	         <div class="tip"><span>内容：</span></div>	
+	         
+	       <p class="nowrap"><label style="height: 60px;">内容：</label>
+			<textarea cols="35" ows="2" style="width:570px;" name="combo.comboContent">${combo.comboContent}</textarea>
+		   </p>
+		</div>
+  <div class="formBar" style="width:98%">
+      <ul>
+        <li>
+          <div class="buttonActive">
+            <div class="buttonContent">
+              <button type="submit">保存</button>
+            </div>
+          </div>
+        </li>
+        <li>
+          <div class="button">
+            <div class="buttonContent">
+              <button type="reset">重置</button>
+            </div>
+          </div>
+        </li>
+      </ul>
+    </div>
+    </div>
+   
+  </form>
+  
+</div>
+ 
+</body>
+</html>

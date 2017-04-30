@@ -1,0 +1,457 @@
+/**
+ * @author DengYouming
+ * @since 2016-9-14 上午11:15:14
+ */
+package org.hpin.events.service;
+
+import org.apache.axis.client.Call;
+import org.apache.axis.encoding.XMLType;
+import org.apache.commons.lang.StringUtils;
+import org.apache.log4j.Logger;
+import org.hpin.common.util.XmlUtils;
+import org.hpin.events.dao.ErpScheduleJobDao;
+import org.hpin.events.entity.ErpScheduleJob;
+import org.hpin.foreign.entity.ErpMessagePush;
+import org.hpin.foreign.entity.ErpReportOrgJY;
+import org.hpin.foreign.entity.ErpReportScheduleJY;
+import org.hpin.foreign.service.ErpMessagePushService;
+import org.hpin.foreign.service.ErpReportOrgJYService;
+import org.hpin.foreign.service.ErpReportScheduleJYService;
+import org.hpin.webservice.service.YmGeneReportServiceImpl;
+import org.hpin.webservice.service.YmGeneReportServiceImplServiceLocator;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
+
+import javax.xml.namespace.QName;
+import javax.xml.rpc.ParameterMode;
+import javax.xml.rpc.ServiceException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * @author DengYouming
+ * @since 2016-9-14 上午11:15:14
+ */
+@Service(value="org.hpin.events.service.ErpScheduleJobService")
+public class ErpScheduleJobService {
+
+	Logger log = Logger.getLogger("ErpScheduleJobService");
+	Logger dealLog = Logger.getLogger("dealReport");
+	Logger jyErrLog = Logger.getLogger("jyErrorInfo"); //1）金域返回的会员信息与数据库中的会员不一致，2）会员报告无法下载
+	Logger jyNoReportLog = Logger.getLogger("jyNoReport"); //数据库中有该会员，但金域没有报告的
+
+	@Autowired
+	private ErpReportOrgJYService orgJYService;
+
+	@Autowired
+	private ErpReportScheduleJYService scheduleJYService;
+
+	@Autowired
+	private ErpMessagePushService messagePushService;
+
+	@Autowired
+	private ErpScheduleJobDao dao;
+
+	@Autowired
+	private ErpCustomerService customerService;
+
+	private static YmGeneReportServiceImplServiceLocator geneLocator = new YmGeneReportServiceImplServiceLocator();
+
+	private static final org.apache.axis.client.Service axisService = new org.apache.axis.client.Service();
+	//星宁基因相关
+	private static final String XN_WSDL = "http://112.74.20.88/TransferServer/transferService?wsdl";
+	private static final String XN_PUSHCUSTOMERSTATE = "pushCustomerState";
+
+	/**
+	 *
+	 * @param params
+	 * @return
+	 * @throws Exception
+	 * @author DengYouming
+	 * @since 2016-9-14 上午11:16:52
+	 */
+	public Map<String,String> dealScheduleJob(Map<String,String> params) throws Exception{
+		Map<String, String> result = null;
+		if(params!=null&&params.keySet().size()>0){
+			result = dao.dealScheduleJob(params);
+		}
+		return result;
+	}
+
+
+	/**
+	 * 根据条件进行查找
+	 * @param params
+	 * @return
+	 */
+	public List<ErpScheduleJob> listScheduleJobByProps(Map<String, String> params) {
+		return dao.listScheduleJobByProps(params);
+	}
+
+	/**
+	 * 转换原始数据
+	 * @author Damian
+	 * @since 2017-02-10
+	 */
+	public synchronized void transferOrgData() {
+		log.info("开始执行transferOrgData方法...");
+		//1. 查询数据库中没有转化的原始数据
+		Map<String, String> orgParams = new HashMap<String, String>();
+		//未处理状态(未添加到定时任务状态)
+		orgParams.put(ErpReportOrgJY.F_STATUS, "0");
+		try {
+			log.info("开始查询未转换的原始数据...");
+			List<ErpReportOrgJY> orgList = orgJYService.listByProps(orgParams);
+			log.info("查询未转换的原始数据数量： " + orgList.size());
+			ErpReportOrgJY orgJYObj;
+			if (orgList != null && orgList.size() > 0) {
+				for (int i = 0; i < orgList.size(); i++) {
+					orgJYObj = orgList.get(i);
+					//2.原始数据转化为定时任务数据
+					scheduleJYService.transferOrgData(orgJYObj);
+					//设置为已处理状态(已添加到定时任务的状态)
+					orgJYObj.setStatus(1);
+					//更新状态
+					orgJYService.update(orgJYObj);
+				}
+			}
+		} catch (Exception e) {
+			log.info(e);
+		}
+		log.info("transferOrgData方法执行完毕...");
+	}
+
+	/**
+	 * @description  下载报告/报告单
+	 * @author Damian
+	 * @since 2017-02-10
+	 */
+	public synchronized void dealReport() {
+		log.info("开始执行dealReport方法...");
+		// 1. 找出未下载全的报告
+		List<ErpReportScheduleJY> scheduleJYList = this.findUnDealReport();
+		// 2. 根据URL地址下载报告
+		if (!CollectionUtils.isEmpty(scheduleJYList)) {
+			//执行下载
+			scheduleJYService.dealDownload(scheduleJYList);
+		}else{
+			log.info("定时任务!");
+		}
+		log.info("dealReport方法执行完毕...");
+	}
+
+	/**
+	 * @description 查找未处理的定时任务
+	 * @author Damian
+	 * @since 2017-02-10
+	 */
+	private List<ErpReportScheduleJY> findUnDealReport() {
+		List<ErpReportScheduleJY> list = null;
+		Map<String, String> params = new HashMap<String, String>();
+		params.put(ErpReportScheduleJY.F_STATUS, "0");
+		try {
+			list = scheduleJYService.listByProps(params);
+			if(!CollectionUtils.isEmpty(list)){
+
+			}
+		} catch (Exception e) {
+			log.info(e);
+		}
+		return list;
+	}
+
+	/**
+	 * @description 处理不匹配的定时任务,重新与会员表数据进行匹配
+	 * @author Damian
+	 * @since 2017-02-10
+	 */
+	public void dealUnmatchScheduleJY(String statusStr){
+		try {
+			Integer[] arr;
+			if(StringUtils.isNotEmpty(statusStr)) {
+				log.info("正常状态："+statusStr);
+				if(statusStr.contains(",")){
+					String[] arrStr = statusStr.split(",");
+					arr = new Integer[arrStr.length];
+					for (int i=0; i<arrStr.length; i++){
+						arr[i] = Integer.valueOf(arrStr[i]);
+					}
+				}else{
+					arr = new Integer[]{Integer.valueOf(statusStr)};
+				}
+				Integer updateNum = scheduleJYService.updateUnmatchSechedule(arr);
+				log.info("本次处理的异常数据条数: " + updateNum);
+			}
+		} catch (Exception e) {
+			log.info(e);
+		}
+	}
+
+	/**
+	 * 给弘康推送客户状态变更
+	 * @author Damian
+	 * @since 2017-02-10
+	 */
+	public void pushStatusToHK(){
+		Logger log = Logger.getLogger("pushCustomerStatus");
+		Map<String,String> props = new HashMap<String, String>();
+		props.put(ErpMessagePush.F_STATUS, "0");
+		props.put(ErpMessagePush.F_KEYWORD, "HK");// 添加关键字查询，用于区分推送不同的方向 add Damian 2017-02-17
+		try {
+			List<ErpMessagePush> list = messagePushService.listByProps(props);
+			if(!CollectionUtils.isEmpty(list)) {
+				String xml;
+				String respXml;
+				log.info("本次要推送的消息数量： "+list.size());
+				for (ErpMessagePush messagePush : list) {
+					xml = messagePush.getMessage();
+					log.info("推送表中取到的消息xml: "+xml);
+					YmGeneReportServiceImpl ymGeneReportService = geneLocator.getYmGeneReportServiceImplPort();
+					//推送弘康
+					String keyWord = messagePush.getKeyWord();
+					log.info("keyWord: "+keyWord);
+					if ("HK".equalsIgnoreCase(keyWord)){
+					    log.info("开始推送弘康的消息， xml: "+xml);
+						respXml = ymGeneReportService.pushCustomerStatus(xml);
+						log.info("弘康消息推送结束!!!");
+						log.info("微服务返回的xml: "+respXml);
+						String status = this.fetchRespStatusHK(respXml);
+						//成功
+						if("1".equals(status)){
+							messagePushService.updateStatus(messagePush, Integer.valueOf(status));
+						}
+					}
+				}
+			}else {
+				log.info("本次没有消息推送...");
+			}
+		} catch (Exception e) {
+			log.info(e);
+		}
+	}
+
+	/**
+	 * 提取弘康返回的XML信息
+	 * @param xml
+	 * @return
+	 * @author Damian
+	 * @since 2017-02-10
+	 */
+	private String fetchRespStatusHK(String xml){
+		Logger log = Logger.getLogger("pushCustomerStatus");
+		String result= "0";
+		if(StringUtils.isNotEmpty(xml)){
+			try {
+				Map<String,String> respMap = XmlUtils.fetchXmlValue(xml, "respStatus",
+						new String[]{"result","message"});
+				result= respMap.get("result");
+			} catch (Exception e) {
+				log.info(e);
+			}
+		}
+		return result;
+	}
+	/**
+	 *
+	 * @description 发送超时状态的邮件提醒
+	 * @param timeLimit 超时时限,单位小时,可以在application.xml中配置时间
+	 * @param statusYm 远盟客户状态,可以在application.xml中配置时间
+	 * @author Damian
+	 * @since 2017-02-14
+	 */
+	public void sendMailOvertime(String timeLimit, String statusYm) {
+		log.info("开始执行发送提示邮件的任务...");
+		Integer limit = Integer.valueOf(timeLimit);
+		Integer stautsYm = Integer.valueOf(statusYm);
+		String msg = null;
+		try {
+			msg = customerService.findAndSendMailOvertime(limit, stautsYm);
+		} catch (Exception e) {
+			log.info(e);
+		}
+		log.info(msg);
+	}
+
+	/**
+	 * 把太平微磁相关的信息保存到消息推送表中
+	 * @param projCode 项目编号
+	 * @param mark 渠道标识
+	 * @author Damian
+	 * @since 2017-02-17
+	 */
+	public void savePushInfoTPWC(String projCode, String mark){
+		Logger logger = Logger.getLogger("savePushInfoTPWC");
+		logger.info("projCode: "+projCode+" , mark: "+mark);
+		logger.info("开始执行pushMsgTPWC方法...");
+		if (StringUtils.isNotEmpty(projCode)&&StringUtils.isNotEmpty(mark)){
+			try {
+				int count = messagePushService.savePushInfoTPWC(projCode, mark);
+				logger.info("本次保存的数量： "+count);
+			} catch (Exception e) {
+			    logger.info(e);
+			}
+		}
+		logger.info("pushMsgTPWC方法执行完毕!!!");
+	}
+
+	/**
+	 * 给太平微磁推送客户状态变更
+	 * @author Damian
+	 * @since 2017-02-10
+	 */
+	public void pushStatusToTPWC(){
+		Logger log = Logger.getLogger("pushStatusToTPWC");
+		Map<String,String> props = new HashMap<String, String>();
+		props.put(ErpMessagePush.F_STATUS, "0");
+		props.put(ErpMessagePush.F_KEYWORD, "TPWC");// 添加关键字查询，用于区分推送不同的方向 add Damian 2017-02-17
+		try {
+			List<ErpMessagePush> list = messagePushService.listByProps(props);
+			if(!CollectionUtils.isEmpty(list)) {
+				String xml;
+				String respXml;
+				log.info("本次要推送的消息数量： "+list.size());
+				YmGeneReportServiceImpl ymGeneReportService = geneLocator.getYmGeneReportServiceImplPort();
+				for (ErpMessagePush messagePush : list) {
+					xml = messagePush.getMessage();
+					log.info("推送表中取到的消息xml: "+xml);
+					//只推送太平微磁的消息
+					String keyWord = messagePush.getKeyWord();
+					log.info("keyWord: "+keyWord);
+					if ("TPWC".equalsIgnoreCase(keyWord)){
+						log.info("开始推送太平微磁的消息， xml: "+xml);
+						respXml = ymGeneReportService.pushCustomerStatusTPWC(xml);
+						log.info("太平微磁的消息推送结束!!!");
+						log.info("微服务返回的xml: "+respXml);
+						String status = this.fetchRespStatusHK(respXml);
+						//成功
+						if("1".equals(status)){
+							messagePushService.updateStatus(messagePush, Integer.valueOf(status));
+						}
+					}
+				}
+			}else {
+				log.info("本次没有消息推送...");
+			}
+		} catch (Exception e) {
+			log.info(e);
+		}
+	}
+
+	/**
+	 * 向第三方进行消息推送
+	 * @author Damian
+	 * @since 2017-04-17
+	 */
+	public synchronized void pushStatusToOther(){
+		Logger log = Logger.getLogger("pushStatusToOther");
+		Map<String,String> props = new HashMap<String, String>();
+		props.put(ErpMessagePush.F_STATUS, "0");
+		try {
+			List<ErpMessagePush> list = messagePushService.listByProps(props);
+
+			if(!CollectionUtils.isEmpty(list)) {
+				String xml;
+				String respXml;
+				String status = null;
+				log.info("本次要推送的消息数量： "+list.size());
+				// 测试用地址
+//                geneLocator.setYmGeneReportServiceImplPortEndpointAddress("http://localhost:7280/websGene/geneReport?wsdl");
+				YmGeneReportServiceImpl ymGeneReportService = geneLocator.getYmGeneReportServiceImplPort();
+				//星宁
+//				Call xnCall = this.crateCall(XN_WSDL, XN_PUSHCUSTOMERSTATE);
+//				xnCall.addParameter("xml", XMLType.XSD_STRING, ParameterMode.IN);
+//				xnCall.setReturnType(XMLType.XSD_STRING);
+//				Object[] values = new Object[1];
+
+				for (ErpMessagePush messagePush : list) {
+					xml = messagePush.getMessage();
+					log.info("推送表中取到的消息xml: "+xml);
+					//只推送太平微磁的消息
+					String keyWord = messagePush.getKeyWord();
+					log.info("keyWord: "+keyWord);
+
+					/**
+					if ("HK".equalsIgnoreCase(keyWord)) {
+						log.info("开始推送弘康的消息， xml: " + xml);
+						respXml = ymGeneReportService.pushCustomerStatus(xml);
+						log.info("弘康消息推送结束!!!");
+						log.info("微服务返回的xml: " + respXml);
+						status = this.fetchRespStatusHK(respXml);
+
+					} else if ("TPWC".equalsIgnoreCase(keyWord)){
+						log.info("开始推送太平微磁的消息， xml: "+xml);
+						respXml = ymGeneReportService.pushCustomerStatusTPWC(xml);
+						log.info("太平微磁的消息推送结束!!!");
+						log.info("微服务返回的xml: "+respXml);
+						status = this.fetchRespStatusHK(respXml);
+
+					} else if ("XN".equalsIgnoreCase(keyWord)){
+						log.info("开始推送星宁基因的消息， xml: "+xml);
+						values[0] = xml;
+						respXml = (String) xnCall.invoke(values);
+						log.info("星宁基因返回的xml: "+respXml);
+						status = this.fetchRespStatusHK(respXml);
+						log.info("星宁基因的消息推送结束!!!");
+
+					}
+					*/
+					if ("XN".equalsIgnoreCase(keyWord)){
+						log.info("开始推送星宁基因的消息， xml: "+xml);
+//						values[0] = xml;
+                        respXml = ymGeneReportService.pushCustomerStatusXN(xml);
+						log.info("星宁基因返回的xml: "+respXml);
+						status = this.fetchRespStatusHK(respXml);
+						log.info("星宁基因的消息推送结束!!!");
+
+					}
+					//成功更新状态
+                    if("1".equals(status)){
+						log.info("更新被推送的记录状态， messagePush object: "+ messagePush.toString());
+                        messagePushService.updateStatus(messagePush, Integer.valueOf(status));
+						log.info("更新被推送的记录状态完成！！！");
+                    }
+				}
+			}else {
+				log.info("本次没有消息推送...");
+			}
+		} catch (Exception e) {
+			log.info(e);
+		}
+	}
+
+	/**
+	 * 创建调用
+	 * @param wsdl WebService地址
+	 * @param method 方法名
+	 * @return Call
+	 * @author Damian
+	 * @since 2017-04-17
+	 */
+	private synchronized Call crateCall(String wsdl, String method) throws ServiceException {
+		Call call = null;
+		if (StringUtils.isNotEmpty(wsdl)&&StringUtils.isNotEmpty(method)){
+			org.apache.axis.client.Service axisService = new org.apache.axis.client.Service();
+            call = (Call) axisService.createCall();
+            call.setTargetEndpointAddress(wsdl);
+//            call.setOperationName(method);
+            call.setOperationName(new QName(wsdl, method));
+		}
+		return call;
+	}
+
+	/**
+	 * 保存符合推送条件的客户信息
+	 * @return String
+	 * @author Damian
+	 * @since 2017-04-18
+	 */
+	public String savePushMsg(){
+		log.info("开始查找符合消息推送条件的客户信息....");
+		String result = messagePushService.savePushMsg(null);
+		log.info("保存到消息推送表的客户信息数量： "+result);
+		log.info("本次执行完成！！！");
+		return result;
+	}
+}

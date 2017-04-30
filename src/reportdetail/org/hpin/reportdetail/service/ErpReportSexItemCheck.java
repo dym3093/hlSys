@@ -1,0 +1,63 @@
+package org.hpin.reportdetail.service;
+
+import org.hpin.reportdetail.entity.ErpReadPDFMatchInfo;
+
+/**
+ * 检测性别所对应的检测项是否正确
+ * @author ybc
+ * @since 2017/3/8
+ */
+public class ErpReportSexItemCheck extends ErpReportItemsCheck {
+	
+	private String reportText=null;
+	
+	private ErpReadPDFMatchInfo matchInfo = null;
+	
+	private static String[] MAN_ITEMS = new String[]{"子宫","卵巢","乳腺","输卵管"};
+	
+	private static String[] WOMAN_ITEMS = new String[]{"前列腺","睾丸"};
+	
+	private static String ERROR_VALUE_ONE="1";
+	
+	private static Integer ERROR_VALUE_THREE=3;
+	
+	public ErpReportSexItemCheck(ErpReadPDFMatchInfo matchInfo,String reportText){
+		this.reportText = reportText;
+		this.matchInfo = matchInfo;
+	}
+	
+	public void check(){
+		super.check();
+		sexCheck(reportText);
+		zeroCheck(reportText);
+	}
+	
+	//实现性别所对应的检测项
+	public void sexCheck(String reportText){
+		//男性:子宫、卵巢、乳腺、输卵管
+		if(-1!=matchInfo.getSex().indexOf("男")){
+			for(String text : MAN_ITEMS){
+				if(-1!=reportText.indexOf(text)){
+					matchInfo.setPdfWrongStatus(ERROR_VALUE_ONE);
+					break;
+				}
+			}
+		}else{
+			//女性:前列腺、睾丸
+			for(String text : WOMAN_ITEMS){
+				if(-1!=reportText.indexOf(text)){
+					matchInfo.setPdfWrongStatus(ERROR_VALUE_ONE);
+					break;
+				}
+			}
+		}
+	}
+	
+	//检测是否含有连续6个0
+	public void zeroCheck(String reportText){
+		if(-1!=reportText.indexOf("000000")){
+			Integer oldValue = matchInfo.getPdfWrongStatus()==null?0:Integer.valueOf(matchInfo.getPdfWrongStatus());
+			matchInfo.setPdfWrongStatus(String.valueOf(oldValue+ERROR_VALUE_THREE));
+		}
+	}
+}

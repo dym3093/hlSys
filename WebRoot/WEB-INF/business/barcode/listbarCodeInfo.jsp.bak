@@ -1,0 +1,68 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ include file="/common/taglibs.jsp"%>
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<div class="tip"><span>查询</span></div>
+<div class="pageHeader">
+	<form onsubmit="if(this.action != '${path }/business/barCodeInfo!listbarCodeInfo.action'){this.action = '${path }/business/barCodeInfo!listbarCodeInfo.action' ;} ;return navTabSearch(this);" action="${path }/business/barCodeInfo!listbarCodeInfo.action"  method="post" rel="pagerForm" id="pagerFindForm">
+	<div class="searchBar">
+		<table class="pageFormContent">
+			<tr>
+				<td>
+					<label>制码批次号：</label>
+					<input type="text" id="batNO" name="filter_and_batNO_EQ_S" value="${ filter_and_batNO_EQ_S }"/>
+				</td>		
+				<td>
+					<label>条形码号：</label>
+					<input type="text" id="barCode" name="filter_and_barCode_EQ_S" value="${ filter_and_barCode_EQ_S }"/>
+				</td>		
+				<td>
+				<div class="buttonActive"><div class="buttonContent"><button type="submit"">查找</button></div></div>
+				<div class="buttonActive"><div class="buttonContent"><button type="button" id="clearText">重置</button></div></div>
+				</td>
+			</tr>
+		
+		</table>
+	</div>
+	</form>
+</div>
+<div class="pageContent">
+	<div class="panelBar">
+		<ul class="toolBar">
+			<web:exportExcelTag pagerFormId="pagerFindForm" 
+								pagerMethodName="findByPage" 
+								actionAllUrl="org.hpin.barcode.web.BarCodeInfoAction" 
+								informationTableId="exportExcelTable"
+								fileName="BarCodeInfo"></web:exportExcelTag>
+		</ul>
+		<jsp:include page="/common/pagination.jsp" />
+	</div>
+	<table class="list" width="100%" layoutH="170" id="exportExcelTable">
+		<thead>
+			<tr>
+				<th width="40px"><nobr>序号</nobr></th>
+				<th export = "true" columnEnName = "barCode" columnChName = "条形码号"><nobr>条形码号</nobr></th>
+				<th><nobr>批次号</nobr></th>
+				<th><nobr>激活状态</nobr></th>
+			</tr>
+		</thead>
+		<tbody>
+		<c:forEach items="${ page.results }" var="barCodeInfo" varStatus="status">
+			<tr target="sid_user" rel="${barCodeInfo.id }">
+				<td>${status.count }</td>
+				<td>${barCodeInfo.barCode }</td>
+				<td align="center" nowrap="nowrap">${barCodeInfo.batNO }</td>
+				<td align="center" nowrap="nowrap">${barCodeInfo.isEffective }
+					   <c:choose>			  	  	  
+				  	  	    <c:when test="${ barCodeInfo.isEffective==0 }">未使用</c:when>
+				  	  	    <c:when test="${ barCodeInfo.isEffective==1 }">已使用</c:when>
+				  	  	    <c:when test="${ barCodeInfo.isEffective==2 }">暂停使用</c:when>	  	  	    
+				     </c:choose>	
+					</td>
+			</tr>
+		</c:forEach>
+		</tbody>
+	</table>
+</div>
+
+</html>

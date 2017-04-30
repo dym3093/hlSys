@@ -1,0 +1,49 @@
+<style type="text/css">
+
+#table2 table{
+	 FONT-SIZE:12pt;
+	  cellspacing: 10; cellpadding: 10;padding:30,30,30,30;
+	width:100%;
+	}
+#table2 input{
+	BACKGROUND-COLOR: #f7f7f7;
+	border:none;
+	}
+</style>
+
+	<form method="post" action="demo/common/ajaxDone.html" class="pageForm required-validate" onsubmit="return validateCallback(this, navTabAjaxDone);">
+		<div class="pageFormContent" layoutH="56">
+		<div class="tip"><span>主单信息</span></div>
+		<div id="table2">
+			<p>
+				<label>工单主题：</label>
+				<input type="text" name="keyword" size="93" value="任务工单样例1"/>
+			</p>
+			<p>
+				<label>工单流水号：</label>
+				<input type="text" name="keyword" size="30" readonly="readonly" value="BJ-018-130325-00010"/>
+			</p>
+			<div class="divider"></div>
+			<p>
+				<label>客户名称：</label>	<input type="text" name="keyword" size="30" readonly="readonly" value="中国平安保险有限公司"/>
+				
+			</p>
+			<p>
+				<label>产品名称：</label><input type="text" name="keyword" size="30" readonly="readonly" value="平安保险AAA套餐"/>
+			</p>
+			<p>
+				<label>产品编号：</label>
+				<input type="text" name="keyword" size="30" readonly="readonly" value="JWF556734"/>
+			</p>
+			<div class="divider"></div>
+			<p class="nowrap">
+				<label>备选备注：</label>
+				<textarea name="textarea1" cols="113" rows="2" readonly="readonly" style="border:none">任务工单备注,要求协助查询</textarea>
+			</p>
+		
+		
+		</div>	
+		</div>
+		
+
+

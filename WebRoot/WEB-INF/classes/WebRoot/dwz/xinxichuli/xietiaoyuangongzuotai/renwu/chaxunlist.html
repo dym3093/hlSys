@@ -1,0 +1,128 @@
+
+<style type="text/css">
+td{ white-space:nowrap; font-size:14px}
+
+
+</style>
+
+<div class="pageContent">
+	<div class="panelBar">
+		<div class="pages">
+			<span>显示</span>
+			<select name="numPerPage" onchange="navTabPageBreak({numPerPage:this.value})">
+				<option value="20">20</option>
+				<option value="50">50</option>
+				<option value="100">100</option>
+				<option value="200">200</option>
+			</select>
+			<span>条，共6条</span>
+		</div>
+		<div style="float:right"><ul class="toolBar">
+ 
+			 
+		</ul></div>
+		<div class="pagination" targetType="navTab" totalCount="200" numPerPage="20" pageNumShown="10" currentPage="1"></div>
+
+	</div>
+	<table class="list" width="100%" layoutH="28">
+		<thead>
+			<tr>
+				<th nowrap>序号</th>
+				<th nowrap>工单流水号</th>
+				<th nowrap align="center">工单主题</th>
+				<th nowrap>客户名称</th>
+				<th nowrap>产品名称</th>
+				
+				<th nowrap>代理人</th>
+				<th nowrap>代理人说明</th>
+				<th nowrap>会员姓名</th>
+				<th nowrap>会员受伤经过</th>
+				
+				<th nowrap>预约省份</th>
+			<th nowrap>预约城市</th><th nowrap>县/区</th>
+				<th nowrap>垫付分类</th>
+				<th nowrap>保单号</th>
+					<th nowrap>车牌号</th><th nowrap>投保人</th>
+						
+						
+				
+				<th nowrap>完成时限</th>
+				<th nowrap>处理时限</th>
+				<th nowrap>所属部门</th><th nowrap>任务所有者</th>
+			</tr>
+		</thead><tbody>
+			<tr target="sid_user" rel="1" bgcolor="#FFFFFF" style="border:thin">
+				<td>1</td>
+				<td nowrap><a href="yewuliucheng/dianfu/xinzeng.html" target="navTab" style="color:#0000FF; font-size:14px"> BJ-016-130305-00001</a></td>
+				<td nowrap>垫付服务</td>
+				<td>中国大地保险公司</td><td>大地垫付AAA</td>
+					<td>胡林</td><td>咨询接口人</td><td>赵川</td><td>紧急事故要求垫付</td>	
+				<td>北京</td><td>北京</td><td>朝阳</td><td>院前</td><td>E02398682</td><td>京A66643</td><td>胡林</td>
+				
+				<td>2013-03-08 12:00:00</td>
+				<td>2013-03-06 12:00:00</td>
+				<td>外科</td><td>王理</td>
+
+			</tr>
+			<tr target="sid_user" rel="2" bgcolor="#FFFFFF">
+				<td>2</td>
+				<td><a href="yewuliucheng/dianfu/xinzeng.html" target="navTab" style="color:#0000FF;  font-size:14px"> BJ-016-130305-00002</a></td>
+				<td>西医垫付服务</td>
+				
+								<td>中国安康保险公司</td><td>安康垫付bb6</td>
+					<td>刘琼</td><td>咨询接口人</td><td>向平</td><td>紧急事故要求垫付</td>
+				<td>北京</td><td>北京</td><td>朝阳</td> <td>门急诊</td><td>E02398682</td><td>京A66643</td><td>胡林</td>
+				
+				<td>2013-02-09 15:00:00</td>
+				<td>2013-02-06 18:00:00</td>
+				<td>骨科</td><td>王芳</td>
+			</tr>
+			<tr target="sid_user" rel="3" bgcolor="#FFFFFF"> 
+			<td>3</td>
+				<td><a href="yewuliucheng/dianfu/xinzeng.html" target="navTab" style="color:#0000FF;  font-size:14px"> BJ-016-130305-00003</a></td>
+				<td>高级垫付服务</td>
+								<td>中国人寿保险公司</td><td>人寿垫付i309</td>
+					<td>刘琼</td><td>咨询接口人</td><td>王芳</td><td>旅游事故要求垫付</td>
+				<td>广东</td><td>广州</td><td>白云</td><td>住院</td><td>E02398682</td><td>京A66643</td><td>苏军</td>
+				
+				<td>2013-02-09 15:00:00</td>
+				<td>2013-02-06 18:00:00</td>
+				<td>骨科</td><td>苏军</td>
+			</tr>	<tr target="sid_user" rel="3" bgcolor="#FFFFFF"> 
+				<td>4</td>
+				<td><a href="yewuliucheng/dianfu/xinzeng.html" target="navTab"  style="color:#0000FF;  font-size:14px"> BJ-016-130306-00004</a></td>
+				<td>西医垫付服务</td>				<td>中国平安保险公司</td><td>新华垫付AAA</td>
+					<td>李楠</td><td>咨询接口人</td><td>王芳</td><td>行动不便要求垫付</td>
+				<td>北京</td><td>北京</td><td>朝阳</td><td>院前</td><td>E02398682</td><td>京A66643</td><td>胡林</td>
+				
+		
+				<td>2013-02-09 15:00:00</td>
+				<td>2013-02-06 18:00:00</td>
+				<td>外科</td><td>欧菲菲</td>
+			</tr>
+				<tr target="sid_user" rel="3" bgcolor="#FFFFFF"> 
+				<td>5</td>
+			<td><a href="yewuliucheng/dianfu/xinzeng.html" target="navTab" style="color:#0000FF;  font-size:14px"> BJ-016-130307-00005</a></td>
+				<td>中医垫付服务</td>				<td>中国新华保险公司</td><td>新华垫付As0</td>
+				<td>方六</td><td>咨询接口人</td><td>王芳</td><td>要求垫付</td>
+				<td>北京</td><td>北京</td><td>朝阳</td>
+				<td>院前</td><td>E02398682</td><td>京A66643</td><td>米莉</td>
+				<td>2013-02-09 15:00:00</td>
+				<td>2013-02-06 18:00:00</td>
+				<td>中医科</td><td>苏军</td>
+			</tr>
+			<tr target="sid_user" rel="3" bgcolor="#FFFFFF"> 
+			<td>6</td>
+			<td><a href="yewuliucheng/dianfu/xinzeng.html" target="navTab" style="color:#0000FF;  font-size:14px"> BJ-016-130305-00006</a></td>
+				<td>急救垫付服务</td>				<td>中国平安保险公司</td><td>平安垫付AAA</td>
+					<td>玉林</td><td>咨询接口人</td><td>李丽</td><td>手术费要求垫付</td>
+				<td>北京</td><td>北京</td><td>朝阳</td>
+				 <td>院前</td><td>E023464436</td><td>京A235653</td><td>胡林</td>
+				<td>2013-02-09 15:00:00</td>
+				<td>2013-02-06 18:00:00</td>
+				<td>内科</td><td>米莉</td>
+			</tr>
+</tbody>
+	</table>
+	
+</div>

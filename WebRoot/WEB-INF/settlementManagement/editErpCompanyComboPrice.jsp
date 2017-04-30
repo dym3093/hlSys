@@ -1,0 +1,143 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"%>
+<%@ include file="/common/taglibs.jsp"%>
+
+<%
+String path = request.getContextPath();
+String userRoles = (String)request.getAttribute("userRoles");
+String userId = (String)request.getAttribute("userId");
+%>
+
+<style type="text/css">
+	.bt{
+		margin-left: 2px;
+		margin-top: 4px;
+		cursor:pointer;
+	}
+	.pointer{
+		cursor:not-allowed;
+	}
+</style>
+<script type="text/javascript" language="javascript">
+
+	$(function(){
+		$(":input[class='really']").each(function(k,v){
+			if($(this).val()!=""){
+				$(this).attr("readonly","true");
+				$(this).addClass("pointer");		//cursor:not-allowed;
+			}
+		});
+	});
+
+	function setPrice(obj){
+		$(obj).prev(":input").removeClass("pointer");
+		$(obj).prev(":input").removeAttr("readonly");
+		$(obj).prev(":input").css("background-color","white");
+		$(obj).prev(":input").focus();
+	}
+
+	/**
+	 * 保存
+	 */
+	function save(){
+		var size=$(".key").length;
+		var str=$("#addForm input").map(function(){
+			var name = $(this).attr("name");
+			var value = $(this).val();
+
+			if($.trim(value)!="" && name!=undefined){
+				return (name+'='+value);
+			}
+//			 return ($(this).attr("name")+'='+$(this).val());
+			}).get().join("&") ;
+		if($.trim(str)==""){
+			alertMsg.info("没有更改的套餐，不需要保存");
+			return;
+		}
+		var company = $("#company").html();
+		var branchCompanyId = $("#branchCompanyId",navTab.getCurrentPanel()).val();
+		if($.trim(str)!=""){
+			$.ajax({
+				type:"post",
+				cache:false,
+				dateType:"json",
+				url:"${path}/settlementManagement/erpCompanyComboPrice!save.action",
+				data:{"result":str,"branchCompanyId":branchCompanyId,"company":company},
+				success:function(data){
+					var resp= eval("("+data+")");
+					if(resp.result=='success'){
+						alertMsg.correct('保存成功!');
+						navTab.closeCurrentTab();
+						return navTabSearch(this);
+					}else{
+						alertMsg.error('保存失败或没有对套餐进行更改！');
+					}
+				},
+				error:function(){
+					alertMsg.error('保存失败或没有对套餐进行更改！');
+				}
+			});
+		}	
+	}
+	
+	//关闭弹窗
+	function isClose(){
+		navTab.closeCurrentTab();
+	}
+
+</script>
+<!-- <div class="tip"><span>添加保险公司套餐价格</span></div> -->
+<div class="pageHeader" style="background:white;" >
+	<form class="pageForm required-validate" id="addForm" 
+		onsubmit="if(this.action != '${path}/settlementManagement/erpCompanyComboPrice!save.action'){this.action = '${path}/settlementManagement/erpCompanyComboPrice!save.action' ;} ;" 
+		action="${path}/settlementManagement/erpCompanyComboPrice!save.action" method="post">
+		<table class="pageFormContent" id="tableId" layoutH="15">
+			<thead>
+					<tr>
+						<td><span style="margin-left: 20px;" id="company">支公司：<%=request.getAttribute("company")%></span></td>
+						<td><span style="margin-left: 20px; width: 60px;">总公司：<%=request.getAttribute("parentCompany")%></span></td>
+						<td hidden="hidden"><input id="branchCompanyId" type="text" value="${branchCompanyId}"/></td><!-- 支公司ID -->
+						<td>
+							<span  style="margin-left: 20px;">省：<%String province=(String)request.getAttribute("province"); %>
+							<hpin:id2nameDB beanId="org.hpin.base.region.dao.RegionDao" id="<%=province%>" /></span>
+						</td>
+						<td>
+							<span style="margin-left: 20px;">市：<%String city=(String)request.getAttribute("city"); %>
+							<hpin:id2nameDB beanId="org.hpin.base.region.dao.RegionDao" id="<%=city%>" /></span>
+						</td>
+			  		</tr>
+		  			<br/>
+			  		<tr>
+			  			<td><span style="margin-left: 60px;">项目编码</span></td>
+			  			<td><span style="margin-left: 63px;">项目名</span></td>
+			  			<td><span style="margin-left: 43px;">项目负责人</span></td>
+			  			<td><span style="margin-left: 60px;">套餐名</span></td>
+			  			<td><span style="margin-left: 70px;">价格</span></td>
+			  		</tr>
+		  	</thead>
+	  		
+		  	<tbody> 		  		
+		  	<c:forEach items="${results}" var="entity" varStatus="status">
+			  	<tr>
+			  		<td><span style="margin-left: 53px;" class="key">${entity.projectCode}</span></td>
+			  		<td><span style="margin-left: 53px;" class="key">${entity.projectName}</span></td>
+			  		<td><span style="margin-left: 53px;" class="key">${entity.projectOwner}</span></td>
+			  		<td><span style="margin-left: 53px;" class="key">${entity.combo}</span></td>
+					<td><span><input type="text" name="${entity.combo},${entity.projectId},${entity.comboId}" value="${entity.comboPrice}" class="really"/><button type="button" class="bt" onclick="setPrice(this)">修改</button></span></td>
+				</tr>
+ 				</c:forEach> 
+			</tbody>
+				
+			<tfoot>
+		        <tr>
+		            <td></td>
+		            <td >
+		            	<div align="center" style="text-align:center;">
+						    <div class="buttonActive"><div class="buttonContent"><button type="button" onclick="save()">保存</button></div></div>
+							<div class="buttonActive" style="margin-left: 12px;"><div class="buttonContent"><button type="button" onclick="isClose()">返回</button></div></div>
+						</div>
+					</td>
+		       </tr>
+			</tfoot>	
+		</table>		
+	</form>
+</div>

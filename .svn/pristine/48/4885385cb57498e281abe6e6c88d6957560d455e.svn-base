@@ -1,0 +1,179 @@
+package org.hpin.base.customerrelationship.dao;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.commons.lang.StringUtils;
+import org.hpin.base.customerrelationship.entity.CustomerRelationShipPro;
+import org.hpin.common.core.orm.BaseDao;
+import org.hpin.common.log.listener.ModifyHistoryService;
+import org.hpin.common.widget.pagination.Page;
+import org.springframework.jdbc.core.BeanPropertyRowMapper;
+import org.springframework.stereotype.Repository;
+import org.springframework.util.Assert;
+import org.ymjy.combo.entity.Combo;
+
+@Repository
+public class CustomerRelationshipProDao extends BaseDao{
+	/**
+	 * 根据条件支公司id和项目编码确定在该项目类型下面是否存在对应的套餐名称;
+	 * 如果有返回true, 否则false
+	 * <p>Description: </p>
+	 * @author herny.xu
+	 * @date 2017年2月21日
+	 */
+	public boolean isExcitComboName(String companyId, String projectCode, String comboName) {
+		String queryCountSql = "select count(1) from HL_Customer_relationship_pro pro " +
+			"left join ERP_RELATIONSHIPPRO_COMBO com on com.CUSTOMER_RELATIONSHIP_PRO_ID= pro.id " +
+			"left join HL_JY_COMBO hjc on hjc.id = com.COMBO_ID " +
+			"where  " +
+			"pro.PROJECT_CODE='" + projectCode + "'  " +
+			"and pro.CUSTOMER_RELATIONSHIP_ID='" + companyId + "' " +
+			"and pro.IS_SEAL = 0 " + // 未封存; 
+			"and pro.IS_DELETED = 0 " + // 有效的
+			"and hjc.COMBO_NAME = '" + comboName + "'";
+		int count = this.getJdbcTemplate().queryForInt(queryCountSql);
+		if(count > 0) {
+			return true;
+		}
+		return false;
+	}
+
+	/**
+	 * <p>Description: 根据支公司id以及项目编码查询对应的shipProid;</p>
+	 * @author herny.xu
+	 * @date 2017年2月17日
+	 */
+	public CustomerRelationShipPro findByCompanyIdAndProjectCode(String bannyCompanyId, String projectCode) {
+		List<?> results = this.getHibernateTemplate().find("from CustomerRelationShipPro pro where pro.customerRelationShipId=? and pro.projectCode=?", new Object[]{bannyCompanyId, projectCode});
+		return results != null && results.size()> 0 ? (CustomerRelationShipPro)results.get(0) : null;
+	}
+	
+	public void savePro(CustomerRelationShipPro shipPro) throws Exception {
+		Assert.notNull(shipPro, "实体类不能为空");
+		this.getHibernateTemplate().saveOrUpdate(shipPro);
+		ModifyHistoryService logService = new ModifyHistoryService();
+		logService.onPostInsert(shipPro);
+	}
+	
+	public void updatePro(CustomerRelationShipPro shipPro) throws Exception {
+		Assert.notNull(shipPro, "实体类不能为空");
+		this.getHibernateTemplate().update(shipPro);
+		ModifyHistoryService logService = new ModifyHistoryService();
+		logService.onPostInsert(shipPro);
+	}
+	
+	/**
+	 * 修改shipPros isDeleted 状态为1;
+	 * @param shipPro
+	 */
+	public void deletePro(CustomerRelationShipPro shipPro) {
+		Assert.notNull(shipPro, "实体类不能为空");
+		this.getHibernateTemplate().update(shipPro);
+		ModifyHistoryService logService = new ModifyHistoryService();
+		logService.onPostInsert(shipPro);
+	}
+	
+	/**
+	 * 根据主键取得实体对象
+	 * 
+	 * @param id主键
+	 * @param clazz
+	 *            实体类class
+	 * @return 实体类
+	 */
+	public CustomerRelationShipPro findCustRelShipProById(Class<?> clazz, String id) {
+		return (CustomerRelationShipPro) this.getHibernateTemplate().get(clazz, id);
+	}
+
+	/**
+	 * 根据项目Id查询对应的套餐情况;
+	 * create by henry.xu 20161118
+	 * @param proId
+	 * @return
+	 */
+	public List<Combo> findCombosByProId(String proId) {
+		String sql = "select "
+			+"proCombo.id, "   //注意此处id不是套餐id;避免混淆;
+			+"combo.combo_name comboName, "
+			+"combo.PROJECT_TYPES projectTypes, "
+			+"proCombo.IS_CREATE_PDF isCreatePdf, "		//add by tx 1+X显示是否生成报告(映射到Combo只用于显示的isCreatePdf字段)
+			+"proCombo.PRINT_TYPE printType, "		//add by tx 1+X显示是否生成报告(映射到Combo只用于显示的isCreatePdf字段)
+			+"proCombo.COMBO_SHOW_NAME comboShowName,  "
+			+"proCombo.IS_USED isUsed "
+			+"from  "
+			+"ERP_RelationShipPro_Combo proCombo "
+			+"inner join HL_CUSTOMER_RELATIONSHIP_PRO pro on pro.id = proCombo.CUSTOMER_RELATIONSHIP_PRO_ID "
+			+"inner join HL_JY_COMBO combo on combo.id = proCombo.COMBO_ID "
+			+"where proCombo.CUSTOMER_RELATIONSHIP_PRO_ID = '"+proId+"' ";
+		BeanPropertyRowMapper<Combo> rowMapper = new BeanPropertyRowMapper<Combo>(Combo.class);
+		return this.getJdbcTemplate().query(sql, rowMapper);
+	}
+	
+	/**
+	 * 根据项目与套餐中间表Id查询对应的数据;
+	 * create by henry.xu 2016年12月26日
+	 * @param id
+	 * @return
+	 */
+	public Combo findErpRelationComboById(String id) {
+		String sql = "select "
+				+"proCombo.id, "   //注意此处id不是套餐id;避免混淆;
+				+"combo.combo_name comboName, "
+				+"combo.PROJECT_TYPES projectTypes, "
+				+"proCombo.IS_CREATE_PDF isCreatePdf, "		//add by tx 1+X显示是否生成报告(映射到Combo只用于显示的isCreatePdf字段)
+				+"proCombo.print_type printType,  "			//@since 2017年2月16日17:41:54 @author chenqi 是否是打印打印套餐
+				+"proCombo.COMBO_SHOW_NAME comboShowName,  "
+				+"proCombo.IS_USED isUsed "
+				+"from  "
+				+"ERP_RelationShipPro_Combo proCombo "
+				+"inner join HL_CUSTOMER_RELATIONSHIP_PRO pro on pro.id = proCombo.CUSTOMER_RELATIONSHIP_PRO_ID "
+				+"inner join HL_JY_COMBO combo on combo.id = proCombo.COMBO_ID "
+				+"where proCombo.id = '"+id+"' ";
+		BeanPropertyRowMapper<Combo> rowMapper = new BeanPropertyRowMapper<Combo>(Combo.class);
+		List<Combo> list = this.getJdbcTemplate().query(sql, rowMapper);
+		
+		return list != null && list.size() > 0 ? list.get(0) : null;
+	}
+	
+	public void findByPage(Page<CustomerRelationShipPro> page, Map<String, String> filterMap) {
+		StringBuilder projectSql = new StringBuilder();
+		List<Object> params = new ArrayList<Object>();
+		projectSql.append("select min(hcrp.id) id,hcrp.project_code projectCode,hcrp.project_name projectName,hcrp.project_owner projectOwner,hcrp.project_type projectType ");
+		projectSql.append("from hl_customer_relationship_pro hcrp where is_deleted='0' ");
+		if(StringUtils.isNotEmpty(filterMap.get("filter_and_projectCode_LIKE_S"))){
+			projectSql.append("and hcrp.project_code like '%"+filterMap.get("filter_and_projectCode_LIKE_S")+"%'");
+		}
+		if(StringUtils.isNotEmpty(filterMap.get("filter_and_projectName_LIKE_S"))){
+			projectSql.append("and hcrp.project_name like '%"+filterMap.get("filter_and_projectName_LIKE_S")+"%'");
+		}
+		if(StringUtils.isNotEmpty(filterMap.get("filter_and_projectOwner_LIKE_S"))){
+			projectSql.append("and hcrp.project_owner like '%"+filterMap.get("filter_and_projectOwner_LIKE_S")+"%'");
+		}
+		projectSql.append("group by	hcrp.project_code,hcrp.project_name,hcrp.project_owner,hcrp.project_type");
+		page.setTotalCount(this.findJdbcCount(projectSql, params));
+		params.add(page.getPageNumEndCount());
+		params.add(page.getPageNumStartCount());
+		BeanPropertyRowMapper<CustomerRelationShipPro> rowMapper = new BeanPropertyRowMapper<CustomerRelationShipPro>(CustomerRelationShipPro.class);
+		page.setResults(this.findJdbcList(projectSql, params, rowMapper));
+		
+	}
+	
+	/**
+	 * 根据id获取项目负责人
+	 * @param relationShipProById
+	 * @return
+	 * @author tangxing
+	 * @date 2017-2-17下午4:16:17
+	 */
+	public String getRelationShipProById(String relationShipProById){
+		String projectOwner = "";
+		String sql = "select pro.PROJECT_OWNER as projectOwner from HL_CUSTOMER_RELATIONSHIP_PRO pro where pro.id=?";
+		List<Map<String, Object>> lists = this.getJdbcTemplate().queryForList(sql, new Object[]{relationShipProById});
+		if(lists!=null&&lists.size()>0){
+			projectOwner = (String) lists.get(0).get("projectOwner");
+		}
+		return projectOwner;
+	}
+}

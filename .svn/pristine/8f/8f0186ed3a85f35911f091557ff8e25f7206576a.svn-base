@@ -1,0 +1,96 @@
+package org.hpin.reportdetail.web;
+
+import java.text.ParseException;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.log4j.Logger;
+import org.apache.struts2.convention.annotation.Action;
+import org.apache.struts2.convention.annotation.Namespace;
+import org.apache.struts2.convention.annotation.Result;
+import org.apache.struts2.convention.annotation.Results;
+import org.hpin.base.usermanager.entity.User;
+import org.hpin.common.core.SpringTool;
+import org.hpin.common.core.web.BaseAction;
+import org.hpin.common.util.HttpTool;
+import org.hpin.common.widget.pagination.Page;
+import org.hpin.reportdetail.entity.ErpReportdetailImgtask;
+import org.hpin.reportdetail.service.ErpReportdetailImgtaskService;
+
+/**
+ * PDF转换img任务Action
+ * @author LeslieTong
+ * @date 2017-3-24下午2:46:57
+ */
+
+@Namespace("/reportdetail")
+@Action("erpReportdetailImgTask")
+@Results({
+    @Result(name="listReportdetailImgtask",location="/WEB-INF/reportdetail/listReportdetailImgtask.jsp"),
+})
+public class ErpReportdetailImgTaskAction extends BaseAction{
+	
+	private Logger log = Logger.getLogger(ErpReportdetailImgTaskAction.class);
+	
+	ErpReportdetailImgtaskService service = (ErpReportdetailImgtaskService)SpringTool.getBean(ErpReportdetailImgtaskService.class);
+	
+	public String listReportdetailImgtask(){
+		Map searchMap = super.buildSearch();
+		User currentUser = (User)HttpTool.getSession().getAttribute("currentUser");
+		String stateInput = HttpTool.getParameter("stateInput");
+		
+		try {
+			page = new Page(HttpTool.getPageNum(),HttpTool.getPageSize());
+		} catch (ParseException e) {
+			e.printStackTrace();
+		}
+		
+		List<ErpReportdetailImgtask> list = service.findByPage(page, searchMap);
+		
+		/* 
+		 * 微磁：该检测仅适用年龄12-80岁之间的人群
+		 * 生物电：该检测仅适用年龄6-90岁之间的人群
+		 * 
+		 * 没有匹配上客户：未匹配客户
+		 * 年龄不在范围内：年龄不符合
+		 * 年龄在范围内：年龄符合
+		 */
+		for (ErpReportdetailImgtask imgtask : list) {
+			String messsage = "";
+			imgtask.getAgeRangeStatus();
+			String code = imgtask.getCode();
+			Map<String, Object> mapResult = service.getCustomerWuChuangByCode(code);
+			if((mapResult!=null&&mapResult.get("code")!=null)){
+				
+				if(mapResult.get("age")!=null){
+					int age = Integer.parseInt((String) mapResult.get("age")) ;
+					if(code.indexOf("W")!=-1){	//无创生物电
+						if(age>=6&&age<=90){
+							messsage="年龄符合";
+						}else{
+							messsage="年龄不符合";
+						}
+					}
+					if(code.indexOf("C")!=-1){	//微磁
+						if(age>=12&&age<=80){
+							messsage="年龄符合";
+						}else{
+							messsage="年龄不符合";
+						}
+					}
+				}else{
+					messsage="年龄不符合";
+				}
+				
+			}else{
+				messsage = "未匹配客户";
+			}
+			imgtask.setAgeRangeStatus(messsage);
+		}
+		page.setResults(list);
+		HttpTool.setAttribute("stateInput", stateInput);
+		
+		return "listReportdetailImgtask";
+	}
+
+}

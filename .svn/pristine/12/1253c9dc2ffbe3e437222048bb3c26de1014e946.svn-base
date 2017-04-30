@@ -1,0 +1,541 @@
+package org.hpin.reportdetail.dao;
+
+import java.sql.CallableStatement;
+import java.sql.Date;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.commons.lang.StringUtils;
+import org.hpin.base.usermanager.entity.User;
+import org.hpin.common.core.orm.BaseDao;
+import org.hpin.common.core.orm.daoWrapper.DaoSupport;
+import org.hpin.common.util.DBUtil;
+import org.hpin.events.entity.ErpCustomer;
+import org.hpin.reportdetail.entity.ErpPrintBatch;
+import org.hpin.reportdetail.entity.ErpPrintTaskContent;
+import org.hpin.reportdetail.entity.ErpReportFileTask;
+import org.hpin.reportdetail.entity.ErpReportMatchBean;
+import org.hpin.reportdetail.entity.ErpReportdetailPDFContent;
+import org.hpin.reportdetail.entity.PrintBatchInfoBean;
+import org.springframework.jdbc.core.BatchPreparedStatementSetter;
+import org.springframework.jdbc.core.BeanPropertyRowMapper;
+import org.springframework.orm.hibernate3.SessionFactoryUtils;
+import org.springframework.stereotype.Repository;
+
+@Repository()
+public class ErpReportdetailPDFContentDao extends BaseDao {
+	
+	public void save(ErpReportdetailPDFContent pdfContent){
+		this.getHibernateTemplate().save(pdfContent);
+	}
+	
+	public void save(List<ErpReportdetailPDFContent> pdfContentList){
+		this.getHibernateTemplate().saveOrUpdateAll(pdfContentList);
+	}
+	
+	public void compare() throws SQLException{
+		SessionFactoryUtils.getDataSource(this.getHibernateTemplate().getSessionFactory()).getConnection().prepareCall("");
+		DBUtil.makeConnection("dataSource");
+	}
+	
+	public void save(ErpReportFileTask task){
+		this.getHibernateTemplate().save(task);
+	}
+	
+	public List<ErpReportdetailPDFContent> queryContents(String batchno){
+		String hql = "from ErpReportdetailPDFContent where batchno = ?";
+		List<ErpReportdetailPDFContent> list = this.getHibernateTemplate().find(hql, batchno);
+		if(list!=null){
+			return list;
+		}
+		return null;
+	}
+	
+	public List<ErpReportdetailPDFContent> queryContentsByCode(String code){
+		String hql = "from ErpReportdetailPDFContent where code = ?";
+		List<ErpReportdetailPDFContent> list = this.getHibernateTemplate().find(hql, code);
+		if(list!=null){
+			return list;
+		}
+		return null;
+	}
+	
+	public List<ErpReportdetailPDFContent> queryContentsByCodes(String codes){
+		String hql = "from ErpReportdetailPDFContent where code in ("+codes+")";
+		List<ErpReportdetailPDFContent> list = this.getHibernateTemplate().find(hql);
+		if(list!=null){
+			return list;
+		}
+		return null;
+	}
+		
+	//调用存储过程进行本批次排重
+	public boolean dealRepeatContents(String batchno) throws Exception{
+		//String procdure = "{Call auto_task_pkg.deal_pdf_repeat_task(?,?)}";
+		String procdure = "{Call deal_pdf_repeat_task(?,?)}";
+		CallableStatement cs = this.getHibernateTemplate().getSessionFactory().getCurrentSession().connection().prepareCall(procdure);
+		cs.setString(1, batchno);
+		cs.registerOutParameter(2, java.sql.Types.VARCHAR);
+		cs.execute();
+		if(("9").equals(cs.getString(2))){
+			return false;
+		}
+		return true;
+	}
+	
+	//查询已入库的PDF文件名
+	public List<String> queryPdfFileNameByNo(String batchno){
+		String hql ="select pdfname from ErpReportdetailPDFContent where batchno = ?";
+		return this.getHibernateTemplate().find(hql,batchno);
+	}
+	
+	//查询PDF内容客户信息未成功读取的信息
+	public List<ErpReportdetailPDFContent> queryPdfCusInfoNotInDB(){
+		String hql ="from ErpReportdetailPDFContent where isrecord=0";
+		return this.getHibernateTemplate().find(hql);
+	}
+
+	public List<ErpReportdetailPDFContent> queryPdfCusInfoNotInDB(String batchno) {
+		String hql ="from ErpReportdetailPDFContent where isrecord=0 and batchno=?";
+		return this.getHibernateTemplate().find(hql,batchno);
+	}
+
+	public void addPdfCusInfo(final List<ErpReportdetailPDFContent> inDbPdf) {
+		String sql ="update ERP_REPORTDETAIL_PDFCONTENT set username=?,age=?,code=?,sex=?,updatedate=? where id=?";
+		this.getJdbcTemplate().batchUpdate(sql, new BatchPreparedStatementSetter(){
+			public int getBatchSize() {
+				return inDbPdf.size();
+				//这个方法设定更新记录数，通常List里面存放的都是我们要更新的，所以返回list.size();
+			}
+			public void setValues(PreparedStatement ps, int i)throws SQLException {
+				ps.setString(1, inDbPdf.get(i).getUsername());
+				ps.setString(2, inDbPdf.get(i).getAge());
+				ps.setString(3, inDbPdf.get(i).getCode());
+				ps.setString(4, inDbPdf.get(i).getSex());
+				ps.setDate(5, (Date)inDbPdf.get(i).getUpdatedate());
+				ps.setString(6, inDbPdf.get(i).getId());
+			}
+		});
+	}
+	
+	//提取需要打印且未分批的PDF
+	public List<ErpReportdetailPDFContent> getWillPrintPdf() {
+		String hql ="from ErpReportdetailPDFContent where isrecord=1 and ps='0' and isrepeat=0 and matchstate in(2,12)";
+		return this.getHibernateTemplate().find(hql);
+	}
+	public List<ErpPrintTaskContent> getPrintPDF() {
+		String hql ="from ErpPrintTaskContent where ps='0'";
+		return this.getHibernateTemplate().find(hql);
+	}
+
+	//通过分组查询获取信息
+	/**
+	 * @return 数据从erp_print_task_content表中获取，
+	 * pdfcontent表作为作为再次打印的数据来源
+	 */
+	public List<PrintBatchInfoBean> getBatchPrint() {
+		
+		String sql = "select combo as setmeal_name,branchcompanyid as branch_company,dept as dept,reporttype as reportType " +
+				"from erp_print_task_content " +
+				"where ps='0' and dept is not null " +
+				"group by branchcompanyid,dept,combo,reporttype";
+		List<PrintBatchInfoBean> list = this.getJdbcTemplate().query(sql, new BeanPropertyRowMapper(PrintBatchInfoBean.class));
+		return list;
+	}
+	
+	/**
+	 * @return 数据从erp_print_task_content表中获取，
+	 * pdfcontent表作为作为再次打印的数据来源
+	 */
+	public List<PrintBatchInfoBean> getBatchPrint2() {
+		
+		String sql = "select combo as setmeal_name,branchcompanyid as branch_company,projectcode as projectCode,reporttype as reportType " +
+				"from erp_print_task_content " +
+				"where ps='0' and dept is null " +
+				"group by branchcompanyid,combo,projectcode,reporttype";
+		List<PrintBatchInfoBean> list = this.getJdbcTemplate().query(sql, new BeanPropertyRowMapper(PrintBatchInfoBean.class));
+		return list;
+	}
+	
+	//
+	public List<Map<String, Object>> getBranchCompanyName(String branchCompanyId){
+		String queryString = "select branch_commany from HL_CUSTOMER_RELATIONSHIP where ID=?";
+		List<Map<String, Object>> companyName = this.getJdbcTemplate().queryForList(queryString,new Object[]{branchCompanyId});
+		return companyName;
+    }
+
+	//通过分组查询需要手工处理的数据
+	public List<PrintBatchInfoBean> getManualPrintBatch() {
+		String sql = "select setmeal_name,branch_company " +
+				"from ERP_REPORTDETAIL_PDFCONTENT " +
+				"where isrecord=1 and ps='11' " +
+				"group by setmeal_name,branch_company";
+		List<PrintBatchInfoBean> list = this.getJdbcTemplate().query(sql, new BeanPropertyRowMapper(PrintBatchInfoBean.class));
+		return list;
+	}
+	
+	//更新PDF内容关于打印批次的信息
+	public void updateContentPrintInfo(List<ErpReportdetailPDFContent> list) {
+		String sql = "update ERP_REPORTDETAIL_PDFCONTENT set printbthno=?,ps=? where id=?";
+		for(ErpReportdetailPDFContent content:list){
+			this.getJdbcTemplate().update(sql, new Object[]{content.getPrintbthno(),content.getPs(),content.getId()});
+		}
+	}
+	
+	//更新PDF基本信息
+	public void updateContentInfo(List<ErpReportdetailPDFContent> list) {
+		String sql = "update ERP_REPORTDETAIL_PDFCONTENT set USERNAME=?,AGE=?,SEX=?,CODE=?,ISRECORD=1,updatedate=sysdate where id=?";
+		for(int i=0;i<list.size();i++){
+			this.getJdbcTemplate().update(sql, new Object[]{list.get(i).getUsername(),list.get(i).getAge(),list.get(i).getSex(),
+					list.get(i).getCode(),list.get(i).getId()});
+		}
+	}
+	
+	public void updateContentPrintInfo2(List<ErpPrintBatch> list) {
+		String sql = "update ERP_REPORTDETAIL_PDFCONTENT set ps='1' where printbthno=?";
+		for(int i=0;i<list.size();i++){
+			this.getJdbcTemplate().update(sql, new Object[]{list.get(i).getPrintBatchNo()});
+		}
+	}
+	
+	//根据打印批次获取PDF内容信息
+	public List<ErpReportdetailPDFContent> findContentsByPrintNo(String printNo){
+		String hql="from ErpReportdetailPDFContent r where r.printbthno =?";
+		List<ErpReportdetailPDFContent> contentList = this.getHibernateTemplate().find(hql,printNo) ;
+		return contentList ;
+	}
+	//根据打印批次获取ErpPrintTaskContent内容信息
+	public List<ErpPrintTaskContent> getTaskContentByBatchNo(String nostr) {
+		String hql="from ErpPrintTaskContent where printbatchno =?";
+		List<ErpPrintTaskContent> contentList = this.getHibernateTemplate().find(hql,nostr) ;
+		return contentList ;
+	}
+
+	public void updateContentPrintInfo(List<ErpReportdetailPDFContent> contentList, String printTaskNos) {
+		String sql = "update ERP_REPORTDETAIL_PDFCONTENT set printtaskno=?,ps='2' where id=?";
+		for(ErpReportdetailPDFContent content : contentList){
+			this.getJdbcTemplate().update(sql,new Object[]{printTaskNos,content.getId()});
+		}
+	}
+	public void updatePrintTaskContent(List<ErpPrintTaskContent> contentList) {
+		String sql = "update erp_print_task_content set ps='2' where id=?";
+		String sql2 = "update erp_repeat_print_task set isprint='1' where id=?";	//更新重复打印表中未打印任务为已打印
+		for(ErpPrintTaskContent content : contentList){
+			this.getJdbcTemplate().update(sql,new Object[]{content.getId()});
+			this.getJdbcTemplate().update(sql2,new Object[]{content.getPdfContentId()});
+		}
+	}
+	
+	public void updateTaskContentPrintInfo(List<ErpPrintTaskContent> taskContentList, String printTaskNo) {
+		String sql = "update erp_print_task_content set printtaskno=?,ps='2' where id=?";
+		String sql2 = "update erp_repeat_print_task set isprint='1' where id=?";
+		for(ErpPrintTaskContent content : taskContentList){
+			this.getJdbcTemplate().update(sql,new Object[]{printTaskNo,content.getId()});
+			this.getJdbcTemplate().update(sql2,new Object[]{content.getPdfContentId()});
+		}
+	}
+	
+	//根据打印ID获取PDF内容信息
+	public List<ErpReportdetailPDFContent> findContentsByPrintId(String printid){
+		String hql="from ErpReportdetailPDFContent r where r.printtaskno = ?";
+		List<ErpReportdetailPDFContent> contentList = this.getHibernateTemplate().find(hql,printid) ;
+		return contentList ;
+	}
+
+	public List<ErpReportdetailPDFContent> queryUnMatchContents3(String batchno) {
+		String hql="from ErpReportdetailPDFContent r where r.batchno = ? and matchstate = 3";
+		List<ErpReportdetailPDFContent> contentList = this.getHibernateTemplate().find(hql,batchno) ;
+		return contentList;
+	}
+	
+	public List<ErpReportdetailPDFContent> queryUnMatchContents4(String batchno) {
+		String hql="from ErpReportdetailPDFContent r where r.batchno = ? and matchstate = 4";
+		List<ErpReportdetailPDFContent> contentList = this.getHibernateTemplate().find(hql,batchno) ;
+		return contentList;
+	}
+	
+	//获取已打印未结算的PDF报告
+	public List<ErpReportdetailPDFContent> queryUnSettlementContent(String code){
+		String hql="from ErpReportdetailPDFContent r where r.code = ? and ps ='2' and settlement_status is null";
+		List<ErpReportdetailPDFContent> contentList = this.getHibernateTemplate().find(hql,code) ;
+		return contentList;
+	}
+	
+	//获取已打印未结算的PDF报告
+	public List<ErpReportdetailPDFContent> findSettlementContent(String code){
+		String hql="from ErpReportdetailPDFContent r where r.code = ? and isrepeat=0 and settlement_status is null";
+		List<ErpReportdetailPDFContent> contentList = this.getHibernateTemplate().find(hql,code) ;
+		return contentList;
+	}
+	
+	public void updateContentState2(String id){
+		String beanHql = "update ERP_REPORTDETAIL_PDFCONTENT set matchstate=?,updatedate=? where id=?";
+		java.util.Date now = new java.util.Date();
+		this.getJdbcTemplate().update(beanHql,new Object[]{2,now,id});
+	}
+	
+	public void updateMoreContentInfo(ErpCustomer customer,String ymPrint,String id){
+		java.util.Date now = new java.util.Date();
+		String contentSql = "update ERP_REPORTDETAIL_PDFCONTENT set matchstate=2,updatedate=?,customerid=?,provice=?,city=?,branch_company=?,events_no=?,setmeal_name=?,sales_man=?,ps=? where id=?";
+		this.getJdbcTemplate().update(contentSql,new Object[]{now,customer.getId(),customer.getProvice(),customer.getCity(),
+				customer.getBranchCompanyId(),customer.getEventsNo(),customer.getSetmealName(),customer.getSalesMan(),
+				ymPrint,id});
+	}
+	
+	public List<String> queryContentInit(String batchno){
+		String hql = "select id from ErpReportdetailPDFContent where batchno = ? and matchstate=4 and isrecord=1 and ps is null";
+		return this.getHibernateTemplate().find(hql, batchno);
+	}
+	
+	public List<ErpReportdetailPDFContent> queryWillMathPdfByBthno(String batchno){
+		String hql = "from ErpReportdetailPDFContent where batchno=? and matchstate=3 and isrecord=1 and isrepeat=0 and ps is null";
+		return this.getHibernateTemplate().find(hql, batchno);
+	}
+	
+	//获取未匹配成功的数据
+	public List<ErpReportdetailPDFContent> queryContentMatchBy3(){
+		String hql = "from ErpReportdetailPDFContent where isrecord=1 and matchstate=3 and isrepeat=0 and ps is null";
+		return this.getHibernateTemplate().find(hql);
+	}
+	
+	//获取异常数据
+	public List<ErpReportdetailPDFContent> queryContentMatchBy4(){
+		String hql = "from ErpReportdetailPDFContent where isrecord=1 and matchstate=4 and isrepeat=0 and ps is null";
+		return this.getHibernateTemplate().find(hql);
+	}
+	
+	//会员信息多条
+	public List<ErpReportdetailPDFContent> queryContentMatchBy5(){
+		String hql = "from ErpReportdetailPDFContent where isrecord=1 and matchstate=5 and isrepeat=0 and ps is null";
+		return this.getHibernateTemplate().find(hql);
+	}
+	
+	/**
+	 * @param batchNo 批次号
+	 * @param matchState 匹配状态
+	 * @return 匹配状态的数量
+	 */
+	public int countMatchState(String batchNo,int matchState){
+		StringBuilder matchStateSql = new StringBuilder("select count(1) from ERP_REPORTDETAIL_PDFCONTENT where batchno=? ");
+		switch (matchState) {
+		case 2:
+			matchStateSql.append("and matchstate in (?,12)");
+			break;
+
+		default:
+			matchStateSql.append( "and matchstate=?");
+			break;
+		}
+		return this.getJdbcTemplate().queryForInt(matchStateSql.toString(), batchNo, matchState);
+	}
+	
+	//更新PDF内容状态
+	public void updateMatchState(String userName,int matchstate,String id){
+		java.util.Date now = new java.util.Date();
+		String beanHql = "update ERP_REPORTDETAIL_PDFCONTENT set updateuser=?, matchstate=?,updatedate=? where id=?";
+		this.getJdbcTemplate().update(beanHql,new Object[]{userName,matchstate,now,id});
+	}
+
+	public boolean cancelPrint(String pdfid) {
+		java.util.Date now = new java.util.Date();
+		String sql = "update ERP_REPORTDETAIL_PDFCONTENT  set ps=?,updatedate=? where id=?";
+		int result = this.getJdbcTemplate().update(sql,new Object[]{"99",now,pdfid});
+		if(1==result){
+			return true;
+		}
+		return false;
+	}
+
+	public HashSet<String> queryPrintBthnoByCode(String code) {
+		HashSet<String> printBthnos = new HashSet<String>();
+		List<ErpReportdetailPDFContent> pdfcontentList = queryContentsByCode(code);
+		if(null!=pdfcontentList){
+			for(ErpReportdetailPDFContent content : pdfcontentList){
+				if(null!=content.getPrintbthno()&&!("").equals(content.getPrintbthno())){
+					printBthnos.add(content.getPrintbthno());
+				}
+			}
+		}
+		if(0<printBthnos.size()){
+			return printBthnos;
+		}
+		return null;
+	}
+	
+	//查询是否含有不打印的数据
+	public int hasDataInUnPrint(String code,String name,String sex){
+		String reportManageSql = "select count(1) from erp_reportdetail_management where code=? and name=? and gender=? and state='1'";
+		return this.getJdbcTemplate().queryForInt(reportManageSql,code,name,sex);
+	}
+
+	public void updateTaskContentInfo(List<ErpPrintTaskContent> list) {
+		String sql = "update erp_print_task_content set printbatchno=?,ps=? where id=?";
+		for(int i=0;i<list.size();i++){
+			this.getJdbcTemplate().update(sql, new Object[]{list.get(i).getPrintBatchNo(),list.get(i).getPs(),list.get(i).getId()});
+		}
+	}
+
+	public void updateTaskContentInfo2(List<ErpPrintBatch> batchBeanList) {
+		String sql = "update erp_print_task_content set ps='1' where printbatchno=?";
+		for(int i=0;i<batchBeanList.size();i++){
+			this.getJdbcTemplate().update(sql, new Object[]{batchBeanList.get(i).getPrintBatchNo()});
+		}
+		
+	}
+
+	/**
+	 * @return 是否需要远盟打印
+	 */
+	public boolean isPrintByYM(String combo) {
+		String isPrintByYMSql = "select count(1) from hl_jy_combo where combo_name=? and is_delete=0 and print_type='0' ";
+		if(this.getJdbcTemplate().queryForInt(isPrintByYMSql,combo)!=0){
+			return true;
+		}
+		return false;
+	}
+
+
+	public List<ErpReportdetailPDFContent> findByProps(String code, String pdfName) throws Exception{
+		List<ErpReportdetailPDFContent> list = null;
+		if(StringUtils.isNotEmpty(code)){
+			String hql = " from ErpReportdetailPDFContent where 1=1 and code = ? and pdfname = ?";
+			list  = this.getHibernateTemplate().find(hql,new Object[]{code, pdfName});
+		}
+		return list;
+	}
+
+	/**
+	 * @since 2017年2月28日15:12:27
+	 * @author Carly
+	 * @param bean 获取里面的条码,性别
+	 * @param name 姓名
+	 * @return 获取客户信息
+	 */
+	public List<ErpCustomer> getCustomerDto(ErpReportMatchBean bean, String name) {
+		String customerHql = "from ErpCustomer where upper(code) = ?  and replace(name,' ','')=? and sex=? and isDeleted=0 order by setmealName asc";
+		return this.getHibernateTemplate().find(customerHql, bean.getCode().toUpperCase(),name,bean.getSex());
+	}
+
+	/**
+	 * @since 2017年2月28日15:13:29
+	 * @author Carly
+	 * @param combo 套餐
+	 * @return 是否是远盟打印
+	 */
+	public boolean existedPrintCombo(String combo) {
+		String sql = "select count(1) from hl_jy_combo where combo_name=? and is_delete=0 and print_type='0'";
+		int count = this.getJdbcTemplate().queryForInt(sql,combo);
+		return count == 0 ? false : true;
+		
+	}
+
+	/**
+	 * @since 2017年2月28日15:22:39
+	 * @author Carly
+	 * @param code 条码
+	 * @param name 姓名
+	 * @param gender 性别
+	 * @return 查询是否有人工确认不打印的套餐
+	 */
+	public boolean existedUnprint(ErpReportMatchBean bean) {
+		String sql = "select count(1) from erp_reportdetail_management where upper(code)=? and name=? and gender=? and state='1'";
+		int count = this.getJdbcTemplate().queryForInt(sql, bean.getCode().toUpperCase(), bean.getName(), bean.getSex());
+		return count == 0 ? false :true;
+	}
+
+	/**
+	 * @since 2017年2月28日15:28:43
+	 * @author Carly
+	 * @param eventsNo 场次号
+	 * @param combo 套餐
+	 * @return 如果能查询到才是真的需要远盟打印
+	 */
+	public boolean existedProjectCodePrint(String eventsNo, String combo) {
+		String sql = "SELECT COUNT(1) FROM ERP_RELATIONSHIPPRO_COMBO a WHERE "
+				+ "EXISTS (SELECT 1 FROM  hl_jy_combo hjc WHERE hjc.COMBO_NAME=?  and hjc.IS_DELETE = 0 AND a.COMBO_ID=hjc.id) " 
+				+"AND "
+				+ "EXISTS (SELECT 1 FROM  ERP_EVENTS ee WHERE ee.EVENTS_NO=? AND a.CUSTOMER_RELATIONSHIP_PRO_ID=ee.CUSTOMERRELATIONSHIPPRO_ID) " 
+				+ "AND NVL(a.PRINT_TYPE,1) =1 ";
+		int count = this.getJdbcTemplate().queryForInt(sql,combo,eventsNo);
+		return count == 0 ? false : true;
+	}
+
+	/**
+	 * @since 2017年3月2日13:28:24
+	 * @author Carly
+	 * @param user 
+	 * @param i
+	 * @param now
+	 * @param id
+	 * @return 更新匹配状态
+	 */
+	public void updatePdfContentMatchstate(String userName, int i, java.util.Date now,String id) {
+		String beanHql = "update ERP_REPORTDETAIL_PDFCONTENT set updateuser=?, matchstate=?,updatedate=? where id=?";
+		this.getJdbcTemplate().update(beanHql,userName,i,now,id);
+	}
+
+	/**
+	 * @author Carly
+	 * @since 2017年3月9日11:26:03
+	 * @param userName 更新人的姓名
+	 * @param customer 客户
+	 * @param ymPrint 打印状态
+	 * @param printTaskContent 组装的分批信息
+	 * @param matchState 匹配状态
+	 * @param now 更新时间
+	 * @param bean pdf信息
+	 */
+	public void updatePdfContentInfo(String userName, ErpCustomer customer, String ymPrint, ErpPrintTaskContent printTaskContent,
+			int matchState, java.util.Date now, ErpReportMatchBean bean) {
+		String contentSql = "update ERP_REPORTDETAIL_PDFCONTENT set updateuser=?, customerid=?,provice=?,city=?,branch_company=?,"
+				+ "events_no=?,age=?,sales_man=?,ps=?,dept=?,projectcode=?,matchstate=?,updatedate=? where id=?";
+		this.getJdbcTemplate().update(contentSql, userName, customer.getId(), customer.getProvice(), customer.getCity(),
+				customer.getBranchCompanyId(), customer.getEventsNo(), customer.getAge(), customer.getSalesMan(),
+				ymPrint, printTaskContent.getDept(), printTaskContent.getProjectCode(), matchState, now, bean.getId());
+		
+	}
+	
+	/**
+	 * @param bean 组装的pdf信息
+	 * @param state 报告状态
+	 * @param customerId 
+	 */
+	public void updateCustomerFilePath(ErpReportMatchBean bean,int state,String customerId) {
+		String pdfNewPath = (bean.getFilePath()).replace("/home/ftp/transact","http://img.healthlink.cn:8099/ymReport");
+		String custHql = "update ERP_CUSTOMER set pdffilepath=?,status_ym=? where id = ?";	
+		this.getJdbcTemplate().update(custHql,pdfNewPath,state,customerId);
+	}
+
+	/**
+	 * @param pdfId
+	 * 还原状态为异常
+	 */
+	public void updateUnmatchState(String userName,String unMatchSate, String pdfId) {
+		String sql="update erp_reportdetail_unmatchinfo set operatorname=?, modifystate=? where pdfid=?";
+		this.getJdbcTemplate().update(sql,userName,unMatchSate,pdfId);
+		
+	}
+	
+	/**
+	 * 根据code、name、场次号查找ErpReportdetailPDFContent
+	 * @param code
+	 * @param name
+	 * @param eventsNo
+	 * @return
+	 * @author tangxing
+	 * @date 2017-3-7下午5:14:42
+	 */
+	public List<ErpReportdetailPDFContent> gePdfContentByEventsNoAndCodeAndName(String code,String name,String eventsNo){
+		String hql = "from ErpReportdetailPDFContent rpc where rpc.matchstate=2 and rpc.code=? and rpc.username=? and rpc.events_no=? ";
+		return this.getHibernateTemplate().find(hql, new Object[]{code,name,eventsNo});
+	}
+	
+	public boolean existedCustomerPdf(ErpCustomer customer) throws Exception {
+		String sql = "select count(1) from erp_reportdetail_pdfcontent where customerid=? and matchstate=2 and pdfname like '%pdf'";
+		int count = this.getJdbcTemplate().queryForInt(sql,customer.getId());
+		return count == 0 ? false : true;
+	}
+}

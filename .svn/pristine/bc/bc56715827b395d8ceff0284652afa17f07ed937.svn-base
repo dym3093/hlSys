@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sql_list>
+
+    <!--根据条码，姓名，场次号修改客户状态-->
+    <!-- 2017-03-07 -->
+    <!--Damian-->
+    <sql id="UPDATE_CUSTOMER" params="STATUS_YM,UPDATE_USER_NAME,CODE,NAME,EVENTS_NO">
+    <![CDATA[
+       	UPDATE
+		ERP_CUSTOMER
+	SET
+		STATUS_YM = ?,
+		UPDATE_TIME = SYSDATE,
+		UPDATE_USER_NAME = ?
+	WHERE
+		1 = 1
+		AND IS_DELETED = 0
+    	AND CODE = ?
+    	AND NAME = ?
+    	AND EVENTS_NO = ?
+    ]]>
+    </sql>
+
+    <!--根据ID修改客户状态 -->
+    <!-- 2017-03-07 -->
+    <!--Damian-->
+    <sql id="UPDATE_CUSTOMER_BY_ID" params="STATUS_YM,UPDATE_USER_NAME,ID">
+        <![CDATA[
+       	UPDATE
+		ERP_CUSTOMER
+	SET
+		STATUS_YM = ?,
+		UPDATE_TIME = SYSDATE,
+		UPDATE_USER_NAME = ?
+	WHERE
+		1 = 1
+		AND IS_DELETED = 0
+    	AND ID = ?
+    ]]>
+    </sql>
+
+</sql_list>

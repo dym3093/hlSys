@@ -1,0 +1,39 @@
+<?xml version="1.0"?>
+<HL_PSNDAT_REQ>
+  <FieldTypes>
+    <HL_PSNDAT_REQ class="R">
+      <HL_INS_SYS type="CHAR"/>
+      <HL_DATE type="DATE"/>
+      <HL_GLS_FLAG type="CHAR"/>
+      <EMPLID type="CHAR"/>
+    </HL_PSNDAT_REQ>
+    <PSCAMA class="R">
+      <LANGUAGE_CD type="CHAR"/>
+      <AUDIT_ACTN type="CHAR"/>
+      <BASE_LANGUAGE_CD type="CHAR"/>
+      <MSG_SEQ_FLG type="CHAR"/>
+      <PROCESS_INSTANCE type="NUMBER"/>
+      <PUBLISH_RULE_ID type="CHAR"/>
+      <MSGNODENAME type="CHAR"/>
+    </PSCAMA>
+  </FieldTypes>
+  <MsgData>
+    <Transaction>
+      <HL_PSNDAT_REQ class="R">
+        <HL_INS_SYS>AD</HL_INS_SYS>
+        <HL_DATE>2011-06-22</HL_DATE>
+        <HL_GLS_FLAG>N</HL_GLS_FLAG>
+        <EMPLID/>
+      </HL_PSNDAT_REQ>
+      <PSCAMA class="R">
+        <LANGUAGE_CD>ZHS</LANGUAGE_CD>
+        <AUDIT_ACTN/>
+        <BASE_LANGUAGE_CD>ENG</BASE_LANGUAGE_CD>
+        <MSG_SEQ_FLG/>
+        <PROCESS_INSTANCE>0</PROCESS_INSTANCE>
+        <PUBLISH_RULE_ID/>
+        <MSGNODENAME/>
+      </PSCAMA>
+    </Transaction>
+  </MsgData>
+</HL_PSNDAT_REQ>

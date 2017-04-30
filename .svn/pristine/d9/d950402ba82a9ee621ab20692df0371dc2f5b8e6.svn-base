@@ -1,0 +1,55 @@
+package org.hpin.reportdetail.web;
+
+import java.text.ParseException;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.log4j.Logger;
+import org.apache.struts2.convention.annotation.Action;
+import org.apache.struts2.convention.annotation.Namespace;
+import org.apache.struts2.convention.annotation.Result;
+import org.apache.struts2.convention.annotation.Results;
+import org.hpin.base.usermanager.entity.User;
+import org.hpin.common.core.SpringTool;
+import org.hpin.common.core.web.BaseAction;
+import org.hpin.common.util.HttpTool;
+import org.hpin.common.widget.pagination.Page;
+import org.hpin.events.entity.ErpQRCode;
+import org.hpin.reportdetail.service.ErpReportdetailImgtaskService;
+
+/**
+ * PDF转换img任务Action
+ * @author LeslieTong
+ * @date 2017-3-24下午2:46:57
+ */
+
+@Namespace("/reportdetail")
+@Action("erpReportdetailImgTask")
+@Results({
+    @Result(name="listReportdetailImgtask",location="/WEB-INF/reportdetail/listReportdetailImgtask.jsp"),
+})
+public class ErpReportdetailImgTaskAction extends BaseAction{
+	
+	private Logger log = Logger.getLogger(ErpReportdetailImgTaskAction.class);
+	
+	ErpReportdetailImgtaskService service = (ErpReportdetailImgtaskService)SpringTool.getBean(ErpReportdetailImgtaskService.class);
+	
+	public String listReportdetailImgtask(){
+		Map searchMap = super.buildSearch();
+		User currentUser = (User)HttpTool.getSession().getAttribute("currentUser");
+		String stateInput = HttpTool.getParameter("stateInput");
+		
+		try {
+			page = new Page(HttpTool.getPageNum(),HttpTool.getPageSize());
+		} catch (ParseException e) {
+			e.printStackTrace();
+		}
+		
+		List<ErpQRCode> list=service.findByPage(page, searchMap);
+		
+		HttpTool.setAttribute("stateInput", stateInput);
+		
+		return "listReportdetailImgtask";
+	}
+
+}

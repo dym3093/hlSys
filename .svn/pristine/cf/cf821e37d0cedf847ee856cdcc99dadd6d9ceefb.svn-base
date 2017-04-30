@@ -1,0 +1,198 @@
+package org.hpin.warehouse.web;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import net.sf.json.JSONObject;
+
+import org.apache.commons.lang.StringUtils;
+import org.apache.log4j.Logger;
+import org.apache.struts2.convention.annotation.Action;
+import org.apache.struts2.convention.annotation.Namespace;
+import org.apache.struts2.convention.annotation.Result;
+import org.apache.struts2.convention.annotation.Results;
+import org.hpin.base.usermanager.entity.User;
+import org.hpin.common.core.SpringTool;
+import org.hpin.common.core.web.BaseAction;
+import org.hpin.common.util.HttpTool;
+import org.hpin.common.widget.pagination.Page;
+import org.hpin.warehouse.entity.ErpStoregeIn;
+import org.hpin.warehouse.entity.ErpSupplier;
+import org.hpin.warehouse.service.ErpStoregeInService;
+import org.hpin.warehouse.service.ErpSupplierService;
+import org.springframework.beans.factory.annotation.Autowired;
+/**
+ * 
+ * @description: 基因物品入库Action
+ * create by henry.xu 2016年10月12日
+ */
+@Namespace("/warehouse")
+@Action("storegeIn")
+@Results({
+		@Result(name="listInfo", location="/WEB-INF/warehouse/storegeIn/listErpStoregeIn.jsp"),
+		@Result(name="edit", location="/WEB-INF/warehouse/storegeIn/inWarehouse.jsp"),
+		@Result(name="toCheckOut", location="/WEB-INF/warehouse/storegeIn/checkOutWarehouse.jsp")})
+public class ErpStoregeInAction extends BaseAction {
+
+	/**
+	 * 序列号;
+	 */
+	private static final long serialVersionUID = 8273689614796966292L;
+	private static final Logger log = Logger.getLogger(ErpStoregeOutAction.class);
+	
+	@Autowired
+	private ErpStoregeInService erpStoregeInService;
+
+	@Autowired
+	private ErpSupplierService erpSupplierService;
+
+	private ErpStoregeIn stroregeIn; //入库实体类;
+	
+	/**
+	 * excel导出数据;查询
+	 */
+	@SuppressWarnings("rawtypes")
+	public Page exportExcel(Page page , Map paramsMap) {
+		//参数获取;
+		HashMap<String, String> params = new HashMap<String, String>();
+		params.put("storegeName", HttpTool.getParameter("params.storegeName", ""));
+		params.put("productName", HttpTool.getParameter("params.productName", ""));
+		params.put("startDate", HttpTool.getParameter("params.startDate", ""));
+		params.put("endDate", HttpTool.getParameter("params.endDate", ""));
+		//查询;
+		erpStoregeInService = (ErpStoregeInService)SpringTool.getBean("erpStoregeInService");
+		erpStoregeInService.findStoregeInsAll(page, params);
+		return page;
+	}
+	
+	/**
+	 * 编辑界面;
+	 * @return
+	 */
+	public String edit() {
+		
+		if(StringUtils.isNotEmpty(id)) {
+			stroregeIn = this.erpStoregeInService.findStoregeInById(id);
+		}
+		
+		//仓库id
+    	HttpTool.setAttribute("warehouseId", HttpTool.getParameter("warehouseId", ""));
+		return "edit";
+	}
+	
+	/**
+     * 入库数据保存;
+     * create by henry.xu 20161014
+     */
+    public void saveOrUpdateStoIn() {
+    	JSONObject json = new JSONObject();
+		String statusCode = "200";
+		String callbackType= "closeCurrent";
+		try {
+			User userInfo = (User)HttpTool.getSession().getAttribute("currentUser");
+			if(stroregeIn != null) {
+				if(StringUtils.isEmpty(stroregeIn.getId())) {
+					erpStoregeInService.saveStroregeIn(stroregeIn, userInfo);
+				} else {
+					erpStoregeInService.updateStroregeIn(stroregeIn, userInfo);
+				}
+				
+			}
+			
+		} catch (Exception e) {
+			statusCode = "300";
+			log.error("产品信息入库保存错误!StoreWarehouseAction.saveOrUpdateStoIn", e);
+		}
+		json.put("statusCode", statusCode);
+		json.put("navTabId", navTabId);
+		json.put("callbackType", callbackType);
+		json.put("message", "操作成功!");
+		renderJson(json);
+    }
+	
+	/**
+	 * 列表
+	 * @return
+	 */
+	@SuppressWarnings("rawtypes")
+	public String listInfo() {
+		try {
+			page = new Page(HttpTool.getPageNum(), HttpTool.getPageSize());
+			this.erpStoregeInService.findStoregeInsByPage(page, getUserInfo(), params);
+		} catch(Exception e) {
+			log.error("基因物品申请查询错误!", e);
+		}
+		return "listInfo";
+	}
+
+	/**
+	 * 跳转到结帐页面
+	 * @return String
+	 * @author Damian
+	 * @since 2017-02-07
+	 */
+	public String toCheckOut(){
+	    String supplierName = null;
+		if(StringUtils.isNotEmpty(id)) {
+			stroregeIn = this.erpStoregeInService.findStoregeInById(id);
+			if (stroregeIn!=null){
+				//查询供应商名称
+				String supplierId = stroregeIn.getSupplierId();
+				ErpSupplier supplier = (ErpSupplier) erpSupplierService.findById(supplierId);
+				if (supplier!=null){
+					supplierName = supplier.getSupplierName();
+				}
+			}
+		}
+		//供应商名称
+		HttpTool.setAttribute("supplierName", supplierName);
+		//仓库id
+		HttpTool.setAttribute("warehouseId", HttpTool.getParameter("warehouseId", ""));
+		return "toCheckOut";
+	}
+
+	/**
+	 * 结帐保存操作
+	 * @author Damian
+     * @since 2017-02-07
+	 */
+	public void checkOut() {
+		JSONObject json = new JSONObject();
+		String statusCode = "300";
+		String callbackType= "closeCurrent";
+		String message = "操作失败！";
+		try {
+			User userInfo = (User)HttpTool.getSession().getAttribute("currentUser");
+			if(stroregeIn != null) {
+				if (StringUtils.isNotEmpty(stroregeIn.getId())
+						&&StringUtils.isNotEmpty(stroregeIn.getSerialNoOA())) {
+				    stroregeIn.setSettleStatus(1); //设置为已经结算
+					erpStoregeInService.checkOut(stroregeIn, userInfo);
+					statusCode = "200";
+					message = "操作成功！";
+				} else {
+					statusCode = "300";
+					message = "操作失败！OA流水号为空！";
+				}
+			}
+
+		} catch (Exception e) {
+			log.error("结帐错误!StoreWarehouseAction.checkOut", e);
+		}
+		json.put("statusCode", statusCode);
+		json.put("navTabId", navTabId);
+		json.put("callbackType", callbackType);
+		json.put("message", message);
+		renderJson(json);
+    }
+
+	/*get/set*/
+
+	public ErpStoregeIn getStroregeIn() {
+		return stroregeIn;
+	}
+
+	public void setStroregeIn(ErpStoregeIn stroregeIn) {
+		this.stroregeIn = stroregeIn;
+	}
+}

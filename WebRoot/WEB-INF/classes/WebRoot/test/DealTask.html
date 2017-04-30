@@ -1,0 +1,117 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>Deal Task repeat data</title>
+<style type="text/css">
+	table{
+		font-family: verdana,arial,sans-serif;
+		font-size:11px;
+		color:#333333;
+		border-width: 1px;
+		border-color: #666666;
+		border-collapse: collapse;
+		margin: 0 auto;}
+	table td{
+		border-width: 1px;
+		padding: 8px;
+		border-style: solid;
+		border-color: #666666;
+		background-color: #ffffff;
+	}
+</style>
+<script type="text/javascript" src="../jquery/jquery-1.7.1.js" ></script>
+<script type="text/javascript">
+	$(function(){
+		$("#doall").click(function(){
+			$.ajax({
+				type: "post",
+				cache :false,
+				dataType: "json",
+				data:null,
+				url: "/ymjy/report/reportFileTask!dealUnRepeatTask.action",
+				success: function(data){
+					if(0==data.results.length){
+						$("#titlename").text("当前没有批次号需要去重！");
+						return;
+					}
+					var jsonObj = data.results;
+					$("#titlename").text(jsonObj.length+"个批次号已去重完毕，结果如下：");
+					var trcontent;
+					$.each(jsonObj, function (i, item) {
+						trcontent +="<tr><td>"+item.batchno+"</td><td>"+item.res+"</td></tr>"
+					});
+					$("#res").append(trcontent);
+				},
+				error :function(){
+					alert("服务发生异常，请稍后再试！");
+					return;
+				}
+			});
+		});
+		
+		$("#doone").click(function(){
+			$("#res").empty();
+			$.ajax({
+				type: "post",
+				cache :false,
+				dataType: "json",
+				data:null,
+				url: "/ymjy/report/reportFileTask!queryUnRepeatTask.action",
+				success: function(data){
+					if(0==data.results.length){
+						$("#titlename").text("当前没有批次号需要去重！");
+						return;
+					}
+					var jsonObj = data.results;
+					$("#titlename").text(jsonObj.length+"个批次号未进行去重如下：");
+					var trcontent;
+					$.each(jsonObj, function (i, item) {
+						trcontent +="<tr id='"+item+"'><td>"+item+"</td><td name='oneres' style='width:20px;'> </td><td><input name='onedeal' type='button' value='去重' onclick='dealOne("+item+")'></td></tr>"
+					});
+					$("#res").append(trcontent);
+				},
+				error :function(){
+					alert("服务发生异常，请稍后再试！");
+					return;
+				}
+			});
+		});
+	});
+	
+	function dealOne(batchno){
+		if(batchno==null){
+			alert("批次号不能为空");
+			return;
+		}
+		$.ajax({
+			type: "post",
+			cache :false,
+			dataType: "json",
+			data:null,
+			url: "/ymjy/report/reportFileTask!dealOneUnRepeatTask.action?batchno="+batchno,
+			success: function(data){
+				var jsonObj = data.results;
+				$("#"+batchno).children("td[name='oneres']").text(jsonObj.res);
+				$("#"+batchno).find("input[name='onedeal']").attr("disabled","disabled");
+			},
+			error :function(){
+				alert("服务发生异常，请稍后再试！");
+				return;
+			}
+		});
+	}
+</script>
+</head>
+<body>
+<div style="text-align: center;">
+	<h1>PDF去重功能</h1>
+	<p>
+		<input type="button" id="doall" value="批量去重" />
+		<input type="button" id="doone" value="单次去重" />
+	</p>
+	<p id="titlename"></p>
+	<table id="res"></table>
+</div>
+</body>
+</html>

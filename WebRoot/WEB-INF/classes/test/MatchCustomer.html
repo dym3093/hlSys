@@ -1,0 +1,97 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>PDF匹配会员信息</title>
+<style type="text/css">
+	table{
+		font-family: verdana,arial,sans-serif;
+		font-size:11px;
+		color:#333333;
+		border-width: 1px;
+		border-color: #666666;
+		border-collapse: collapse;
+		margin: 0 auto;}
+	table td{
+		border-width: 1px;
+		padding: 8px;
+		border-style: solid;
+		border-color: #666666;
+		background-color: #ffffff;
+	}
+</style>
+<script type="text/javascript" src="../jquery/jquery-1.7.1.js" ></script>
+<script type="text/javascript">
+	function queryUnMatch(){
+		$.ajax({
+			type: "post",
+			cache :false,
+			dataType: "json",
+			data:null,
+			url: "/ymjy/report/reportFileTask!queryUnMatchBatchno.action",
+			success: function(data){
+				$("#res").empty();
+				var jsonObj = data.results;
+				if(jsonObj.lenght==0){
+					$("#titlename").text("当前没有需要进行会员匹配的数据");
+					return;
+				}
+				var trcontent;
+				$.each(jsonObj, function (i, item) {
+					trcontent +="<tr id='"+item+"'><td>"+(i+1)+"</td><td>"+item+"</td><td name='itemres' style='width:400px'></td><td><input name='startbnt' type='button' value='开始匹配' onclick='startMatch(\""+item+"\")'></td></tr>"
+				});
+				$("#res").append(trcontent);
+			},
+			error :function(){
+				alert("服务发生异常，请稍后再试！");
+				return;
+			}
+		});
+	}
+	
+	function startMatch(batchno){
+		if(batchno==null||0==batchno){
+			alert("批次号不能为空");
+			return;
+		}
+		$("#"+batchno).find("input[name='startbnt']").attr("disabled","disabled");
+		$.ajax({
+			type: "post",
+			cache :false,
+			dataType: "json",
+			data:null,
+			url: "/ymjy/report/reportFileTask!dealCustomerMatch.action?batchno="+batchno,
+			success: function(data){
+				var jsonObj = data.results;
+				if(jsonObj.needmatchnum=='0'){
+					$("#"+batchno).children("td[name='itemres']").text("本批次没有需要匹配的数据");
+					$("#"+batchno).find("input[name='startbnt']").attr("disabled","disabled");
+					return;
+				}
+				if(typeof(jsonObj.exception)!="undefined"){
+					$("#"+batchno).children("td[name='itemres']").text(jsonObj.exception);
+					$("#"+batchno).find("input[name='startbnt']").attr("disabled","disabled");
+					return;
+				}
+				$("#"+batchno).children("td[name='itemres']").text("PDF数量="+jsonObj.needmatchnum+";子公司数量="+jsonObj.companynum+";重复数量="+jsonObj.repeatnum+";更新数据="+jsonObj.updatenum+";未匹配数据="+jsonObj.unmatchnum);
+				$("#"+batchno).find("input[name='startbnt']").attr("disabled","disabled");
+			},
+			error :function(){
+				alert("服务发生异常，请稍后再试！");
+				return;
+			}
+		});
+	}
+</script>
+</head>
+<body>
+<div style="text-align: center;">
+	<h1>PDF内容匹配会员信息</h1>
+	<p>
+		<input type="button" value="查询" onclick="queryUnMatch()">
+	</p>
+	<p id="titlename"></p>
+	<table id="res"></table>
+</div>
+</body>
+</html>

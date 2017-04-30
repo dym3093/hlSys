@@ -1,0 +1,168 @@
+<form id="pagerForm"  method="post" action="xinxichuli/xietiaoyuangongzuotai/renwu/daichuli.html">
+	<input type="hidden" name="status" value="${param.status}">
+	<input type="hidden" name="keywords" value="${param.keywords}" />
+	<input type="hidden" name="pageNum" value="1" />
+	<input type="hidden" name="numPerPage" value="${model.numPerPage}" />
+	<input type="hidden" name="orderField" value="${param.orderField}" />
+
+
+
+<div class="tip"><span>查询</span></div>
+<div class="pageHeader">
+	
+	<div class="searchBar">
+		<table class="pageFormContent">
+			<tr>
+				<td>
+					<label>工单流水号：</label><input type="text" name="keyword" /></td>
+				<td>
+					<label>工单主题：</label><input type="text" name="keyword" /></td>
+				<td>
+					<label>项目名称：</label><input type="text" name="keyword" /></td>
+			</tr>
+			<tr>
+				<td>
+					<label>客户名称：</label><input type="text" name="keyword" /></td>
+				<td>
+					<label>派单时间从：</label><input type="text" name="startDate" class="date" size="20" /><a class="inputDateButton" href="javascript:;">选择</a>
+				</td>
+				<td>
+				<label >至：</label><input type="text" name="startDate" class="date" size="20" /><a class="inputDateButton" href="javascript:;">选择</a>				                </td>
+			</tr>
+				<tr>
+				<td>
+					<label>产品名称：</label><input type="text" name="keyword" /></td>
+
+			</tr>
+		</table>
+		<div class="subBar">
+			<ul>
+				<li><div class="buttonActive"><div class="buttonContent"><button >查找</button></div></div></li>
+				
+			</ul>
+		</div>
+	</div>
+	
+</div>
+<div class="pageContent">
+	<div class="panelBar">
+		<ul class="toolBar">
+			<li><a class="add" href="yewuliucheng/view/dianfu/yishengpanduanview.html" target="navTab"><span>查看</span></a></li>
+
+			 
+		</ul>
+	</div>
+	<table class="list" width="100%"  layoutH="245">
+		<thead>
+			<tr>
+				<th width="50">序号</th>
+				<th>工单流水号</th>
+				<th align="center">工单主题</th>
+				<th>处理阶段</th>
+				<th>完成时限</th>
+				<th>处理时限</th>
+				<th>任务所属者</th>
+			</tr>
+		</thead><tbody>
+			<tr target="sid_user" rel="1" bgcolor="#FFFFFF" style="border:thin">
+				<td><input type="checkbox" value="1">1</td>
+				<td><a href="xinxichuli/xietiaoyuangongzuotai/renwu/view/renwuxiangxiview.html" target="dialog" width="800" height="480" style="color:#0000FF;font-size:9pt"> BJ-010-130305-00001</a></td>
+				<td><label style=" margin:2">任务工单</label></td><td><label style=" margin:2">处理前</label></td>
+				<td>2013-03-08 12:00:00</td>
+				<td>2013-03-06 12:00:00</td>
+				<td><label style=" margin:2">王林</label></td>
+
+			</tr>
+			<tr target="sid_user" rel="2" bgcolor="#FFFFFF">
+				<td><input type="checkbox" value="1">2</td>
+				<td><a href="xinxichuli/xietiaoyuangongzuotai/renwu/view/renwuxiangxiview.html" target="dialog" width="800" height="480" style="color:#0000FF;font-size:9pt"> BJ-010-130305-00002</a></td>
+				<td><label style=" margin:2">任务工单</label></td><td><label style=" margin:2">处理中</label></td>
+				<td>2013-02-09 15:00:00</td>
+				<td>2013-02-06 18:00:00</td>
+				<td><label style=" margin:2">李璐</label></td>
+			</tr>
+			<tr target="sid_user" rel="3" bgcolor="#FFFFFF"> 
+			<td><input type="checkbox" value="1">3</td>
+				<td><a href="xinxichuli/xietiaoyuangongzuotai/renwu/view/renwuxiangxiview.html" target="dialog" width="800" height="480" style="color:#0000FF;font-size:9pt"> BJ-010-130305-00003</a></td>
+				<td><label style=" margin:2">xx任务工单</label></td><td><label style=" margin:2">服务完成</label></td>
+				<td>2013-02-09 15:00:00</td>
+				<td>2013-02-06 18:00:00</td>
+				<td><label style=" margin:2">刘军</label></td>
+			</tr>	<tr target="sid_user" rel="3" bgcolor="#FFFFFF"> 
+				<td><input type="checkbox" value="1">4</td>
+				<td><a href="xinxichuli/xietiaoyuangongzuotai/renwu/view/renwuxiangxiview.html" target="dialog" width="800" height="480" style="color:#0000FF;font-size:9pt"> BJ-010-130306-00004</a></td>
+				<td><label style=" margin:2">任务工单</label></td><td><label style=" margin:2">受理中</label></td>
+		
+				<td>2013-02-09 15:00:00</td>
+				<td>2013-02-06 18:00:00</td>
+				<td><label style=" margin:2">于房</label></td>
+			</tr>
+				<tr target="sid_user" rel="3" bgcolor="#FFFFFF"> 
+				<td><input type="checkbox" value="1">5</td>
+			<td><a href="xinxichuli/xietiaoyuangongzuotai/renwu/view/renwuxiangxiview.html" target="dialog" width="800" height="480" style="color:#0000FF;font-size:9pt"> BJ-010-130307-00005</a></td>
+				<td><label style=" margin:2">任务工单</label></td><td><label style=" margin:2">服务完成</label></td>
+				<td>2013-02-09 15:00:00</td>
+				<td>2013-02-06 18:00:00</td>
+				<td><label style=" margin:2">富泽</label></td>
+			</tr>
+			<tr target="sid_user" rel="3" bgcolor="#FFFFFF"> 
+			<td><input type="checkbox" value="1">6</td>
+			<td><a href="xinxichuli/xietiaoyuangongzuotai/renwu/view/renwuxiangxiview.html" target="dialog" width="800" height="480" style="color:#0000FF;font-size:9pt"> BJ-010-130305-00006</a></td>
+				<td><label style=" margin:2">任务工单</label></td><td><label style=" margin:2">受理前</label></td>
+				<td>2013-02-09 15:00:00</td>
+				<td>2013-02-06 18:00:00</td>
+				<td><label style=" margin:2">富泽</label></td>
+			</tr>
+						<tr target="sid_user" rel="3" bgcolor="#FFFFFF"> 
+			<td><input type="checkbox" value="1">7</td>
+			<td><a href="xinxichuli/xietiaoyuangongzuotai/renwu/view/renwuxiangxiview.html" target="dialog" width="800" height="480" style="color:#0000FF;font-size:9pt"> BJ-010-130305-00007</a></td>
+				<td><label style=" margin:2">任务工单</label></td><td><label style=" margin:2">处理中</label></td>
+				<td>2013-02-09 15:00:00</td>
+				<td>2013-02-06 18:00:00</td>
+				<td><label style=" margin:2">刘军</label></td>
+			</tr>
+	<tr target="sid_user" rel="3" bgcolor="#FFFFFF"> 
+			<td><input type="checkbox" value="1">8</td>
+			<td><a href="xinxichuli/xietiaoyuangongzuotai/renwu/view/renwuxiangxiview.html" target="dialog" width="800" height="480" style="color:#0000FF;font-size:9pt"> BJ-010-130305-00008</a></td>
+				<td><label style=" margin:2">任务工单</label></td><td><label style=" margin:2">处理中</label></td>
+				<td>2013-02-09 15:00:00</td>
+				<td>2013-02-06 18:00:00</td>
+				<td><label style=" margin:2">付茜茜</label></td>
+			</tr>
+			
+			
+				<tr target="sid_user" rel="3" bgcolor="#FFFFFF"> 
+			<td><input type="checkbox" value="1">9</td>
+			<td><a href="xinxichuli/xietiaoyuangongzuotai/renwu/view/renwuxiangxiview.html" target="dialog" width="800" height="480" style="color:#0000FF;font-size:9pt"> BJ-010-130305-00009</a></td>
+				<td><label style=" margin:2">任务工单</label></td><td><label style=" margin:2">处理中</label></td>
+				<td>2013-02-09 15:00:00</td>
+				<td>2013-02-06 18:00:00</td>
+				<td><label style=" margin:2">莫菲菲</label></td>
+			</tr>
+					<tr target="sid_user" rel="3" bgcolor="#FFFFFF"> 
+			<td><input type="checkbox" value="1">10</td>
+			<td><a href="xinxichuli/xietiaoyuangongzuotai/renwu/view/renwuxiangxiview.html" target="dialog" width="800" height="480" style="color:#0000FF;font-size:9pt"> BJ-010-130305-00010</a></td>
+				<td><label style=" margin:2">任务工单</label></td><td><label style=" margin:2">处理中</label></td>
+				<td>2013-02-09 15:00:00</td>
+				<td>2013-02-06 18:00:00</td>
+				<td><label style=" margin:2">付茜茜</label></td>
+			</tr>
+	
+	</tbody>
+	</table>
+	<div class="panelBar">
+		<div class="pages">
+			<span>显示</span>
+			<select name="numPerPage" onchange="navTabPageBreak({numPerPage:this.value})">
+				<option value="20">20</option>
+				<option value="50">50</option>
+				<option value="100">100</option>
+				<option value="200">200</option>
+			</select>
+			<span>条，共10条</span>
+		</div>
+		
+		<div class="pagination" targetType="navTab" totalCount="200" numPerPage="20" pageNumShown="10" currentPage="1"></div>
+
+	</div>
+</div>

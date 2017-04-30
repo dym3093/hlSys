@@ -1,0 +1,305 @@
+package org.hpin.reportdetail.service;
+
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import jxl.Cell;
+import jxl.Sheet;
+import jxl.Workbook;
+
+import org.apache.poi.xssf.usermodel.XSSFRow;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.hpin.common.core.orm.BaseService;
+import org.hpin.common.util.ExcelUtils;
+import org.hpin.common.util.HttpTool;
+import org.hpin.common.widget.pagination.Page;
+import org.hpin.events.dao.ErpCustomerDao;
+import org.hpin.events.entity.ErpCustomer;
+import org.hpin.reportdetail.dao.ErpReportdetailPDFTaskDao;
+import org.hpin.reportdetail.entity.ErpReportFileTask;
+import org.hpin.reportdetail.entity.ErpReportFileTaskBean;
+import org.hpin.reportdetail.entity.ErpReportdetailPDFContent;
+import org.hpin.reportdetail.entity.ReportFileTaskView;
+import org.hpin.reportdetail.util.BuidReportExcel;
+import org.hpin.reportdetail.util.DealWithFileUtil;
+import org.hpin.reportdetail.util.ZipFileUtil;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+
+@Service(value = "org.hpin.reportdetail.service.ErpReportFileTaskService")
+@Transactional()
+public class ErpReportFileTaskService extends BaseService {
+	@Autowired
+	ErpReportdetailPDFTaskDao dao;
+	@Autowired
+	ErpCustomerDao customerDao;
+	
+	private BuidReportExcel buildExcel = new BuidReportExcel();
+	
+	private ZipFileUtil zipUtil = new ZipFileUtil();
+	
+	public void save(ErpReportFileTask task){
+		dao.save(task);
+	}
+	
+	public ErpReportFileTask queryTaskByBatch(String batchno){
+		return dao.queryTaskByBatchno(batchno);
+	}
+	
+	public List<ErpReportFileTask> queryAllTask(){
+		return dao.queryAllTask();
+	}
+	
+	public ErpReportFileTask getById(String id){
+		return (ErpReportFileTask) dao.findById(ErpReportFileTask.class, id);
+	}
+	
+	public List<ErpCustomer> getCustomerInfo(String batchno){
+		List<ErpCustomer> list = customerDao.getCustomerByCodes(batchno,null);
+		return list;
+	}
+	
+	public List<ErpCustomer> getCustomerInfo(String batchno,String branchCompany){
+		List<ErpCustomer> list = customerDao.getCustomerByCodes(batchno,branchCompany);
+		return list;
+	}
+	
+	//根据批次号获取
+	public List<Map<String,String>> getTaskCompanyInfo(List<ErpCustomer> customerList,Map<String,Integer> companyMap){
+		List<Map<String,String>> result = new ArrayList<Map<String,String>>();
+		List<String> companyList = new ArrayList<String>();
+		for(ErpCustomer customer : customerList){
+			Map<String,String> maps = new HashMap<String,String>();
+			if(companyList.contains(customer.getBranchCompany())){
+				if(customer.getPdffilepath()!=null&&!(customer.getPdffilepath()).equals("")){
+					companyMap.put(customer.getBranchCompany(), companyMap.get(customer.getBranchCompany())+1);
+				}
+			}else{
+				maps.put("company",customer.getBranchCompany());
+				result.add(maps);
+				companyList.add(customer.getBranchCompany());
+				companyMap.put(customer.getBranchCompany(), 1);
+			}
+		}
+		return result;
+	}
+
+	public List<ErpReportFileTaskBean> dealTaskBean(List<Map<String, String>> lists,String batchno,Map<String,Integer> companyNum) {
+		List<ErpReportFileTaskBean> resultBean = new ArrayList<ErpReportFileTaskBean>();
+		for(Map<String, String> map : lists){
+			ErpReportFileTaskBean bean = new ErpReportFileTaskBean();
+			bean.setBatchno(batchno);
+			bean.setBranchcompany(map.get("company"));
+			bean.setPdfnum(companyNum.get(map.get("company")));
+			resultBean.add(bean);
+		}
+		return resultBean;
+	}
+	
+	//在指定目录下生成所有下载文件,返回生成的ZIP文件名
+	public String downloadFile(StringBuilder rootPath,String batchno,String branchCompany) throws Exception{
+		String tmpFilePath = rootPath.toString();
+		List<ErpCustomer> allCustomerList = getCustomerInfo(batchno);
+		List<String> companyList = new ArrayList<String>();
+		//根据当前日期获取文件路径
+		SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddhhmmss");
+		String timePath = sdf.format(new Date());
+		String rootTimePath = rootPath.append(timePath + File.separator).toString();
+		Map<String,List<ErpCustomer>> companyCustomer = DealWithFileUtil.getInstance().dealErpCustomer(allCustomerList,companyList);
+		
+		if(branchCompany!=null){
+			List<List<String>> rowList = DealWithFileUtil.getInstance().buildExcelRow(companyCustomer.get(branchCompany));
+			String fileToPath = rootTimePath +branchCompany + File.separator;
+			String fileName = batchno+".xls";
+			buildExcel.writeXls(fileToPath,fileName, rowList);
+			DealWithFileUtil.getInstance().buidPDFDownload(fileToPath,companyCustomer.get(branchCompany));
+		}else{
+			for(int i=0;i<companyList.size();i++){
+				String branchCompany2 = companyList.get(i);
+				List<List<String>> rowList = DealWithFileUtil.getInstance().buildExcelRow(companyCustomer.get(branchCompany2));
+				String fileToPath = rootTimePath +branchCompany2 + File.separator;
+				String fileName = batchno+String.valueOf(i)+".xls";
+				buildExcel.writeXls(fileToPath,fileName, rowList);
+				DealWithFileUtil.getInstance().buidPDFDownload(fileToPath,companyCustomer.get(branchCompany2));
+			}
+		}
+		String zipName = timePath +".zip";
+		zipUtil.fileToZip(tmpFilePath+zipName,rootTimePath);
+		return zipName;
+	}
+	
+	//在指定目录下生成所有下载文件,返回生成的ZIP文件名
+	public String downloadFileByCodes(StringBuilder rootPath,List<ErpReportdetailPDFContent> contents) throws Exception{
+		String tmpFilePath = rootPath.toString();
+		//根据当前日期获取文件路径
+		SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddhhmmss");
+		String timePath = sdf.format(new Date());
+		String rootTimePath = rootPath.append(timePath + File.separator).toString();
+		String fileToPath = rootTimePath + "DownFileByCodes" + File.separator;
+		DealWithFileUtil.getInstance().buidPDFDownloadByContent(fileToPath,contents);
+		String zipName = timePath +".zip";
+		zipUtil.fileToZip(tmpFilePath+zipName,rootTimePath);
+		return zipName;
+	}
+	
+	//
+	
+	//查询未去重的批次号
+	public List<String> queryUnRepeatBatchno(){
+		return dao.queryUnRepeatBatchno();
+	}
+	
+	//查询未匹配会员信息的批次号
+	public List<String> queryUnMatchBatchno(){
+		return dao.queryUnMatchBatchno();
+	}
+
+	//处理页面需要展示的信息
+	public Page dealTaskView(Page page) {
+		List<ErpReportFileTask> result = page.getResults();
+		List<ReportFileTaskView> lists = new ArrayList<ReportFileTaskView>();
+		for(ErpReportFileTask task : result){
+			ReportFileTaskView taskView = new ReportFileTaskView();
+			taskView.setBatchno(task.getBatchno());
+			taskView.setId(task.getId());
+			taskView.setPdftotal(task.getPdftotal());
+			taskView.setCompanynum(task.getCompanynum());
+			taskView.setRepeatnum(task.getRepeatnum());
+			taskView.setUpdatenum(task.getUpdatenum());
+			taskView.setUnmatchnum(task.getUnmatchnum());
+			taskView.setIsdisrepeat(task.getIsdisrepeat());
+			taskView.setIsmatch(task.getIsmatch());
+			taskView.setCreatedate(task.getCreatedate());
+			taskView.setUpdatedate(task.getUpdatedate());
+			taskView.setAbnormalnnum(task.getAbnormalnnum());
+			taskView.setNoYMCombo(task.getNoYMCombo());
+			taskView.setNoCustomerCombo2SY(task.getNoCustomerCombo2SY());
+			taskView.setNoSYCombo(task.getNoSYCombo());
+			taskView.setErrorPdfName(task.getErrorPdfName());
+			taskView.setStopCombo(task.getStopCombo());
+			taskView.setStopReport(task.getStopReport());
+			int unrecordnum = dao.getNumUnRecord(task.getBatchno());
+			int inbthrepeatnum = dao.getBthRepeatNum(task.getBatchno(),1);
+			int otherbthrepeatnum = dao.getBthRepeatNum(task.getBatchno(),2);
+			taskView.setUnrecordnum(unrecordnum);
+			taskView.setInbthrepeatnum(inbthrepeatnum);
+			taskView.setOtherbthrepeatnum(otherbthrepeatnum);
+			taskView.setCusmorenum(task.getCusmorenum());
+			lists.add(taskView);
+		}
+		page.setResults(lists);
+		return page;
+	}
+	
+	public ReportFileTaskView getTaskView(ErpReportFileTask task){
+		ReportFileTaskView taskView = new ReportFileTaskView();
+		taskView.setBatchno(task.getBatchno());
+		taskView.setId(task.getId());
+		taskView.setPdftotal(task.getPdftotal());
+		taskView.setCompanynum(task.getCompanynum());
+		taskView.setRepeatnum(task.getRepeatnum());
+		taskView.setUpdatenum(task.getUpdatenum());
+		taskView.setUnmatchnum(task.getUnmatchnum());
+		taskView.setIsdisrepeat(task.getIsdisrepeat());
+		taskView.setIsmatch(task.getIsmatch());
+		taskView.setCreatedate(task.getCreatedate());
+		taskView.setUpdatedate(task.getUpdatedate());
+		int unrecordnum = dao.getNumUnRecord(task.getBatchno());
+		int inbthrepeatnum = dao.getBthRepeatNum(task.getBatchno(),1);
+		int otherbthrepeatnum = dao.getBthRepeatNum(task.getBatchno(),2);
+		taskView.setInbthrepeatnum(inbthrepeatnum);
+		taskView.setOtherbthrepeatnum(otherbthrepeatnum);
+		taskView.setUnrecordnum(unrecordnum);
+		taskView.setAbnormalnnum(task.getAbnormalnnum());
+		taskView.setCusmorenum(task.getCusmorenum());
+		taskView.setNoYMCombo(task.getNoYMCombo());
+		taskView.setNoSYCombo(task.getNoSYCombo());
+		taskView.setNoCustomerCombo2SY(task.getNoCustomerCombo2SY());
+		taskView.setErrorPdfName(task.getErrorPdfName());
+		taskView.setStopCombo(task.getStopCombo());
+		taskView.setStopReport(task.getStopReport());
+		return taskView;
+	}
+	
+	//获取上传条码EXCEL文件中的数据
+	public List<String> getCodeByExcel(File exlFile) {
+		String filePath = HttpTool.getParameter("filePath");
+		List<String> codeList = new ArrayList<String>();
+		InputStream in = null;
+		try{
+			if(filePath.indexOf(".xlsx")!=-1){
+				in = new FileInputStream(exlFile);
+				XSSFWorkbook wb = new XSSFWorkbook(in);
+				XSSFSheet st = wb.getSheetAt(0);
+				int bb = st.getLastRowNum();
+				for (int i = 0; i <= bb; i++) {
+					XSSFRow row = st.getRow(i);
+					codeList.add(ExcelUtils.getValue(row.getCell(0)));
+				}
+				wb.close();
+			}else if(filePath.indexOf(".xls")!=-1){
+				in = new FileInputStream(exlFile);
+				Workbook workbook = Workbook.getWorkbook(in);
+				Sheet[] sheetNum = workbook.getSheets();
+				System.out.println("上传的sheet的个数："+sheetNum.length);
+				Sheet sheet = workbook.getSheet(0);
+				Cell cell = null;
+				int rowCount = sheet.getRows(); //行数
+				for (int i = 0; i < rowCount; i++) {
+					cell = sheet.getCell(0, i);
+					codeList.add(cell.getContents());
+				}
+				workbook.close();
+			}
+		}catch(Exception e){
+			System.out.println("ErpReportdetailService getCodeByExcel"+e);
+			return codeList;
+		}
+		return codeList;
+	}
+
+	public void updateTaskState(String batchno) {
+		dao.updateTaskState(batchno);
+	}
+	
+	//查出未找到的条码
+	public List<String> queryUnFindCodes(List<ErpReportdetailPDFContent> contents,String codes){
+		String allCodes = codes.replaceAll("'","");
+		String[] strArray = allCodes.split(",");
+		List<String> unfindCodes = new ArrayList<String>();
+		List<String> dbCodes = new ArrayList<String>();
+		for(ErpReportdetailPDFContent content : contents){
+			dbCodes.add(content.getCode());
+		}
+		for(int i=0;i<strArray.length;i++){
+			if(!dbCodes.contains(strArray[i])){
+				unfindCodes.add(strArray[i]);
+			}
+		}
+		return unfindCodes;
+	}
+
+	/**
+	 * @param batchno
+	 * @return 获取批次号
+	 */
+	public ErpReportFileTask getBatchNo(String batchno) {
+		String sql = "from ErpReportFileTask where batchno=?";
+		return (ErpReportFileTask) dao.getHibernateTemplate().find(sql, batchno).get(0);
+	}
+	
+	public int dealPdfAbnormal(String id,int state){
+		return dao.dealPdfAbnormal(id, state);
+	}
+}

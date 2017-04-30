@@ -1,0 +1,217 @@
+<script type="text/javascript">
+
+function sfornot1(){
+var i=document.getElementById("biaoji1").value;
+if(i=="sf"){
+document.getElementById("subtag1").style.display="none";
+ document.getElementById("subtag2").style.display="";
+  document.getElementById("biaoji2").value="sf";
+}else{
+document.getElementById("subtag1").style.display="";
+document.getElementById("subtag2").style.display="none";
+}
+
+}
+function sfornot2(){
+var i=document.getElementById("biaoji2").value;
+if(i=="sf"){
+document.getElementById("subtag1").style.display="none";
+ document.getElementById("subtag2").style.display="";
+ 
+}else{
+document.getElementById("subtag2").style.display="none";
+document.getElementById("subtag1").style.display="";
+document.getElementById("biaoji1").value=document.getElementById("biaoji2").value;
+}
+
+}
+
+
+
+</script>
+
+
+<div><div class="tip"><span>话单</span></div>
+<table class="table" width="100%">
+		<thead>
+			<tr>
+				<th width="80">呼叫编号</th>
+				<th width="120">呼叫描述</th>
+				<th>主叫号码</th>
+				<th width="100">被叫号码</th>
+				<th width="150">用户名称</th>
+				<th width="80" align="center">通话时间</th>
+				<th width="80">通话时长</th>
+				<th width="80">中继号</th>
+					<th width="80">IVR通道号</th><th width="80">信息编号</th><th width="80">信息名称</th><th width="80">坐席员工号</th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr target="sid_user" rel="1">
+				<td>923342242401</td>
+				<td>呼入IVR分机</td>
+				<td>65443234</td>
+				<td>00034</td>
+				<td>王华</td>
+				<td>2013-3-1 00:42:01</td>
+				<td>00:42:01</td>
+				<td>2</td><td>1</td><td>0</td><td>王华</td><td>9527</td>
+
+
+
+
+			</tr>
+			<tr target="sid_user" rel="2">
+							<td>923342000404</td>
+				<td>呼入IVR分机</td>
+				<td>65443234</td>
+				<td>00034</td>
+				<td>王华</td>
+				<td>2013-3-1 00:42:01</td>
+				<td>00:42:01</td>
+				<td>2</td><td>1</td><td>0</td><td>王华</td><td>9527</td>
+
+
+			</tr>
+			<tr target="sid_user" rel="3">
+							<td>923342242402</td>
+				<td>呼入IVR分机</td>
+				<td>65443234</td>
+				<td>00034</td>
+				<td>刘岚</td>
+				<td>2013-3-1 00:42:01</td>
+				<td>00:42:01</td>
+				<td>2</td><td>1</td><td>0</td><td>刘岚</td><td>9567</td>
+
+
+			</tr>
+			<tr target="sid_user" rel="4">
+								<td>923342242404</td>
+				<td>呼入IVR分机</td>
+				<td>65443234</td>
+				<td>00034</td>
+				<td>王华</td>
+				<td>2013-3-1 00:42:01</td>
+				<td>00:42:01</td>
+				<td>2</td><td>1</td><td>0</td><td>王华</td><td>9527</td>
+
+
+			</tr>
+
+		
+		</tbody>
+	</table><div class="panelBar">
+		<div class="pages">
+			<span>显示</span>
+			<select name="numPerPage" onchange="navTabPageBreak({numPerPage:this.value})">
+				<option value="20">20</option>
+				<option value="50">50</option>
+				<option value="100">100</option>
+				<option value="200">200</option>
+			</select>
+			<span>条，共4条</span>
+		</div>
+		
+		<div class="pagination" targetType="navTab" totalCount="200" numPerPage="20" pageNumShown="10" currentPage="1"></div>
+
+	</div></div>
+	
+	<div><div class="tip"><span>录音</span></div>
+	<div class="panelBar">
+		<ul class="toolBar">
+			<li><a class="add" href="demo_page4.html" target="navTab"><span>刷新</span></a></li>
+		<li><a class="add" href="demo_page4.html" target="navTab"><span>播放</span></a></li>
+			<li><a class="edit" href="demo_page4.html?uid={sid_user}" target="navTab"><span>下载</span></a></li>
+			 
+			<li><a class="icon" href="demo/common/dwz-team.xls" target="dwzExport" targetType="navTab" title="实要导出这些记录吗?"><span>下载查询全部结果</span></a></li>
+			<li><a class="delete" href="demo/common/ajaxDone.html?uid={sid_user}" target="ajaxTodo" title="确定要删除吗?"><span>删除</span></a></li>
+			<li><a class="icon" href="demo/common/dwz-team.xls" target="dwzExport" targetType="navTab" title="实要导出这些记录吗?"><span>显示删除的数据</span></a></li>
+			<li><a class="icon" href="demo/common/ajaxDone.html?uid={sid_user}" target="ajaxTodo" ><span>下载路径:D:/download</span></a></li>
+			<li><a class="add" href="demo_page4.html" target="navTab"><span>浏览</span></a></li>
+		</ul>
+	</div>
+<table class="table" width="100%">
+		<thead>
+			<tr>
+				<th width="80">工号</th>
+			
+				<th>主叫号码</th>
+				<th width="100">被叫号码</th>
+				<th width="150">录音日期</th>
+				<th width="80" align="center">截止时间</th>
+				<th width="80">通话时长</th>
+				<th width="80">评分人</th>
+					<th width="80">服务器代码</th><th width="80">录音文件路径</th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr target="sid_user" rel="1">
+				<td>923342242401</td>
+			
+				<td>65443234</td>
+				<td>00034</td>
+				<td>2013-2-1 00:42:01</td>
+				<td>2013-3-1 00:42:01</td>
+				<td>198:42:01</td>
+				<td>2</td><td>0</td><td>D:\download\9527.wav</td>
+
+
+
+
+			</tr>
+			<tr target="sid_user" rel="2">
+							<td>923342000404</td>
+				
+				<td>65443234</td>
+				<td>00034</td>
+				<td>2013-2-1 00:42:01</td>
+				<td>2013-3-1 00:42:01</td>
+				<td>198:42:01</td>
+				<td>2</td><td>0</td><td>D:\download\9527.wav</td>
+
+
+			</tr>
+			<tr target="sid_user" rel="3">
+							<td>923342242402</td>
+					<td>65443234</td>
+				<td>00034</td>
+				<td>2013-2-1 00:42:01</td>
+				<td>2013-3-1 00:42:01</td>
+				<td>198:42:01</td>
+				<td>2</td><td>0</td><td>D:\download\9527.wav</td>
+
+
+
+
+			</tr>
+			<tr target="sid_user" rel="4">
+								<td>923342242404</td>
+						<td>65443634</td>
+				<td>02214</td>
+				<td>2013-2-1 00:42:01</td>
+				<td>2013-3-1 00:42:01</td>
+				<td>198:42:01</td>
+				<td>2</td><td>0</td><td>D:\download\9527.wav</td>
+
+
+
+
+			</tr>
+
+		
+		</tbody>
+	</table><div class="panelBar">
+		<div class="pages">
+			<span>显示</span>
+			<select name="numPerPage" onchange="navTabPageBreak({numPerPage:this.value})">
+				<option value="20">20</option>
+				<option value="50">50</option>
+				<option value="100">100</option>
+				<option value="200">200</option>
+			</select>
+			<span>条，共4条</span>
+		</div>
+		
+		<div class="pagination" targetType="navTab" totalCount="200" numPerPage="20" pageNumShown="10" currentPage="1"></div>
+
+	</div></div>

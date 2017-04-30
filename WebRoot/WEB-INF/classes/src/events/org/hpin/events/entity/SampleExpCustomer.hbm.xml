@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+<hibernate-mapping>
+	<class name="org.hpin.events.entity.SampleExpCustomer" table="ERP_SAMPLE_EXPRESS_CUSTOMER">
+		<id name="id" type="java.lang.String">
+			<column name="ID" />
+			<generator class="uuid" />
+		</id>
+		<property name="sampleExpMgrId" type="java.lang.String">
+			<column name="SAMPLE_EXPRESS_ID"/>
+		</property>
+		
+		<property name="isdeleted" type="java.lang.Integer">
+			<column name="ISDELETED" />
+		</property>
+		
+		<property name="customerId" type="java.lang.String">
+			<column name="CUSTOMER_ID" />
+		</property> 
+		
+		<property name="createDate" type="java.util.Date">
+			<column name="CREATEDATE" />
+		</property>
+		
+		<property name="eventsId" type="java.lang.String">
+			<column name="EVENTS_ID" />
+		</property>
+		
+		<property name="eventsBatchno" type="java.lang.String">
+			<column name="EVENTS_BATCHNO" />
+		</property>
+		
+	</class>
+</hibernate-mapping>

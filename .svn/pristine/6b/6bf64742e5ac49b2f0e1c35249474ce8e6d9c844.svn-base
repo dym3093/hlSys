@@ -1,0 +1,57 @@
+package org.hpin.venueStaffSettlement.service;
+
+import org.apache.log4j.Logger;
+import org.hpin.base.customerrelationship.entity.ProjectType;
+import org.hpin.common.core.orm.BaseService;
+import org.hpin.common.widget.pagination.Page;
+import org.hpin.venueStaffSettlement.dao.ErpNonConferenceDao;
+import org.hpin.venueStaffSettlement.entity.ErpNonConference;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+
+/**
+ * @author Carly
+ * @since 2017年1月22日12:07:26
+ * 非会场费用管理
+ */
+@Service(value = "org.hpin.venueStaffSettlement.service.ErpNonConferenceService")
+@Transactional()
+public class ErpNonConferenceService extends BaseService {
+	@Autowired
+	ErpNonConferenceDao dao;
+	Logger logger = Logger.getLogger(ErpNonConferenceService.class);
+	
+	/**
+	 * @param page
+	 * @param nonConference
+	 */
+	public void getNonConferenceList(Page<ErpNonConference> page, ErpNonConference nonConference) {
+		dao.getNonConferenceList(page,nonConference);
+		
+	}
+
+	/**
+	 * @param id
+	 * @return 删除会议
+	 */
+	public boolean deleteNonConference(String id) throws Exception{
+		int count = dao.deleteNonConference(id);
+		switch (count) {
+		case 1:
+			return true;
+		default:
+			return false;
+		}
+	}
+
+	/**
+	 * @param projectType
+	 * @return 通过id获取项目信息
+	 */
+	public ProjectType getProjectInfo(String projectType) {
+		return dao.getProjectInfo(projectType);
+	}
+	
+}

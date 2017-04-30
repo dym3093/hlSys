@@ -1,0 +1,243 @@
+<script type="text/javascript">
+
+function sfornot1(){
+var i=document.getElementById("laiyuan1").value;
+if(i=="sf"){
+document.getElementById("tag1").style.display="none";
+ document.getElementById("tag2").style.display="";
+  document.getElementById("laiyuan2").value="sf";
+}else{
+document.getElementById("tag1").style.display="";
+document.getElementById("tag2").style.display="none";
+}
+
+}
+function sfornot2(){
+var i=document.getElementById("laiyuan2").value;
+if(i=="sf"){
+document.getElementById("tag1").style.display="none";
+ document.getElementById("tag2").style.display="";
+ 
+}else{
+document.getElementById("tag2").style.display="none";
+document.getElementById("tag1").style.display="";
+document.getElementById("laiyuan1").value=document.getElementById("laiyuan2").value;
+}
+
+}
+
+
+function ifcheck(){
+var i=document.getElementById("ch1").checked;
+
+if(i){
+document.getElementById("gongdan").value="否";
+document.getElementById("gongdanhao").value="BJ-010-130305-00001";
+
+
+}else {
+
+document.getElementById("gongdan").value="是";
+document.getElementById("gongdanhao").value="";
+}
+}
+
+
+
+</script>
+<div class="pageContent" style="height:600px;">
+	<div style="height:500px;">
+		<div class="tip">
+			<span>来电信息</span>
+		</div>
+		<table class="infoTable">
+			<tr>
+				<th>
+					来电电话：
+				</th>
+				<td>
+					18600102030
+				</td>
+				<th>
+					来电时间：
+				</th>
+				<td>
+					2013-3-15 9:20:36
+				</td>
+				<th>
+					来电省份：
+				</th>
+				<td>
+					北京
+				</td>
+				<th>
+					来电城市：
+				</th>
+				<td>
+					北京
+				</td>
+			</tr>
+		</table>
+		<div class="panel close collapse" style="margin:0" defH="200">
+		<h1><div class="tip2">
+			<span>查询</span>
+		</div></h1>
+		<div style="background:#FFFFFF">
+			<table class="fromTable">
+			<tr>
+				<th>
+					会员姓名
+				</th>
+				<td>
+					<input type="text" size="15" />
+				</td>
+				<th>
+					客户全称
+				</th>
+				<td>
+					<input type="text" size="15" />
+				</td>
+				<th>
+					产品名称
+				</th>
+				<td>
+					<input type="text" size="15" />
+				</td>
+			</tr>
+			<tr>
+				<th>
+					会员联系方式
+				</th>
+				<td>
+					<input type="text" size="15" />
+				</td>
+				<th>
+					会员证件号码
+				</th>
+				<td>
+					<input type="text" size="15" />
+				</td>
+				<th>
+					会员卡号
+				</th>
+				<td>
+					<input type="text" size="15" />
+				</td>
+			</tr>
+			<tr>
+				<th>
+					车牌号
+				</th>
+				<td>
+					<input type="text" size="15" />
+				</td>
+				<th>
+					保单号
+				</th>
+				<td>
+					<input type="text" size="15" />
+				</td>
+
+
+			</tr>
+			<tr>
+				<td colspan="6">
+					<a class="button"
+						href="fuwuyewu/huiyuanxinxi/chanpinhuiyuanlist.html"
+						target="dialog" rel="dlg_page2" width="645" height="370"
+						fresh="false"><span>查询</span>
+					</a>
+				</td>
+			</tr>
+		</table>
+		</div>
+	</div>
+	
+		
+		
+		<div class="tabs" currentIndex="0" eventType="click">
+			<div class="tabsHeader">
+				<div class="tabsHeaderContent">
+					<ul>
+						<!--标签名 链接到新页面,自己定义文件夹名-->
+
+						<li>
+							<a
+								href="xinxichuli/xietiaoyuangongzuotai/lishi/lishigongdan.html"
+								class="j-ajax"><span>历史工单</span>
+							</a>
+						</li>
+
+						<li>
+							<a
+								href="xinxichuli/xietiaoyuangongzuotai/lishi/lishidianhuajilu.html"
+								class="j-ajax"><span>历史电话记录</span>
+							</a>
+						</li>
+
+					</ul>
+				</div>
+			</div>
+			<div class="tabsContent" style="padding: 0;">
+				<div id="tab0">
+					<!--复制第1page-->
+
+
+				</div>
+				<div id="tab1">
+
+
+
+				</div>
+
+			</div>
+
+
+		</div>
+
+		</fieldset>
+		<div style="float: left; width: 100%;">
+			<div class="tabs" currentIndex="0" eventType="click">
+				<div class="tabsHeader">
+					<div class="tabsHeaderContent">
+						<ul>
+							<!--标签名 链接到新页面,自己定义文件夹名-->
+
+							<li>
+								<a href="xinxichuli/xietiaoyuangongzuotai/xinxi/xinxijilu.html"
+									class="j-ajax"><span>信息记录</span>
+								</a>
+							</li>
+							<li>
+								<a
+									href="xinxichuli/xietiaoyuangongzuotai/xinxi/xinxijiluliebiao.html"
+									class="j-ajax"><span>信息记录列表</span>
+								</a>
+							</li>
+
+
+						</ul>
+					</div>
+				</div>
+				<div class="tabsContent" style="padding: 0;" layoutH="200">
+					<div id="tab0">
+						<!--复制第1page-->
+
+					</div>
+					<div id="tab1">
+
+
+
+					</div>
+
+
+				</div>
+
+
+			</div>
+
+		</div>
+
+	</div>
+	
+</div>

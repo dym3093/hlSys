@@ -1,0 +1,262 @@
+package org.hpin.statistics.briefness.service;
+
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+
+import org.apache.commons.lang.StringUtils;
+import org.hpin.base.usermanager.dao.UserDao;
+import org.hpin.base.usermanager.entity.User;
+import org.hpin.base.usermanager.service.UserService;
+import org.hpin.common.core.SpringTool;
+import org.hpin.common.core.orm.BaseService;
+import org.hpin.common.util.DateUtil;
+import org.hpin.common.util.HttpTool;
+import org.hpin.common.widget.pagination.Page;
+import org.hpin.statistics.briefness.dao.ValidityDayQueryDao;
+import org.hpin.statistics.briefness.entity.ConferenceVO;
+import org.hpin.statistics.briefness.entity.ReportValidQuery;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.BeanPropertyRowMapper;
+import org.springframework.jdbc.core.RowMapper;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+/**
+ * 报告时效性日期查询Service
+ * @author Henry
+ *
+ */
+@Service(value = "org.hpin.statistics.briefness.service.ValidityDayService")
+@Transactional()
+public class ValidityDayService extends BaseService{
+	
+	@Autowired
+	private ValidityDayQueryDao validityDayQueryDao;
+	
+	@Autowired
+	private UserDao userDao;
+	
+	/**
+	 * 报告时效性日期查询分页;
+	 * @param page 分页
+	 */
+	@SuppressWarnings("rawtypes")
+	public void findValidQueryByPage(Page page) {
+		List<Object> objs = new ArrayList<Object>();
+		String company = HttpTool.getParameter("company", "");
+		String code = HttpTool.getParameter("code", "");
+		String batchNum = HttpTool.getParameter("batchNum", "");
+		String combo = HttpTool.getParameter("combo", "");
+		objs.add(HttpTool.getParameter("endDate", DateUtil.getDateTime("yyyy-MM-dd", new Date())));
+		
+		StringBuilder jdbcSql = new StringBuilder("select * from ( select ");
+		jdbcSql.append("cust.NAME personName, ") // --姓名
+		.append("cust.BRANCH_COMPANY batchCompany, ") //--支公司 
+		.append("cust.SETMEAL_NAME comboName, ")// --套餐
+		.append("cust.SAMPLING_DATE taskSamleTime, ")//--采样时间
+		.append("cust.TEST_INSTITUTION detectionCompany, ")//--检测公司
+		.append("cust.EVENTS_NO eventsNum, ")//--场次号
+		.append("event.BATCHNO batchNum, ")//--批次号
+		.append("cust.CODE barcode, ")// --条形码
+		.append("cust.CREATE_TIME sampleTime, ")// --寄样时间;
+		.append("combo.VALIDITY_DAY validityDay, ")//--时效(天)
+//		.append("cust.CREATE_TIME + combo.VALIDITY_DAY expectDate, ")//
+//		.append("floor(to_date(?, 'yyyy-MM-dd') - (cust.CREATE_TIME + combo.VALIDITY_DAY)) delayNumDay, ")//
+		.append("FINDEXPECTDATE(combo.VALIDITY_DAY,cust.CREATE_TIME) expectDate, ")//
+		.append("FINDDELAYNUMDAY(combo.VALIDITY_DAY,cust.CREATE_TIME,to_date(?,'yyyy/mm/dd')) delayNumDay, ")//
+		.append("cust.NOTE note ")//记录
+		.append("from ")//
+		.append("erp_customer cust ")//
+		.append("inner join HL_JY_COMBO combo on combo.IS_DELETE = 0 and combo.COMBO_NAME = cust.SETMEAL_NAME ")//
+		.append("inner join ERP_EVENTS event on event.EVENTS_NO = cust.EVENTS_NO ")
+		.append("where ")
+		.append("cust.PDFFILEPATH is null ")
+		.append("and cust.IS_DELETED = 0 ");
+		
+		if(StringUtils.isNotEmpty(batchNum.trim())) {
+			jdbcSql.append(" and event.BATCHNO like '%"+batchNum+"%' ");			
+		}
+		
+		if(StringUtils.isNotEmpty(combo.trim())) {
+			jdbcSql.append(" and cust.SETMEAL_NAME like '%"+combo+"%'");
+			
+		}
+		
+		if(StringUtils.isNotEmpty(code)) {
+			jdbcSql.append(" and cust.CODE like '%"+code+"%' ");
+			
+		}
+		
+		if(StringUtils.isNotEmpty(company)) {
+			objs.add(company);
+			jdbcSql.append("and cust.TEST_INSTITUTION = ? ");
+		}
+		jdbcSql.append(" order by event.BATCHNO ) where delayNumDay >0 ");
+		
+		Long count = validityDayQueryDao.findJdbcCount(jdbcSql, objs);
+		page.setTotalCount(count);
+		
+		objs.add(page.getPageNumEndCount());
+		objs.add(page.getPageNumStartCount());
+		@SuppressWarnings("unchecked")
+		List<ReportValidQuery> lists = (List<ReportValidQuery>) validityDayQueryDao.findJdbcList(jdbcSql, objs, new ReportValidQueryRowMapper());
+		page.setResults(lists);
+	}
+
+	/**
+	 * 实现RowMapper接口,实现类封装;
+	 * @author Henry
+	 *
+	 */
+	class ReportValidQueryRowMapper implements RowMapper<ReportValidQuery> {
+
+		@Override
+		public ReportValidQuery mapRow(ResultSet rs, int index) throws SQLException {
+			ReportValidQuery rvq = new ReportValidQuery();
+			rvq.setBarcode(rs.getString("barcode"));
+			rvq.setBatchCompany(rs.getString("batchCompany"));
+			rvq.setBatchNum(rs.getString("batchNum"));
+			rvq.setComboName(rs.getString("comboName"));
+			rvq.setDelayNumDay(rs.getString("delayNumDay"));
+			rvq.setDetectionCompany(rs.getString("detectionCompany"));
+			rvq.setEventsNum(rs.getString("eventsNum"));
+			rvq.setExpectDate(DateUtil.getDateTime("yyyy-MM-dd", rs.getDate("expectDate")));
+			rvq.setPersonName(rs.getString("personName"));
+			rvq.setSampleTime(DateUtil.getDateTime("yyyy-MM-dd", rs.getDate("sampleTime")));
+			rvq.setTaskSamleTime(DateUtil.getDateTime("yyyy-MM-dd", rs.getDate("taskSamleTime")));
+			rvq.setValidityDay(rs.getString("validityDay"));
+			rvq.setNote(rs.getString("note"));
+			
+			return rvq;
+		}
+		
+	}
+
+	/**
+	 * 根据条件查询会场数据
+	 * @param page
+	 */
+	@SuppressWarnings("rawtypes")
+	public void findVenueByPage(Page page) {
+		
+		/*
+		 * 权限判断;除了admin以外的其他用户登录时，判断如果当前登录用户的【数据权限】字段值为部门数据，
+		 * 则根据当前用户所属的部门，查找这个部门下所有成员关联的会议信息。
+		 * 如果当前登录用户的【数据权限】字段值为个人数据，则查询当前用户关联的会议信息
+		 */
+		User currentUser = (User)HttpTool.getSession().getAttribute("currentUser");
+		String userName=currentUser.getUserName();
+		StringBuilder strSql = new StringBuilder("");
+		if(!userName.equals("管理员")){//销售人员
+			String deptPri = currentUser.getDataPriv();
+			//当该值为空时,不执行;按照原有方式执行;
+			StringBuilder inStr = new StringBuilder("");
+			if(StringUtils.isNotEmpty(deptPri)) {
+				//查询该人员是否是部门管理;如果不是则查询该人员数据; 否则查询该部门管理下面包含的人员;
+				if("priv_01".equals(deptPri)){
+					//查询
+					List<User> lists = userDao.getUserListByDeptId(currentUser.getDeptId());
+					//拼接字符串;
+					if(lists != null && lists.size()> 0) {
+						for(User user : lists) {
+							if(StringUtils.isEmpty(inStr.toString())) {
+								inStr.append("'").append(user.getUserName()).append("'");
+							} else {
+								inStr.append(", '").append(user.getUserName()).append("'");
+							}
+						}
+					}
+					strSql.append(" and pro.PROJECT_OWNER in (").append(inStr).append(")");
+				} else {
+					
+					strSql.append(" and pro.PROJECT_OWNER ='").append(userName).append("'");			
+				}
+				
+			} else {
+				strSql.append(" and pro.PROJECT_OWNER ='").append(userName).append("'");			
+			}
+			
+		}
+		
+		//参数获取(查询条件为：会议日期、支公司、省、市。)
+		List<Object> objs = new ArrayList<Object>();
+		String startDate = HttpTool.getParameter("startDate", "");
+		String endDate =HttpTool.getParameter("endDate", "");
+		String branchCompanyName =HttpTool.getParameter("branchCompanyName", "");
+		String province =HttpTool.getParameter("province", "");
+		String city = HttpTool.getParameter("city", "");
+		
+		//sql封装
+		StringBuilder jdbcSql = new StringBuilder("select " +
+			"conf.id, " +
+			"conf.conference_no conferenceNo, " +
+			"to_char(conf.CONFERENCE_DATE, 'yyyy-MM-dd') conferenceDate, " +
+			"conf.province province, " +
+			"reg.REGION_NAME provinceName, " +
+			"conf.city city, " +
+			"regcity.REGION_NAME cityName, " +
+			"conf.BRANCH_COMPANY_ID branchCompanyId, " +
+			"ship.BRANCH_COMMANY branchCompanyName, " +
+			"conf.OWNED_COMPANY_ID ownedCompanyId, " +
+			"dept.DEPT_NAME ownedCompanyName, " +
+			"conf.ADDRESS address, " +
+			"conf.CONFERENCE_TYPE conferenceType, " +
+			"ditype.DICTNAME conferenceName, " +
+			"conf.CUSTOMERRELATIONSHIPPRO_ID customerrelationshipproId, " +
+			"pro.PROJECT_TYPE projectType, " +
+			"proType.PROJECT_TYPE_NAME projectTypeName " +
+			"from  erp_conference conf " +
+			"inner join HL_REGION reg on reg.id = conf.PROVINCE " +
+			"inner join HL_REGION regcity on regcity.id = conf.CITY " +
+			"inner join HL_CUSTOMER_RELATIONSHIP ship on ship.id = conf.BRANCH_COMPANY_ID  " +
+			"inner join UM_DEPT dept on dept.id = conf.OWNED_COMPANY_ID " +
+			"inner join SYS_DICTTYPE ditype on ditype.DICTID = conf.CONFERENCE_TYPE " +
+			"inner join HL_CUSTOMER_RELATIONSHIP_PRO pro on pro.id =  conf.CUSTOMERRELATIONSHIPPRO_ID " +
+			"inner join T_PROJECT_TYPE proType on proType.id = pro.PROJECT_TYPE where conf.is_deleted = '0' ");
+		
+		//参数处理
+		if(StringUtils.isNotEmpty(startDate)) {
+			jdbcSql.append(" and conf.CONFERENCE_DATE >= ").append("to_date('").append(startDate).append("', 'yyyy-MM-dd') ");
+		}
+		
+		if(StringUtils.isNotEmpty(endDate)) {
+			jdbcSql.append(" and conf.CONFERENCE_DATE < ").append("to_date('").append(endDate).append("', 'yyyy-MM-dd')+1 ");
+		}
+		
+		if(StringUtils.isNotEmpty(branchCompanyName)) {
+			jdbcSql.append(" and ship.BRANCH_COMMANY like '%").append(branchCompanyName.trim()).append("%' ");
+		}
+		
+		if(StringUtils.isNotEmpty(province)) {
+			jdbcSql.append(" and conf.province = '").append(province).append("' ");
+		}
+		
+		if(StringUtils.isNotEmpty(city)) {
+			jdbcSql.append(" and conf.city = '").append(city).append("' ");
+		}
+		//加入部门权限限制;
+		if(StringUtils.isNotEmpty(strSql.toString())) {
+			jdbcSql.append(strSql);
+		}
+		
+		//排序
+		jdbcSql.append(" order by conf.CONFERENCE_DATE desc ");
+		
+		//count
+		long count = this.validityDayQueryDao.findJdbcCount(jdbcSql, objs);
+		page.setTotalCount(count);
+		//list
+		objs.add(page.getPageNumEndCount());
+		objs.add(page.getPageNumStartCount());
+		BeanPropertyRowMapper<ConferenceVO> rowMapper = new BeanPropertyRowMapper<ConferenceVO>(ConferenceVO.class);
+		List<?> results = this.validityDayQueryDao.findJdbcList(jdbcSql, objs, rowMapper);
+		page.setResults(results);
+		
+	}
+	
+}
+
+

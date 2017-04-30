@@ -1,0 +1,264 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+	pageEncoding="UTF-8"%>
+<%@ include file="/common/taglibs.jsp"%>
+
+<div class="pageContent">
+  <form method="post" action="${path }/resource/customerRelationShip!updateCustomer.action" class="pageForm required-validate" onsubmit="return validateCallback(this, navTabAjaxDone);" novalidate="novalidate" class="pageForm required-validate">
+  <input type="hidden" name="navTabId" value="${ navTabId }"/>
+  <div class="pageFormContent" layoutH="50" style="overflow: hidden;">
+      <div>
+       <input type="hidden" name="customerRelationShip.createTime" value="${customerRelationShip.createTime}"/>
+	   <input type="hidden" name="customerRelationShip.id" value="${customerRelationShip.id}"/>
+        <div class="tip"><span>公司基本信息</span></div>
+      
+         <table class="pageFormContent">
+        	<tr>
+        		<td>
+        	    	<label>总公司名称：</label>
+		            <select id="ownedCompany" name="customerRelationShip.ownedCompany"  rel="iselect" loadUrl="${path}/um/dept!treeRegion.action?defaultID=40289b6a5206079d0152061530000007" >
+						 <option value="${customerRelationShip.ownedCompany}"></option>
+					</select>
+					<input type="hidden" id="ownedCompany1" value=""/>
+        		</td>
+        		<td>
+	        		<label>省 份：</label>
+		            <select id="province" name="customerRelationShip.province" rel="iselect" loadUrl="${path}/system/region!treeRegion.action" ref="city" refUrl="${path}/system/region!treeRegionDispose.action?parentId=">
+				    <option value="${ customerRelationShip.province }"></option>
+				    </select>
+        		</td>
+        		<td>
+        			 <label>城 市：</label>
+			         <select id="city" name="customerRelationShip.city" rel="iselect" onchange="test(this.value)" >
+			         <option value="${ customerRelationShip.city }"></option>
+			         </select> 
+        		    <input type="hidden" vlaue="" id="city1"/>
+        		</td>
+        	</tr>
+        	<tr>
+        		<td>
+        		    <label>公司名称：</label>
+          			<input name="customerRelationShip.branchCommany" maxlength="60" type="text" beanName="CustomerRelationShip" propertyName="branchCommany" id="checkcustomerName" class="textInput" value="${customerRelationShip.branchCommany }"/>
+        		</td>
+        		<td></td>
+        		<td></td>
+        	</tr>
+        	<tr>
+        		<td colspan="2">
+        			<label>详细地址：</label>
+					<input name = "customerRelationShip.address" class="Input" type="text" style="width:540px;"  maxlength="200"  id="address" value="${customerRelationShip.address}"/>
+        		</td>
+        		<td></td>
+        	</tr>
+        </table>
+      </div>
+      
+      <div class="divider" style="margin-top: 15px;"></div>
+	<div inited="1000" style="display: block;">
+		<div class="tip"><span>项目信息列表</span></div>
+		<table class="list nowrap" addButton="" style="clear: both;" width="100%">
+			<thead>
+				<tr>
+					<th style="width: 30px">序号</th>
+					<th style="width: 100px;">项目编码</th>
+					<th>项目名称</th>
+					<th style="width: 80px;">项目负责人</th>
+					<th style="width: 60px;">项目类型</th>
+					<th style="width: 80px;">远盟对接人</th>
+					<th style="width: 100px;">远盟对接人电话</th>
+					<th style="width: 200px;">邮件地址</th>
+					<th style="width: 60px;">收件人</th>
+					<th style="width: 80px;">收件人电话</th>
+					<th style="width: 80px;">批次前缀</th>
+					<th style="width: 60px;">是否封存</th>
+					<th style="width: 80px;">操作</th>
+				</tr>
+			</thead>
+			<tbody>
+				<c:forEach items="${shipPros }" var="pro" varStatus="status">
+					<tr class="unitBox" name="${pro.id }">
+						<td style="text-align: center">${status.count }</td>
+						<td>${pro.projectCode }</td>
+						<td>${pro.projectName }</td>
+						<td>${pro.projectOwner }</td>
+						<td style="text-align: center">
+							<c:forEach items="${proTypes }" var="prtype">
+								<c:if test="${prtype.id == pro.projectType }"> ${prtype.projectTypeName }</c:if>
+							</c:forEach>
+						</td>
+						<td>${pro.linkName }</td>
+						<td>${pro.linkTel }</td>
+						<td>${pro.mailAddress }</td>
+						<td>${pro.reception }</td>
+						<td>${pro.receptionTel }</td>
+						<td style="text-align: center">${pro.batchPre }</td>
+						<td style="text-align: center">${pro.isSeal == "1"? "是" : "否" }</td>
+						<td>
+							<a id="add_proCombo_a_id" href="javascript:;" class="button" name="${pro.id }"><span>添加套餐</span></a>
+						</td>
+					</tr>
+					<tr name="hidTr_name" style="width: 100%">
+						<td style="width: 45px; ">&nbsp;</td>
+						<td colspan="11">
+							<table width="100%" class="list">
+								<thead>
+									<tr style="background-color: #DDE7F4;">
+										<th style="width: 45px;">序号</th>
+										<th>套餐名称</th>
+										<th style="width: 200px;">项目类型</th>
+										<th style="width: 120px;">1+X是否生成报告</th>
+										<th style="width: 120px;">是否出具纸质报告</th>
+										<th>套餐显示名称</th>
+										<th>是否前端显示</th>
+										<th style="width: 90px;">操作</th>
+									</tr>
+								
+								</thead>
+								<tbody name="${pro.id }">
+									<c:forEach items="${pro.combos }" var="item" varStatus="stat">
+										<tr>
+											<td style="text-align: center;">${stat.count }</td>
+											<td >${item.comboName }</td>
+											<td>
+												<c:if test="${item.projectTypes=='PCT_001'}">基因项目</c:if>
+												<c:if test="${item.projectTypes=='PCT_002'}">癌筛项目</c:if>
+												<c:if test="${item.projectTypes=='PCT_003'}">分子检测</c:if>
+												<c:if test="${item.projectTypes=='PCT_004'}">无创生物电检测</c:if>
+												<c:if test="${item.projectTypes=='PCT_005'}">无创微磁检测</c:if>
+											</td>
+											<!--add by tx  1+X该套餐是否生成报告状态 -->
+											<c:if test="${item.isCreatePdf=='0'}">
+												<td style="text-align: center">否</td>
+											</c:if>
+											<c:if test="${item.isCreatePdf=='1'}">
+												<td style="text-align: center">是</td>
+											</c:if>
+											<c:if test="${item.isCreatePdf==null||item.isCreatePdf==''}">
+												<td></td>
+											</c:if>
+											<td style="text-align: center">
+												<c:choose>
+													<c:when test="${item.printType == 0}">否</c:when>
+													<c:when test="${item.printType == 1 || item.printType == null}">是</c:when>
+												</c:choose>
+											</td>
+											<td>${item.comboShowName }</td>
+											<td style="text-align: center">${item.isUsed==null || item.isUsed == '' || item.isUsed=='0' ? "否": "是" }</td>
+											<td>
+												<a href="javascript:void(0);" class="button" name="modified" id="${item.id }" title="变更"><span>变更</span></a>
+												&nbsp;&nbsp;
+												<a href="javascript:void(0)" class="btnDel" name="${item.id }" title="删除" style="margin-left: 10px;">删除</a>
+												
+											</td>
+										</tr>
+									</c:forEach>
+								</tbody>
+							</table>
+						</td>
+					</tr>
+				</c:forEach>
+			</tbody>
+		</table>
+	     
+	</div>
+	
+    </div>
+  </form>
+</div>
+</div>
+<script type="text/javascript">
+//add by tx  1+X该套餐是否生成报告状态更改action 
+function changeIsCreatePdf(idTemp){
+	if (confirm("确认更改状态?")) {
+		$.ajax({
+			type: "post",
+			cache : false,
+			async : false,
+			data:{"id":idTemp},
+			url: "${path }/resource/customerRelationShip!changeIsCreatePdf.action",
+			success: function(data){
+				var dt = eval("("+data+")");
+				console.info(dt.result)
+				if(dt.result) {
+					//保存后刷新选中navTab;
+					navTab.reloadFlag(navTab._getTabs().filter('.selected').attr('tabid'));
+				}
+			},
+			error :function(){
+				alertMsg.error("服务发生异常，请稍后再试！");
+				return;
+			}
+		});
+	};
+}	
+
+$(function() {
+	
+	/**变更项目对应套餐数据显示名称 create by henry.xu 20161226*/
+	$("a[name='modified']", navTab.getCurrentPanel()).on("click", function() {
+		//获取该项目id;
+		var id = $(this).attr("id");
+		var navTabId = navTab._getTabs().filter('.selected').attr('tabid');
+		//弹出框;
+		$.pdialog.open("${path}/resource/customerRelationShip!modifiedComboRelation.action?id="+id+"&navTabId="+navTabId, 
+				"modifiedComboDialog", "变更套餐", {width: 400, height: 300});
+	});
+	
+	/*
+	 * 删除按钮操作;
+	 * 需要校验：如果当前erp_customer表中已经存在当前这个项目下的这个套餐，
+	 * 则不允许进行删除，并给出提示“客户已经关联了此套餐，不允许删除
+	 */
+	 $(".btnDel", navTab.getCurrentPanel()).on("click", function() {
+		 var id = $(this).attr("name");
+		 alertMsg.confirm("确定要删除项目下该套餐吗?", {
+			okCall: function(){
+				$.ajax({
+					type: "post",
+					cache : false,
+					async : false,
+					data:{"id":id},
+					url: "${path }/resource/customerRelationShip!deleteProCombo.action",
+					success: function(data){
+						var dt = eval("("+data+")");
+						console.info(dt.result)
+						if(dt.result) {
+							//保存后刷新选中navTab;
+							navTab.reloadFlag(navTab._getTabs().filter('.selected').attr('tabid'));
+						} else  {
+							alertMsg.warn("客户已经关联了此套餐，不允许删除!");
+						}
+					},
+					error :function(){
+						alertMsg.error("服务发生异常，请稍后再试！");
+						return;
+					}
+				});
+			}
+		});
+		
+	 });
+	
+	//添加套餐单击事件; create by herny.xu 20161117
+	$("#add_proCombo_a_id", navTab.getCurrentPanel()).on("click", function() {
+		//获取该项目id;
+		var id = $(this).attr("name");
+		var navTabId = navTab._getTabs().filter('.selected').attr('tabid');
+		//弹出框;
+		$.pdialog.open("${path}/resource/customerRelationShip!queryCombo.action?id="+id+"&navTabId="+navTabId, "queryComboDialog", "选择套餐", {width: 600, height: 400});
+	});
+	
+	$("input", navTab.getCurrentPanel()).each(function() {
+		$(this).attr("readonly", "readonly");
+	});	
+	
+	$("select", navTab.getCurrentPanel()).each(function() {
+		$(this).attr("disabled", "disabled");
+	});
+	
+	$("tr[name='hidTr_name']").on("click", function() {
+		$(this).css("background-color", "#F8F8F8");
+	});
+	
+})
+
+</script>

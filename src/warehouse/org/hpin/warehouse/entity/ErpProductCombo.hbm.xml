@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping>
+    <class name="org.hpin.warehouse.entity.ErpProductCombo" table="ERP_PRODUCT_COMBO">
+        <id name="id" type="java.lang.String">
+			<column name="ID" />
+			<generator class="uuid" />
+		</id>
+        
+        <property name="productComboName" type="java.lang.String">
+            <column name="PRODUCT_COMBO_NAME"/>
+        </property>
+        <property name="declare" type="java.lang.String">
+            <column name="DECLARE"/>
+        </property>
+        <property name="isClose" type="java.lang.String">
+            <column name="IS_CLOSE"/>
+        </property>
+        <property name="comboType" type="java.lang.String">
+            <column name="COMBO_TYPE"/>
+        </property>
+        
+        <!-- 默认字段 -->
+        <property name="createUserId" type="java.lang.String">
+            <column name="CREATE_USER_ID"/>
+        </property>
+        <property name="createTime" type="java.util.Date">
+            <column name="CREATE_TIME"/>
+        </property>
+        <property name="updateUserId" type="java.lang.String">
+            <column name="UPDATE_USER_ID"/>
+        </property>
+        <property name="updateTime" type="java.util.Date">
+            <column name="UPDATE_TIME" />
+        </property>
+        <property name="isDeleted" type="java.lang.Integer">
+            <column name="IS_DELETED" precision="4" scale="0" />
+        </property>
+    </class>
+</hibernate-mapping>

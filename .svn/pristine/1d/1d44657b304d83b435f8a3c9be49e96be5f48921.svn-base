@@ -1,0 +1,3438 @@
+<?xml version="1.0" encoding="UTF-8"?>   
+<root>  
+	<!-- 
+		create by henry.xu 20170407
+		统计报表-基因部门报表-无创项目预约项目数据统计表  
+	 -->
+	<query config_id="stat171">
+		<sqls>
+			<sql>
+				<![CDATA[ 
+              		select rec.EXAMDATE, pro.PROJECT_CODE, pro.PROJECT_NAME, pro.PROJECT_OWNER, count(1) from erp_customer_receive rec
+					inner join erp_customer cus on cus.code = rec.servicecode and cus.IS_DELETED = 0
+					inner join HL_CUSTOMER_RELATIONSHIP_PRO pro on pro.CUSTOMER_RELATIONSHIP_ID = rec.BRANCHCOMPANYID
+					left join T_PROJECT_TYPE ptype on ptype.id = pro.PROJECT_TYPE
+					where 1=1 and rec.RETURNFLAG = 'Yes' and rec.ISMATCH = 1 and ptype.PROJECT_TYPE in ('PCT_004', 'PCT_005')
+					   and rec.EXAMDATE <= ('@filter_and_createTime_GE_T@ 23:59:59')
+					group by rec.EXAMDATE, pro.PROJECT_CODE, pro.PROJECT_NAME, pro.PROJECT_OWNER
+					having pro.PROJECT_NAME is not null
+					order by rec.EXAMDATE desc, pro.PROJECT_CODE desc
+                ]]>
+			</sql>
+			<summary>filter_and_createTime_GE_T</summary>
+            <params>filter_and_createTime_GE_T</params><!--  sql对应的参数类似于报表工具的配置   -->
+            <paramsflag></paramsflag>  <!--  sql对应的参数做特殊处理添加单引号   -->
+		</sqls>
+	</query>
+
+	<!-- 
+		create by henry.xu 20170407
+		统计报表-基因部门报表-无创项目预约项目数据统计表  
+	 -->
+	<query config_id="stat170">
+		<sqls>
+			<sql>
+				<![CDATA[ 
+              		select 
+              		to_char(temp.create_time, 'yyyy-MM-dd'), 
+              		pro.PROJECT_CODE, 
+              		pro.PROJECT_NAME, 
+              		pro.PROJECT_OWNER, 
+              		count(1) 
+              		from erp_customer_temp_wuchuang temp
+					inner join HL_CUSTOMER_RELATIONSHIP_PRO pro on pro.CUSTOMER_RELATIONSHIP_ID = temp.BRANCH_COMPANY_ID
+					left join T_PROJECT_TYPE ptype on ptype.id = pro.PROJECT_TYPE 
+					where ptype.PROJECT_TYPE in ('PCT_004', 'PCT_005')
+					  and temp.create_time <= to_date('@filter_and_createTime_GE_T@ 23:59:59', 'yyyy-MM-dd hh24:mi:ss')
+					group by  to_char(temp.create_time, 'yyyy-MM-dd'), pro.PROJECT_CODE, pro.PROJECT_NAME, pro.PROJECT_OWNER
+					having pro.PROJECT_NAME is not null
+					order by to_char(temp.create_time, 'yyyy-MM-dd') desc, pro.PROJECT_CODE desc
+                ]]>
+			</sql>
+			<summary>filter_and_createTime_GE_T</summary>
+            <params>filter_and_createTime_GE_T</params><!--  sql对应的参数类似于报表工具的配置   -->
+            <paramsflag></paramsflag>  <!--  sql对应的参数做特殊处理添加单引号   -->
+		</sqls>
+	</query>
+ 
+	<!-- 
+		create by henry.xu 20170401
+		统计报表-保险公司报表-省公司场次查询子页面
+	 -->
+	<query config_id="stat165_s">
+		<sqls>
+			<sql>
+				<![CDATA[ 
+              		select 
+					to_char(cus.sampling_date, 'yyyy-MM-dd') , 
+					cus.code , 
+					cus.name , 
+					cus.sex , 
+					cus.age, 
+					cus.idno , 
+					cus.PHONE , 
+					cus.BRANCH_COMPANY a, 
+					ship.BRANCH_COMMANY b,
+					cus.SETMEAL_NAME, 
+					cus.SALES_MAN,
+					cus.SALES_MAN_NO, 
+					cus.HEIGHT, 
+					cus.WEIGHT, 
+					cus.EVENTS_NO,
+					event.BATCHNO  
+					from erp_customer cus
+					left join HL_CUSTOMER_RELATIONSHIP ship on ship.id = cus.OTHER_COMPANY_ID
+					left join ERP_EVENTS event on event.EVENTS_NO = cus.EVENTS_NO
+					
+					where 1=1
+					    and cus.EVENTS_NO = '@filter_and_eventsNo_EQ_S@'
+                ]]>
+			</sql>
+			<summary>filter_and_eventsNo_EQ_S</summary>
+            <params>filter_and_eventsNo_EQ_S</params><!--  sql对应的参数类似于报表工具的配置   -->
+            <paramsflag></paramsflag>  <!--  sql对应的参数做特殊处理添加单引号   -->
+		</sqls>
+	</query>
+	<!-- 
+		create by henry.xu 20170401
+		统计报表-保险公司报表-省公司场次查询
+	 -->
+	<query config_id="stat165">
+		<sqls>
+			<sql>
+				<![CDATA[ 
+              		select 
+              		e.events_no, 
+					e.batchno,
+					to_char(e.event_date, 'yyyy-MM-dd'), 
+					(select r.region_name from hl_region r where r.id = e.province), 
+					(select r.region_name from hl_region r where r.id = e.city), 
+					p.branch_commany , 
+					(select d.dept_name from um_dept d where d.id = e.owned_company_id) , 
+					(select count(*) 
+					from erp_customer c 
+					where c.events_no = e.events_no 
+					and c.is_deleted = 0) , 
+					(select count(*) 
+					from erp_customer c 
+					where c.events_no = e.events_no 
+					and c.is_deleted = 0
+					and c.pdffilepath is not null)  
+					from erp_events e, 
+					hl_customer_relationship_pro pr, 
+					hl_customer_relationship     p 
+					where e.customerrelationshippro_id = pr.id 
+					  and pr.customer_relationship_id = p.id 
+					  and e.is_deleted = 0
+					  and e.event_date >= to_date('@filter_and_createTime_GE_T@ 00:00:00', 'yyyy-MM-dd hh24:mi:ss')
+					   and e.event_date <= to_date('@filter_and_createTime_LE_T@ 23:59:59', 'yyyy-MM-dd hh24:mi:ss')
+					  and p.BRANCH_COMMANY = '@filter_and_branchCommany_EQ_S@'
+					  and e.city = '@filter_and_city_EQ_S@'
+					  and e.province = '@filter_and_province_EQ_S@'
+					  and pr.project_code in (@filter_and_projectCode_EQ_S@)
+					order by e.event_date desc, e.id desc
+                ]]>
+			</sql>
+			<summary>filter_and_createTime_GE_T,filter_and_createTime_LE_T,filter_and_branchCommany_EQ_S,filter_and_city_EQ_S,filter_and_province_EQ_S,filter_and_projectCode_EQ_S</summary>
+            <params>filter_and_createTime_GE_T,filter_and_createTime_LE_T,filter_and_branchCommany_EQ_S,filter_and_city_EQ_S,filter_and_province_EQ_S,filter_and_projectCode_EQ_S</params><!--  sql对应的参数类似于报表工具的配置   -->
+            <paramsflag></paramsflag>  <!--  sql对应的参数做特殊处理添加单引号   -->
+		</sqls>
+	</query>
+	
+	<!-- 
+		create by wh 20170405
+		统计报表-保险公司报表-市公司场次查询
+	 -->
+	<query config_id="stat166">
+		<sqls>
+			<sql>
+				<![CDATA[ 
+              		select 
+              		e.events_no, 
+					e.batchno,
+					to_char(e.event_date, 'yyyy-MM-dd'), 
+					(select r.region_name from hl_region r where r.id = e.province), 
+					(select r.region_name from hl_region r where r.id = e.city), 
+					p.branch_commany , 
+					(select d.dept_name from um_dept d where d.id = e.owned_company_id) , 
+					(select count(*) 
+					from erp_customer c 
+					where c.events_no = e.events_no 
+					and c.is_deleted = 0) , 
+					(select count(*) 
+					from erp_customer c 
+					where c.events_no = e.events_no 
+					and c.is_deleted = 0
+					and c.pdffilepath is not null)  
+					from erp_events e, 
+					hl_customer_relationship_pro pr, 
+					hl_customer_relationship     p 
+					where e.customerrelationshippro_id = pr.id 
+					  and pr.customer_relationship_id = p.id 
+					  and e.is_deleted = 0
+					  and e.event_date >= to_date('@filter_and_createTime_GE_T@ 00:00:00', 'yyyy-MM-dd hh24:mi:ss')
+					   and e.event_date <= to_date('@filter_and_createTime_LE_T@ 23:59:59', 'yyyy-MM-dd hh24:mi:ss')
+					  and p.BRANCH_COMMANY = '@filter_and_branchCommany_EQ_S@'
+					  and e.city = '@filter_and_city_EQ_S@'
+					  and e.province = '@filter_and_provice_EQ_S@'
+					  and pr.project_code in (@filter_and_projectcode_like_S@)
+					order by e.event_date desc, e.id desc
+                ]]>
+			</sql>
+			<summary>filter_and_createTime_GE_T,filter_and_createTime_LE_T,filter_and_branchCommany_EQ_S,filter_and_city_EQ_S,filter_and_provice_EQ_S,filter_and_projectcode_like_S</summary>
+            <params>filter_and_createTime_GE_T,filter_and_createTime_LE_T,filter_and_branchCommany_EQ_S,filter_and_city_EQ_S,filter_and_provice_EQ_S,filter_and_projectcode_like_S</params><!--  sql对应的参数类似于报表工具的配置   -->
+            <paramsflag></paramsflag>  <!--  sql对应的参数做特殊处理添加单引号   -->
+		</sqls>
+	</query>
+	
+	<!-- 
+		create by wh 20170405
+		统计报表-保险公司报表-省公司场次查询子页面
+	 -->
+	<query config_id="stat166_s">
+		<sqls>
+			<sql>
+				<![CDATA[ 
+              		select 
+					to_char(cus.sampling_date, 'yyyy-MM-dd') , 
+					cus.code , 
+					cus.name , 
+					cus.sex , 
+					cus.age, 
+					cus.idno , 
+					cus.PHONE , 
+					cus.BRANCH_COMPANY a, 
+					ship.BRANCH_COMMANY b,
+					cus.SETMEAL_NAME, 
+					cus.SALES_MAN,
+					cus.SALES_MAN_NO, 
+					cus.HEIGHT, 
+					cus.WEIGHT, 
+					cus.EVENTS_NO,
+					event.BATCHNO  
+					from erp_customer cus
+					left join HL_CUSTOMER_RELATIONSHIP ship on ship.id = cus.OTHER_COMPANY_ID
+					left join ERP_EVENTS event on event.EVENTS_NO = cus.EVENTS_NO
+					
+					where 1=1
+						and cus.is_deleted = 0 
+					    and cus.EVENTS_NO = '@filter_and_eventsNo_EQ_S@'
+                ]]>
+			</sql>
+			<summary>filter_and_eventsNo_EQ_S</summary>
+            <params>filter_and_eventsNo_EQ_S</params><!--  sql对应的参数类似于报表工具的配置   -->
+            <paramsflag></paramsflag>  <!--  sql对应的参数做特殊处理添加单引号   -->
+		</sqls>
+	</query>
+	
+	<!-- 
+		create by wh 20170405
+		统计报表-保险公司报表-支公司场次查询
+	 -->
+	<query config_id="stat167">
+		<sqls>
+			<sql>
+				<![CDATA[ 
+              		select 
+              		e.events_no, 
+					e.batchno,
+					to_char(e.event_date, 'yyyy-MM-dd'), 
+					(select r.region_name from hl_region r where r.id = e.province), 
+					(select r.region_name from hl_region r where r.id = e.city), 
+					p.branch_commany , 
+					(select d.dept_name from um_dept d where d.id = e.owned_company_id) , 
+					(select count(*) 
+					from erp_customer c 
+					where c.events_no = e.events_no 
+					and c.is_deleted = 0) , 
+					(select count(*) 
+					from erp_customer c 
+					where c.events_no = e.events_no 
+					and c.is_deleted = 0
+					and c.pdffilepath is not null)  
+					from erp_events e, 
+					hl_customer_relationship_pro pr, 
+					hl_customer_relationship     p 
+					where e.customerrelationshippro_id = pr.id 
+					  and pr.customer_relationship_id = p.id 
+					  and e.is_deleted = 0
+					  and e.event_date >= to_date('@filter_and_createTime_GE_T@ 00:00:00', 'yyyy-MM-dd hh24:mi:ss')
+					   and e.event_date <= to_date('@filter_and_createTime_LE_T@ 23:59:59', 'yyyy-MM-dd hh24:mi:ss')
+					  and p.id = '@filter_and_jobnumber_EQ_S@'
+					  and pr.project_code in (@filter_and_projectcode_like_S@)
+					order by e.event_date desc, e.id desc
+                ]]>
+			</sql>
+			<summary>filter_and_createTime_GE_T,filter_and_createTime_LE_T,filter_and_jobnumber_EQ_S,filter_and_projectcode_like_S</summary>
+            <params>filter_and_createTime_GE_T,filter_and_createTime_LE_T,filter_and_jobnumber_EQ_S,filter_and_projectcode_like_S</params><!--  sql对应的参数类似于报表工具的配置   -->
+            <paramsflag></paramsflag>  <!--  sql对应的参数做特殊处理添加单引号   -->
+		</sqls>
+	</query>
+	
+	<!-- 
+		create by wh 20170405
+		统计报表-保险公司报表-支公司场次查询子页面
+	 -->
+	<query config_id="stat167_s">
+		<sqls>
+			<sql>
+				<![CDATA[ 
+              		select 
+					to_char(cus.sampling_date, 'yyyy-MM-dd') , 
+					cus.code , 
+					cus.name , 
+					cus.sex , 
+					cus.age, 
+					cus.idno , 
+					cus.PHONE , 
+					cus.BRANCH_COMPANY a, 
+					ship.BRANCH_COMMANY b,
+					cus.SETMEAL_NAME, 
+					cus.SALES_MAN,
+					cus.SALES_MAN_NO, 
+					cus.HEIGHT, 
+					cus.WEIGHT, 
+					cus.EVENTS_NO,
+					event.BATCHNO  
+					from erp_customer cus
+					left join HL_CUSTOMER_RELATIONSHIP ship on ship.id = cus.OTHER_COMPANY_ID
+					left join ERP_EVENTS event on event.EVENTS_NO = cus.EVENTS_NO
+					
+					where 1=1
+						and cus.is_deleted = 0 
+					    and cus.EVENTS_NO = '@filter_and_eventsNo_EQ_S@'
+                ]]>
+			</sql>
+			<summary>filter_and_eventsNo_EQ_S</summary>
+            <params>filter_and_eventsNo_EQ_S</params><!--  sql对应的参数类似于报表工具的配置   -->
+            <paramsflag></paramsflag>  <!--  sql对应的参数做特殊处理添加单引号   -->
+		</sqls>
+	</query>
+	
+	<!-- 
+		create by wh 20170406
+		统计报表-代理商报表-客户明细报表
+	 -->
+	<query config_id="stat168">
+		<sqls>
+			<sql>
+				<![CDATA[ 
+              		SELECT 
+              		 e.branch_company, 
+              		 e.events_no, 
+              		 c.code, 
+              		 c.name, 
+              		 c.setmeal_name, 
+              		 c.sampling_date, 
+              		 CASE WHEN c.pdffilepath IS NULL THEN '否' ELSE '是' END, 
+              		 (
+						SELECT cc.combo_price
+							FROM erp_company_combo_price cc
+							WHERE cc.project_code = pr.project_code
+							and cc.company_id = pr.customer_relationship_id
+							and cc.combo = c.setmeal_name
+						)
+					 FROM erp_events e, erp_customer c, hl_customer_relationship_pro pr
+					 WHERE e.events_no = c.events_no
+					 and e.customerrelationshippro_id = pr.id
+					 and pr.project_code in (@filter_and_projectcode_like_S@)
+					 and c.is_deleted = 0
+					 and c.setmeal_name like '%@filter_and_setmealName_LIKE_S@%' 
+					 and c.IDNO like '%@filter_and_idno_LIKE_S@%' 
+					 and c.SAMPLING_DATE >= to_date('@filter_and_samplingDate_GE_T@ 00:00:00', 'yyyy-MM-dd hh24:mi:ss') 
+					 and c.SAMPLING_DATE <= to_date('@filter_and_samplingDate_LE_T@ 23:59:59', 'yyyy-MM-dd hh24:mi:ss') 
+					 and e.PROVINCE = '@filter_and_provice_EQ_S@' 
+					 and e.city = '@filter_and_city_EQ_S@' 
+					 and c.name like '%@filter_and_name_LIKE_S@%' 
+					 and c.EVENTS_NO like '%@filter_and_eventsNo_LIKE_S@%' 
+					 and c.CODE like '%@filter_and_code_LIKE_S@%' 
+					 and e.BATCHNO like '%@filter_and_batchNo_LIKE_S@%'
+                ]]>
+			</sql>
+			<summary>filter_and_setmealName_LIKE_S,filter_and_idno_LIKE_S,filter_and_samplingDate_LE_T,filter_and_samplingDate_GE_T,filter_and_provice_EQ_S,filter_and_city_EQ_S,filter_and_name_LIKE_S,filter_and_eventsNo_LIKE_S,filter_and_batchNo_LIKE_S,filter_and_code_LIKE_S,filter_and_projectcode_like_S</summary>
+            <params>filter_and_setmealName_LIKE_S,filter_and_idno_LIKE_S,filter_and_samplingDate_LE_T,filter_and_samplingDate_GE_T,filter_and_provice_EQ_S,filter_and_city_EQ_S,filter_and_name_LIKE_S,filter_and_eventsNo_LIKE_S,filter_and_batchNo_LIKE_S,filter_and_code_LIKE_S,filter_and_projectcode_like_S</params><!--  sql对应的参数类似于报表工具的配置   -->
+            <paramsflag></paramsflag>  <!--  sql对应的参数做特殊处理添加单引号   -->
+		</sqls>
+	</query>
+	
+	<!-- 
+		create by wh 20170406
+		统计报表-代理商报表-套餐价格清单
+	 -->
+	<query config_id="stat169">
+		<sqls>
+			<sql>
+				<![CDATA[ 
+              		select cp.company,
+      		 cp.project_code,
+      		 cp.project_name,
+      		 cp.project_owner,
+      		 cp.combo,
+      		 cp.combo_price
+  			from erp_company_combo_price cp
+ 				where 1=1
+ 			 and cp.project_code in (@filter_and_projectcode_like_S@) 
+ 			 order by cp.company,cp.combo
+                ]]>
+			</sql>
+			<summary>filter_and_projectcode_like_S</summary>
+            <params>filter_and_projectcode_like_S</params><!--  sql对应的参数类似于报表工具的配置   -->
+            <paramsflag></paramsflag>  <!--  sql对应的参数做特殊处理添加单引号   -->
+		</sqls>
+	</query>
+	
+	<!-- 
+		create by henry.xu 20161102 出库信息汇总统计
+		备注：同一个仓库同一个产品的多次入库信息汇总为一条数据
+	 -->
+	<query config_id="stat111">
+		<sqls>
+			<sql>
+				<![CDATA[ 
+              		select c.events_no,
+					       (select e.batchno from erp_events e where e.events_no = c.events_no),
+					       c.setmeal_name,
+					       to_char(c.create_time,'yyyy-mm-dd'),
+					       to_char(c.create_time+j.VALIDITY_DAY,'yyyy-mm-dd'),
+					      count(*)
+					  from erp_customer c left join hl_jy_combo j on c.SETMEAL_NAME=j.COMBO_NAME
+					 where c.is_deleted = 0
+					 and c.pdffilepath is null 					 
+					 and c.create_time >= to_date('@filter_and_createTime_GE_T@ 00:00:00', 'yyyy-MM-dd hh24:mi:ss')
+					 and c.create_time <= to_date('@filter_and_createTime_LE_T@ 23:59:59', 'yyyy-MM-dd hh24:mi:ss')
+					 and c.sampling_date >= to_date('@filter_and_samplingDate_GE_T@ 00:00:00', 'yyyy-MM-dd hh24:mi:ss') 
+					 and c.sampling_date <= to_date('@filter_and_samplingDate_LE_T@ 23:59:59', 'yyyy-MM-dd hh24:mi:ss') 
+					 group by c.events_no,       
+					       c.setmeal_name,
+					       to_char(c.create_time,'yyyy-mm-dd'),
+					       to_char(c.create_time+j.VALIDITY_DAY,'yyyy-mm-dd')
+					       order by to_char(c.create_time,'yyyy-mm-dd'), c.setmeal_name
+                ]]>
+			</sql>
+			<summary>filter_and_createTime_GE_T,filter_and_createTime_LE_T,filter_and_samplingDate_GE_T,filter_and_samplingDate_LE_T</summary>
+            <params>filter_and_createTime_GE_T,filter_and_createTime_LE_T,filter_and_samplingDate_GE_T,filter_and_samplingDate_LE_T</params><!--  sql对应的参数类似于报表工具的配置   -->
+            <paramsflag></paramsflag>  <!--  sql对应的参数做特殊处理添加单引号   -->
+		</sqls>
+	</query>
+
+	<!-- 
+		create by henry.xu 20161102 出库信息汇总统计
+		备注：同一个仓库同一个产品的多次入库信息汇总为一条数据
+	 -->
+	<query config_id="stat110">
+		<sqls>
+			<sql>
+				<![CDATA[ 
+              		select 
+						a.project_code,
+						a.project_name,
+						a.project_owner,
+						sum(t.cost),
+						sum(t.EXPRESS_MONEY)
+					from 
+						erp_storege_out t --出库表
+						inner join erp_storege_in i on t.storege_in_id=i.id--入库表
+						inner join erp_application a on t.application_id=a.id--申请表
+						inner join store_warehouse w on i.storege_id=w.id --仓库表，
+						inner join erp_product p on t.product_id=p.id
+					where 1=1 
+						and t.IS_DELETED=0
+					    and t.create_time >= to_date('@filter_and_createTime_GE_T@ 00:00:00', 'yyyy-MM-dd hh24:mi:ss')
+					    and t.create_time <= to_date('@filter_and_createTime_LE_T@ 23:59:59', 'yyyy-MM-dd hh24:mi:ss')
+					group by a.project_code,a.project_name,a.project_owner
+                ]]>
+			</sql>
+			<summary>filter_and_createTime_GE_T,filter_and_createTime_LE_T</summary>
+            <params>filter_and_createTime_GE_T,filter_and_createTime_LE_T</params><!--  sql对应的参数类似于报表工具的配置   -->
+            <paramsflag></paramsflag>  <!--  sql对应的参数做特殊处理添加单引号   -->
+		</sqls>
+	</query>
+	
+	<query config_id="stat161">
+		<sqls>
+			<sql>
+				<![CDATA[ 
+              		select 
+						a.project_code,
+						a.project_name,
+						a.project_owner,
+            t.EXPRESS_NAME,
+						sum(t.EXPRESS_MONEY)
+					from 
+						erp_storege_out t --出库表
+						inner join erp_storege_in i on t.storege_in_id=i.id--入库表
+						inner join erp_application a on t.application_id=a.id--申请表
+						inner join store_warehouse w on i.storege_id=w.id --仓库表，
+						inner join erp_product p on t.product_id=p.id
+					where 1=1 
+						and t.IS_DELETED=0 
+						and t.EXPRESS_MONEY !=0
+					    and t.create_time >= to_date('@filter_and_createTime_GE_T@ 00:00:00', 'yyyy-MM-dd hh24:mi:ss')
+					    and t.create_time <= to_date('@filter_and_createTime_LE_T@ 23:59:59', 'yyyy-MM-dd hh24:mi:ss')
+					group by a.project_code,a.project_name,a.project_owner,t.EXPRESS_NAME  
+                ]]>
+			</sql>
+			<summary>filter_and_createTime_GE_T,filter_and_createTime_LE_T</summary>
+            <params>filter_and_createTime_GE_T,filter_and_createTime_LE_T</params><!--  sql对应的参数类似于报表工具的配置   -->
+            <paramsflag></paramsflag>  <!--  sql对应的参数做特殊处理添加单引号   -->
+		</sqls>
+	</query>
+	
+	<query config_id="stat163">
+		<sqls>
+			<sql>
+				<![CDATA[ 
+              		select 
+              		h.PROJECT_CODE,
+              		h.PROJECT_NAME,     
+              		h.PROJECT_OWNER,
+              		p.EXPRESS_COMMANY,
+              		p.EXPRESS_COST             		
+				from erp_events e 
+				left join hl_customer_relationship_pro h on e.CUSTOMERRELATIONSHIPPRO_ID=h.id 
+        left join erp_report_express p on p.events_no=e.events_no
+				where e.is_deleted='0' and h.is_deleted='0' and p.express_delete='0'
+        and p.EXPRESS_DATE >= to_date('@filter_and_createTime_GE_T@ 00:00:00', 'yyyy-MM-dd hh24:mi:ss')
+					    and p.EXPRESS_DATE <= to_date('@filter_and_createTime_LE_T@ 23:59:59', 'yyyy-MM-dd hh24:mi:ss')
+                ]]>
+			</sql>
+			<summary>filter_and_createTime_GE_T,filter_and_createTime_LE_T</summary>
+            <params>filter_and_createTime_GE_T,filter_and_createTime_LE_T</params><!--  sql对应的参数类似于报表工具的配置   -->
+            <paramsflag></paramsflag>  <!--  sql对应的参数做特殊处理添加单引号   -->
+		</sqls>
+	</query>
+	
+	<query config_id="stat164">
+		<sqls>
+			<sql>
+				<![CDATA[ 
+              		select a.CREATE_TIME 申请日期,p.APPLICATION_NO 申请单号,dept.dept_name 总公司,ship.BRANCH_COMMANY 支公司,
+umUser.USER_NAME 申请人,
+t.EXPRESS_NO 快递单号,
+p.CUSTOMER_NAME 被保险人姓名,p.CUSTOMER_SKU_NUM 被保险人唯一标识,p.COMBO_NAME 检测套餐,
+a.PROJECT_CODE 项目编码 
+from ERP_BXCOMPANY_PRESET p 
+left join erp_application a on a.APPLICATION_NO=p.APPLICATION_NO
+left join HL_CUSTOMER_RELATIONSHIP ship on ship.id = p.CUSTOMER_RELATIONSHIP_ID 
+left join UM_DEPT dept on dept.id = ship.OWNED_COMPANY
+left join erp_storege_out t on t.application_id=a.id
+left join UM_USER umUser on umUser.id = a.CREATE_USER_ID 
+WHERE a.IS_DELETED = 0 
+	 and ship.BRANCH_COMMANY='@filter_and_branchCompanyId_EQ_S@' 
+	 and a.CREATE_TIME >= to_date('@filter_and_createTime_GE_T@ 00:00:00', 'yyyy-MM-dd hh24:mi:ss')
+					    and a.CREATE_TIME <= to_date('@filter_and_createTime_LE_T@ 23:59:59', 'yyyy-MM-dd hh24:mi:ss') 
+                ]]>
+			</sql>
+			<summary>filter_and_createTime_GE_T,filter_and_createTime_LE_T,filter_and_branchCompanyId_EQ_S</summary>
+            <params>filter_and_createTime_GE_T,filter_and_createTime_LE_T,filter_and_branchCompanyId_EQ_S</params><!--  sql对应的参数类似于报表工具的配置   -->
+            <paramsflag></paramsflag>  <!--  sql对应的参数做特殊处理添加单引号   -->
+		</sqls>
+	</query>
+	
+	<query config_id="stat162">
+		<sqls>
+			<sql>
+				<![CDATA[ 
+              		SELECT a.code, a.username, a.idno, a.phoneno, a.birthday
+	, ec.SETMEAL_NAME, ec.sex,  a.createtime, ec.SAMPLING_DATE
+	, ec.branch_company, ec.owned_company, ec.SALES_MAN, ec.sales_man_no, ec.PDFFILEPATH,CASE a.state WHEN 1 THEN '报告可查' WHEN 0 THEN '等待转JPG' ELSE '异常' END AS state
+FROM ERP_REPORTDETAIL_IMGTASK a, erp_customer ec
+WHERE a.isdeleted = 0
+	and a.code = ec.code
+	and ec.is_deleted = 0 
+	and a.code LIKE 'C%' 
+	 and a.code like '%@filter_and_code_EQ_S@%'
+	 and a.username like '%@filter_and_name_LIKE_S@%'
+	 and a.idno like '%@filter_and_idno_EQ_S@%'
+	 and a.phoneno like '%@filter_and_phone_EQ_S@%'
+    and  a.birthday = '@filter_and_birthday_EQ_S@' 
+	and a.code IN (SELECT code
+		FROM erp_customer_temp_wuchuang ec
+		WHERE ec.code LIKE 'C0%'
+			 and ec.sales_channel = 'taipingwc')  
+        
+                ]]>
+			</sql>
+			<summary>filter_and_birthday_EQ_S,filter_and_code_EQ_S,filter_and_name_LIKE_S,filter_and_idno_EQ_S,filter_and_phone_EQ_S</summary>
+            <params>filter_and_birthday_EQ_S,filter_and_code_EQ_S,filter_and_name_LIKE_S,filter_and_idno_EQ_S,filter_and_phone_EQ_S</params><!--  sql对应的参数类似于报表工具的配置   -->
+            <paramsflag></paramsflag>  <!--  sql对应的参数做特殊处理添加单引号   -->
+		</sqls>
+	</query>
+	
+	<!-- 
+		create by henry.wu 20161129 出入库汇总统计
+		备注：同一个仓库同一个产品的多次入库信息汇总为一条数据
+	 -->
+	<query config_id="stat132">
+		<sqls>
+			<sql>
+				<![CDATA[ 
+				    select  wname,
+       						productName,
+       						sum(quantity),      						
+       						sum(outQuantity),     						
+       						sum(userbilyquantity)
+  					from (select (select w.name
+                  				  	from store_warehouse w
+                 				  where w.id = i.storege_id) as wName,
+               			 		 (select t.product_name
+                 				    from erp_product t
+                 				  where t.id = i.product_id) as productName,
+                                 i.quantity as quantity,
+               					 (select sum(o.quantity)
+                  					from erp_storege_out o
+                                  where o.storege_in_id = i.id) as outQuantity,
+               					 i.useable_quantity as userbilyQuantity,
+               					 i.create_time as createTime               					 
+          			from erp_storege_in i where i.STOREGE_STATUS = 1)
+ 					where 1 = 1
+  					   and createTime >= to_date('@filter_and_createTime_GE_T@ 00:00:00', 'yyyy-MM-dd hh24:mi:ss')
+					   and createTime <= to_date('@filter_and_createTime_LE_T@ 23:59:59', 'yyyy-MM-dd hh24:mi:ss')
+ 					group by wname, productName				
+                ]]>
+			</sql>
+			<summary>filter_and_createTime_GE_T,filter_and_createTime_LE_T</summary>
+            <params>filter_and_createTime_GE_T,filter_and_createTime_LE_T</params><!--  sql对应的参数类似于报表工具的配置   -->
+            <paramsflag></paramsflag>  <!--  sql对应的参数做特殊处理添加单引号   -->
+		</sqls>
+	</query>
+	
+	<!-- 
+		create by henry.xu 20161102 库存信息统计
+		备注：同一个仓库同一个产品的多次入库信息汇总为一条数据
+	 -->
+	<query config_id="stat109">
+		<sqls>
+			<sql>
+				<![CDATA[     
+              		select 
+						stoWar.NAME,
+						pro.product_Name,
+						sum(stoIn.QUANTITY),
+						sum(stoIn.AMOUNT),
+						pro.STANDARD,
+						pro.DESCRIBE,
+						sum(stoIn.USEABLE_QUANTITY)
+					from 
+						erp_storege_in stoIn
+					left join STORE_WAREHOUSE stoWar on stoIn.STOREGE_ID = stoWar.ID
+					left join erp_product pro on pro.id = stoIn.PRODUCT_ID
+					
+					where 1=1
+						 and stoWar.NAME like '%@filter_and_StoregeName_like_S@%'
+						 and pro.product_name like '%@filter_and_productName_like_S@%'
+						 and stoIn.create_time >= to_date('@filter_and_createTime_GE_T@ 00:00:00', 'yyyy-MM-dd hh24:mi:ss')
+						 and stoIn.create_time <= to_date('@filter_and_createTime_LE_T@ 23:59:59', 'yyyy-MM-dd hh24:mi:ss')
+					group by stoWar.NAME, pro.product_Name, pro.STANDARD,pro.DESCRIBE
+                ]]>
+			</sql>
+			<summary>filter_and_createTime_GE_T,filter_and_createTime_LE_T,filter_and_StoregeName_like_S,filter_and_productName_like_S</summary>
+            <params>filter_and_createTime_GE_T,filter_and_createTime_LE_T,filter_and_StoregeName_like_S,filter_and_productName_like_S</params><!--  sql对应的参数类似于报表工具的配置   -->
+            <paramsflag></paramsflag>  <!--  sql对应的参数做特殊处理添加单引号   -->
+		</sqls>
+	</query>
+	
+	<!-- 
+		create by wuhao 20170411 入库信息统计
+	 -->
+	<query config_id="stat174">
+		<sqls>
+			<sql>
+				<![CDATA[     
+              		select 
+				stoWar.Name storegeName, 
+				pro.product_name productName, 
+				stoIn.PRICE price, 
+				stoIn.QUANTITY quantity, 
+				stoIn.AMOUNT amount, 
+				stoIn.STANDARD standard, 
+				stoIn.DESCRIBE describe, 
+				stoIn.USEABLE_QUANTITY useableQuantity, 
+				stoIn.Create_Time createTime, 
+				stoIn.SERIAL_NO serialNo, 
+				
+				stoIn.SERIAL_NO_OA serialNoOA ,
+        case
+			         when stoIn.SETTLE_STATUS =0 then
+			       				   '未结算'
+			         when stoIn.SETTLE_STATUS =1 then
+			          '已结算'
+			       end as settleStatus,
+        (select sup.supplier_name from erp_supplier sup where sup.id=stoIn.supplier_id and sup.is_Deleted=0) as supplierName, 
+        case
+			         when stoIn.STOREGE_STATUS =0 then
+			       				   '退货入库'
+			         when stoIn.STOREGE_STATUS =1 then
+			          '正常入库'
+			       end as storegeStatus
+
+				from  
+				erp_storege_in stoIn 
+				left join store_warehouse stoWar on stoIn.Storege_Id = stoWar.Id 
+				left join erp_product pro on pro.id = stoIn.Product_Id  
+				where stoIn.is_deleted = 0
+						 and stoWar.NAME like '%@filter_and_StoregeName_like_S@%'
+						 and pro.product_name like '%@filter_and_productName_like_S@%'
+						 and stoIn.create_time >= to_date('@filter_and_createTime_GE_T@ 00:00:00', 'yyyy-MM-dd hh24:mi:ss')
+						 and stoIn.create_time <= to_date('@filter_and_createTime_LE_T@ 23:59:59', 'yyyy-MM-dd hh24:mi:ss')
+                ]]>
+			</sql>
+			<summary>filter_and_createTime_GE_T,filter_and_createTime_LE_T,filter_and_StoregeName_like_S,filter_and_productName_like_S</summary>
+            <params>filter_and_createTime_GE_T,filter_and_createTime_LE_T,filter_and_StoregeName_like_S,filter_and_productName_like_S</params><!--  sql对应的参数类似于报表工具的配置   -->
+            <paramsflag></paramsflag>  <!--  sql对应的参数做特殊处理添加单引号   -->
+		</sqls>
+	</query>
+	
+	<!-- 
+		create by wuhao 20170411 出库信息统计
+	 -->
+	<query config_id="stat175">
+		<sqls>
+			<sql>
+				<![CDATA[     
+              		select 
+				  stoWar.name storegeName,
+          appc.application_no as applicationNo , 
+				  stOut.product_name as productName, 
+				  stOut.price as price, 
+				  stOut.quantity as quantity, 
+          stOut.express_money as expressMoney, 
+          stOut.cost as cost, 
+				  stOut.amount as amount, 
+          stOut.card_start as cardStart, 
+				  stOut.card_end as cardEnd,  
+				  appc.PROJECT_CODE as projectCode, 
+          appc.PROJECT_OWNER as projectOwner,
+				  appc.PROJECT_NAME as projectName, 
+				  umser.USER_NAME as createUserName,  
+				  stOut.create_time as createTime,
+          (select sup.supplier_name from erp_supplier sup where sup.id=stoIn.supplier_id and sup.is_Deleted=0) as supplierName
+				from 
+				erp_storege_out stOut 
+				left join erp_storege_in stoIn on stoIn.id = stOut.storege_in_id 
+				left join STORE_WAREHOUSE stoWar on stoIn.Storege_Id = stoWar.ID 
+				left join erp_application appc on appc.id = stOut.application_id 
+				left join um_user umser on umser.id = appc.create_user_id 
+				where 
+				stOut.is_deleted = 0
+						 and stoWar.NAME like '%@filter_and_StoregeName_like_S@%'
+						 and appc.application_no like '%@filter_and_applicationNo_like_S@%' 
+						 and umser.USER_NAME like '%@filter_and_username_like_S@%'
+						 and stOut.product_name like '%@filter_and_productName_like_S@%'
+						 and stOut.create_time >= to_date('@filter_and_createTime_GE_T@ 00:00:00', 'yyyy-MM-dd hh24:mi:ss')
+						 and stOut.create_time <= to_date('@filter_and_createTime_LE_T@ 23:59:59', 'yyyy-MM-dd hh24:mi:ss')
+                ]]>
+			</sql>
+			<summary>filter_and_applicationNo_like_S,filter_and_username_like_S,filter_and_createTime_GE_T,filter_and_createTime_LE_T,filter_and_StoregeName_like_S,filter_and_productName_like_S</summary>
+            <params>filter_and_applicationNo_like_S,filter_and_username_like_S,filter_and_createTime_GE_T,filter_and_createTime_LE_T,filter_and_StoregeName_like_S,filter_and_productName_like_S</params><!--  sql对应的参数类似于报表工具的配置   -->
+            <paramsflag></paramsflag>  <!--  sql对应的参数做特殊处理添加单引号   -->
+		</sqls>
+	</query>
+	
+	<query config_id="stat131">
+		<sqls>
+			<sql>
+				<![CDATA[     
+              		select 
+              			a.APPLICATION_NO,
+              			a.create_time,
+              			a.HOPE_DATE,
+              			d.application_count,
+              			d.product_name,
+						a.receive_name,
+						a.receive_tel,
+						a.address,
+						a.PROJECT_OWNER,
+						a.PROJECT_NAME,
+						a.PROJECT_CODE,
+						'' a,
+						'' r,
+						'' e,
+						'' o,
+						a.REMARK, u.USER_NAME from erp_application a,erp_application_detail d , UM_USER u where a.id=d.APPLICATION_ID
+						 and a.CREATE_USER_ID = u.ID
+						 and a.receive_name like '%@filter_and_receivename_like_S@%'
+						 and u.USER_NAME like '%@filter_and_username_like_S@%' 						 
+						 and a.create_time >= to_date('@filter_and_createTime_GE_T@ 00:00:00', 'yyyy-MM-dd hh24:mi:ss')
+						 and a.create_time <= to_date('@filter_and_createTime_LE_T@ 23:59:59', 'yyyy-MM-dd hh24:mi:ss')		
+                ]]>
+			</sql>
+			<summary>filter_and_createTime_GE_T,filter_and_createTime_LE_T,filter_and_receivename_like_S,filter_and_username_like_S</summary>
+            <params>filter_and_createTime_GE_T,filter_and_createTime_LE_T,filter_and_receivename_like_S,filter_and_username_like_S</params><!--  sql对应的参数类似于报表工具的配置   -->
+            <paramsflag></paramsflag>  <!--  sql对应的参数做特殊处理添加单引号   -->
+		</sqls>
+	</query>
+	
+	<!-- 
+		create by wuhao 20161216 客户信息查询		
+	 --> 
+	<query config_id="stat133">
+		<sqls>
+			<sql>
+				<![CDATA[     
+              		SELECT e.events_no,
+       e.batchno,
+       c.code,
+       c.name,
+       c.sex,
+       c.age,
+       c.idno,
+       c.phone,
+       c.department,
+       p.branch_commany,
+       p.customer_name_simple,
+       c.setmeal_name,
+       to_char(c.sampling_date,'yyyy-mm-dd') AS sampling_date,
+       to_char(c.create_time,'yyyy-mm-dd') AS create_time,
+       CASE
+           WHEN c.setmeal_name LIKE '%TM%' THEN REPLACE(
+                                                          (SELECT wm_concat(pc.filepath)
+                                                           FROM erp_reportdetail_pdfcontent pc
+                                                           WHERE pc.code=c.code
+                                                             and pc.username=c.name
+                                                             and pc.filepath IS NOT NULL
+                                                             and (pc.matchstate=2 or pc.matchstate=12)),'/home/ymdata/','http://img.healthlink.cn:8099/')
+           WHEN c.setmeal_name NOT LIKE '%TM%' THEN REPLACE(
+                                                              (SELECT wm_concat(pc.filepath)
+                                                               FROM erp_reportdetail_pdfcontent pc
+                                                               WHERE pc.code=c.code
+                                                                 and pc.username=c.name
+                                                                 and pc.filepath IS NOT NULL
+                                                                 and (pc.matchstate=2 or pc.matchstate=12)),'/home/ftp/transact','http://img.healthlink.cn:8099/ymReport')
+       END,
+
+  (SELECT wm_concat(to_char(pc.createdate,'yyyy-mm-dd'))
+   FROM erp_reportdetail_pdfcontent pc
+   WHERE pc.code=c.code
+     and pc.username=c.name 
+     and pc.filepath is not null and (pc.matchstate=2 or pc.matchstate=12)) AS reportdate,
+       c.note,
+       pr.project_code,
+       pr.project_name,
+       pr.PROJECT_OWNER,
+       pr.LINK_NAME,
+       c.sales_man,
+       c.sales_man_no,(SELECT wm_concat(re.express_no)
+   FROM erp_report_express re
+   WHERE re.code=c.code
+     AND re.name=c.name and re.express_delete=0) AS expressNo ,
+       case
+			         when c.is_deleted =0 then
+			       				   '正常'
+			         when c.is_deleted =2 then
+			          '异常'
+			       end as isDeleted,
+       c.TEST_INSTITUTION,
+       c.PROVICE,
+       c.city
+FROM erp_customer c,
+     erp_events e,
+     hl_customer_relationship_pro pr,
+     hl_customer_relationship p
+WHERE c.events_no = e.events_no
+  and e.customerrelationshippro_id = pr.id
+  and pr.customer_relationship_id=p.id 
+  and c.is_deleted in (0,2)
+  and c.is_deleted = '@filter_and_isDeleted_S@'
+  and e.EVENTS_NO = '@filter_and_eventsNo_LIKE_S@'
+  and e.batchno = '@filter_and_batchNo_LIKE_S@'
+  and c.name like '%@filter_and_name_LIKE_S@%'
+  and c.code like '%@filter_and_code_LIKE_S@%'
+  and c.phone like '%@filter_and_phone_LIKE_S@%'
+  and c.setmeal_name like '%@filter_and_setmealName_LIKE_S@%'
+  and c.idno like '%@filter_and_idno_LIKE_S@%'
+  and pr.project_code in ('@filter_and_projectcode_like_S@')
+  and pr.project_name like '%@filter_and_projectname_like_S@%'
+  and c.PROVICE = '@filter_and_provice_EQ_S@'
+  and c.city = '@filter_and_city_EQ_S@'
+  and c.create_time >= to_date('@filter_and_createTime_GE_T@ 00:00:00', 'yyyy-MM-dd hh24:mi:ss')
+  and c.create_time <= to_date('@filter_and_createTime_LE_T@ 23:59:59', 'yyyy-MM-dd hh24:mi:ss')	
+  and c.TEST_INSTITUTION = '@filter_and_testInstitution_LIKE_S@'
+  and c.sampling_date >= to_date('@filter_and_samplingDate_GE_T@ 00:00:00', 'yyyy-MM-dd hh24:mi:ss')
+  and c.sampling_date <= to_date('@filter_and_samplingDate_LE_T@ 23:59:59', 'yyyy-MM-dd hh24:mi:ss')
+                ]]>
+			</sql>
+			<summary>filter_and_isDeleted_S,filter_and_eventsNo_LIKE_S,filter_and_batchNo_LIKE_S,filter_and_name_LIKE_S,filter_and_code_LIKE_S,filter_and_phone_LIKE_S,filter_and_setmealName_LIKE_S,filter_and_idno_LIKE_S,filter_and_testInstitution_LIKE_S,filter_and_provice_EQ_S,filter_and_city_EQ_S,filter_and_projectcode_like_S,filter_and_projectname_like_S,filter_and_createTime_GE_T,filter_and_createTime_LE_T,filter_and_samplingDate_GE_T,filter_and_samplingDate_LE_T</summary>
+            <params>filter_and_isDeleted_S,filter_and_eventsNo_LIKE_S,filter_and_batchNo_LIKE_S,filter_and_name_LIKE_S,filter_and_code_LIKE_S,filter_and_phone_LIKE_S,filter_and_setmealName_LIKE_S,filter_and_idno_LIKE_S,filter_and_testInstitution_LIKE_S,filter_and_provice_EQ_S,filter_and_city_EQ_S,filter_and_projectcode_like_S,filter_and_projectname_like_S,filter_and_createTime_GE_T,filter_and_createTime_LE_T,filter_and_samplingDate_GE_T,filter_and_samplingDate_LE_T</params><!--  sql对应的参数类似于报表工具的配置   -->
+            <paramsflag></paramsflag>  <!--  sql对应的参数做特殊处理添加单引号   -->
+		</sqls>
+	</query>
+	
+	<!-- 
+		create by wuhao 20161219 场次信息查询		
+	 --> 
+	<query config_id="stat134">
+		<sqls>
+			<sql>
+				<![CDATA[     
+              		SELECT e.events_no,
+       e.batchno,
+       e.event_date,
+       pr.project_code,
+       pr.project_name,
+       pr.project_owner,
+       p.branch_commany,
+       p.customer_name_simple,
+       e.combo_name,
+
+  (SELECT d.dictname
+   FROM sys_dicttype d
+   WHERE d.dictcode=e.level2) AS level2,
+       e.headcount,
+       e.now_headcount,
+       e.nopdfcount,
+       e.province,
+       e.city
+FROM erp_events e,
+     hl_customer_relationship_pro pr,
+     hl_customer_relationship p
+WHERE e.is_deleted = '0'
+  and e.customerrelationshippro_id = pr.id
+  and pr.customer_relationship_id = p.id
+  and e.events_no = '@filter_and_eventsNo_LIKE_S@'
+  and p.branch_commany = '@filter_and_branchCompanyId_EQ_S@'
+  and p.customer_name_simple = '@filter_and_ownedCompanyId_EQ_S@'
+  and e.level2 ='@filter_and_level2_LIKE_S@'
+  and e.PROVINCE = '@filter_and_provice_EQ_S@'
+  and e.city = '@filter_and_city_EQ_S@'
+  and e.batchno = '@filter_and_batchno_EQ_S@'
+  and e.event_date >= to_date('@filter_and_eventDate_GE_T@ 00:00:00', 'yyyy-MM-dd hh24:mi:ss')
+  and e.event_date <= to_date('@filter_and_eventDate_LE_T@ 23:59:59', 'yyyy-MM-dd hh24:mi:ss')
+  and pr.project_code in ('@filter_and_projectcode_like_S@')
+  and pr.project_name like '%@filter_and_projectname_like_S@%'
+  
+                ]]>
+			</sql>
+			<summary>filter_and_eventsNo_LIKE_S,filter_and_batchno_EQ_S,filter_and_branchCompanyId_EQ_S,filter_and_level2_LIKE_S,filter_and_ownedCompanyId_EQ_S,filter_and_provice_EQ_S,filter_and_city_EQ_S,filter_and_projectcode_like_S,filter_and_projectname_like_S,filter_and_eventDate_GE_T,filter_and_eventDate_LE_T</summary>
+            <params>filter_and_eventsNo_LIKE_S,filter_and_batchno_EQ_S,filter_and_branchCompanyId_EQ_S,filter_and_level2_LIKE_S,filter_and_ownedCompanyId_EQ_S,filter_and_provice_EQ_S,filter_and_city_EQ_S,filter_and_projectcode_like_S,filter_and_projectname_like_S,filter_and_eventDate_GE_T,filter_and_eventDate_LE_T</params><!--  sql对应的参数类似于报表工具的配置   -->
+            <paramsflag></paramsflag>  <!--  sql对应的参数做特殊处理添加单引号   -->
+		</sqls>
+	</query>
+	
+	<!-- 
+		create by wuhao 20170122 非会场费用报表	
+	 --> 
+	<query config_id="stat142">
+		<sqls>
+			<sql>
+				<![CDATA[     
+              		SELECT no.month,
+       no.PROJECTCODE,
+       no.PROJECTUSER,
+       no.PROJECTNAME,
+       t.PROJECT_TYPE_NAME,
+       no.FEES
+FROM ERP_NONCONFERENCE NO,
+                       T_PROJECT_TYPE t
+WHERE no.PROJECTTYPE=t.PROJECT_TYPE
+  and no.isdeleted= 0
+  and no.month= '@filter_and_month_like_S@'
+                ]]>
+			</sql>
+			<summary>filter_and_month_like_S</summary>
+            <params>filter_and_month_like_S</params><!--  sql对应的参数类似于报表工具的配置   -->
+            <paramsflag></paramsflag>  <!--  sql对应的参数做特殊处理添加单引号   -->
+		</sqls>
+	</query>
+	
+	<!-- 
+		create by wuhao 20170206 异常客户信息	
+	 --> 
+	<query config_id="stat144">
+		<sqls>
+			<sql>
+				<![CDATA[     
+				SELECT e.BATCHNO,
+       e.BRANCH_COMPANY,
+       e.EVENTS_NO,
+       c.CODE,
+       c.NAME,
+       c.PHONE,
+       c.IDNO,
+       c.SETMEAL_NAME,
+       c.SEX,
+       c.AGE,
+       c.SALES_MAN,
+       c.NOTE,
+       c.RESULT
+FROM ERP_EVENTS e,
+     ERP_CUSTOMER_EXCEPTION c
+WHERE e.EVENTS_NO=c.EVENTS_NO
+  and e.EVENTS_NO = '@filter_and_eventsNo_LIKE_S@'
+  and e.batchno = '@filter_and_batchNo_LIKE_S@'
+  and c.name like '%@filter_and_name_LIKE_S@%'
+  and c.code like '%@filter_and_code_LIKE_S@%'
+  and c.phone like '%@filter_and_phone_LIKE_S@%'
+  and c.setmeal_name like '%@filter_and_setmealName_LIKE_S@%'
+  and c.idno like '%@filter_and_idno_LIKE_S@%'
+  and e.BRANCH_COMPANY = '@filter_and_branchCompanyId_EQ_S@'
+                ]]>
+			</sql>
+			<summary>filter_and_eventsNo_LIKE_S,filter_and_batchNo_LIKE_S,filter_and_name_LIKE_S,filter_and_code_LIKE_S,filter_and_phone_LIKE_S,filter_and_setmealName_LIKE_S,filter_and_idno_LIKE_S,filter_and_branchCompanyId_EQ_S</summary>
+            <params>filter_and_eventsNo_LIKE_S,filter_and_batchNo_LIKE_S,filter_and_name_LIKE_S,filter_and_code_LIKE_S,filter_and_phone_LIKE_S,filter_and_setmealName_LIKE_S,filter_and_idno_LIKE_S,filter_and_branchCompanyId_EQ_S</params><!--  sql对应的参数类似于报表工具的配置   -->
+            <paramsflag></paramsflag>  <!--  sql对应的参数做特殊处理添加单引号   -->
+		</sqls>
+	</query>
+	
+	<!-- 
+		create by wuhao 20170123 无创项目活动量统计	
+	 --> 
+	<query config_id="stat143">
+		<sqls>
+			<sql>
+				<![CDATA[     
+              		SELECT r.region_name,
+  (SELECT count(DISTINCT tw.sales_man_no)
+		   FROM erp_customer_temp_wuchuang tw,
+		        hl_customer_relationship p
+		   WHERE tw.branch_company_id=p.id
+		     and p.citey=r.id
+		     and tw.sales_man!=tw.name
+		     and tw.owned_company_id='@filter_and_deptId_EQ_S@') as count1,
+		  (SELECT count(*)
+		   FROM erp_customer_temp_wuchuang tw,
+		        hl_customer_relationship p
+		   WHERE tw.branch_company_id = p.id
+		     and p.citey=r.id
+		     and tw.sales_man!=tw.name
+		     and tw.owned_company_id='@filter_and_deptId_EQ_S@')  as count2,
+		  (SELECT count(*)
+		   FROM erp_customer_receive re,
+		        hl_customer_relationship p
+		   WHERE re.branchcompanyid=p.id
+		     and p.citey=r.id
+		     and re.returnflag='Yes'
+		     and p.owned_company='@filter_and_deptId_EQ_S@')  as count3,
+		  (SELECT count(DISTINCT tw.sales_man_no)
+		   FROM erp_customer_temp_wuchuang tw,
+		        hl_customer_relationship p
+		   WHERE tw.branch_company_id=p.id
+		     and p.citey=r.id
+		     and tw.sales_man!=tw.name
+		     and tw.create_time>=to_date('@filter_and_createTime_GEST_T@ 00:00:00', 'yyyy-MM-dd hh24:mi:ss')
+		     and tw.create_time<=to_date('@filter_and_createTime_GEST_T@ 23:59:59', 'yyyy-MM-dd hh24:mi:ss')
+		     and tw.owned_company_id='@filter_and_deptId_EQ_S@')  as count4,
+		  (SELECT count(*)
+		   FROM erp_customer_temp_wuchuang tw,
+		        hl_customer_relationship p
+		   WHERE tw.branch_company_id = p.id
+		     and p.citey=r.id
+		     and tw.sales_man!=tw.name
+		     and tw.create_time>=to_date('@filter_and_createTime_GEST_T@ 00:00:00', 'yyyy-MM-dd hh24:mi:ss')
+		     and tw.create_time<=to_date('@filter_and_createTime_GEST_T@ 23:59:59', 'yyyy-MM-dd hh24:mi:ss')
+		     and tw.owned_company_id='@filter_and_deptId_EQ_S@')  as count5,
+		  (SELECT count(*)
+		   FROM erp_customer_receive re,
+		        hl_customer_relationship p
+		   WHERE re.branchcompanyid=p.id
+		     and p.citey=r.id
+		     and re.returnflag='Yes'
+		     and p.owned_company='@filter_and_deptId_EQ_S@'
+		     and to_date(re.examdate,'yyyy-MM-dd')>=to_date('@filter_and_createTime_GEST_T@', 'yyyy-MM-dd') 
+		     and to_date(re.examdate,'yyyy-MM-dd')<=to_date('@filter_and_createTime_GEST_T@', 'yyyy-MM-dd'))  as count6,
+		      r.id  as tempId   
+		FROM hl_region r
+		WHERE r.parent_id = '@filter_and_provice_EQ_S@'
+                ]]>
+			</sql>
+			<summary>filter_and_deptId_EQ_S,filter_and_createTime_GEST_T,filter_and_createTime_LE_T,filter_and_provice_EQ_S</summary>
+            <params>filter_and_deptId_EQ_S,filter_and_createTime_GEST_T,filter_and_createTime_LE_T,filter_and_provice_EQ_S</params><!--  sql对应的参数类似于报表工具的配置   -->
+            <paramsflag></paramsflag>  <!--  sql对应的参数做特殊处理添加单引号   -->
+		</sqls>
+	</query>
+	
+	
+	<!-- 
+		create by wuhao 20170407 无创项目数据邀约统计表	
+	 --> 
+	<query config_id="stat172">
+		<sqls>
+			<sql>
+				<![CDATA[     
+              		select 
+aa.a,
+(SELECT count(*) 
+		   FROM erp_customer_temp_wuchuang tw
+		   WHERE 1=1
+		     and tw.PROJECT_TYPE in ('PCT_005','PCT_004') 
+		     and tw.create_time<=to_date('@filter_and_createTime_LE_T@ 23:59:59', 'yyyy-MM-dd hh24:mi:ss') 
+         ) as 总邀约人数,             
+(SELECT count(*) 
+		   FROM erp_customer_temp_wuchuang tw
+		   WHERE 1=1
+		   	 and tw.create_time<=to_date('@filter_and_createTime_LE_T@ 23:59:59', 'yyyy-MM-dd hh24:mi:ss') 
+         and tw.PROJECT_TYPE ='PCT_005' ) as 微磁邀约总,        
+(SELECT count(*) 
+		   FROM erp_customer_temp_wuchuang tw
+		   WHERE 1=1 
+		   	 and tw.create_time<=to_date('@filter_and_createTime_LE_T@ 23:59:59', 'yyyy-MM-dd hh24:mi:ss') 
+         and tw.PROJECT_TYPE ='PCT_004') as 生物电邀约总,
+aa.wc,
+bb.swd
+from		    
+( SELECT 
+      to_char(tw.create_time,'yyyy-MM-dd') as a,
+     count(*) as wc
+		   FROM erp_customer_temp_wuchuang tw
+		   WHERE 1=1
+			 and tw.create_time<=to_date('@filter_and_createTime_LE_T@ 23:59:59', 'yyyy-MM-dd hh24:mi:ss') 
+         and tw.PROJECT_TYPE ='PCT_005'
+         group by to_char(tw.create_time,'yyyy-MM-dd') ) aa,
+( SELECT 
+      to_char(tw.create_time,'yyyy-MM-dd') as b,
+     count(*) as swd
+		   FROM erp_customer_temp_wuchuang tw
+		   WHERE 1=1
+		   	 and tw.create_time<=to_date('@filter_and_createTime_LE_T@ 23:59:59', 'yyyy-MM-dd hh24:mi:ss') 
+         and tw.PROJECT_TYPE ='PCT_004'
+         group by to_char(tw.create_time,'yyyy-MM-dd')) bb
+  where aa.a=bb.b
+  order by aa.a desc
+                ]]>
+			</sql>
+			<summary>filter_and_createTime_LE_T</summary>
+            <params>filter_and_createTime_LE_T</params><!--  sql对应的参数类似于报表工具的配置   -->
+            <paramsflag></paramsflag>  <!--  sql对应的参数做特殊处理添加单引号   -->
+		</sqls>
+	</query>
+	
+	
+	<!-- 
+		create by wuhao 20170407 无创项目数据检测统计表	
+	 --> 
+	<query config_id="stat173">
+		<sqls>
+			<sql>
+				<![CDATA[     
+              		select 
+aa.a,
+(SELECT count(*) 
+		   FROM erp_customer_receive re,
+		   		erp_customer c,
+		        hl_customer_relationship p
+		   WHERE re.branchcompanyid = p.id
+		     and re.returnflag='Yes'
+		     and c.code=re.SERVICECODE
+		     and re.ISMATCH=1
+		     and c.is_deleted=0
+		     and re.examdate<=('@filter_and_createTime_LE_T@') 
+         ) as 总检测人数,             
+(SELECT count(*) 
+		   FROM erp_customer_receive re,
+		   erp_customer c,
+		        hl_customer_relationship p
+		   WHERE re.branchcompanyid = p.id
+		   	 and re.examdate<=('@filter_and_createTime_LE_T@') 
+		     and re.returnflag='Yes'
+		     and re.ISMATCH=1
+		     and c.code=re.SERVICECODE
+		     and c.is_deleted=0
+         and re.SERVICECODE like'C%' ) as 微磁检测总,        
+(SELECT count(*) 
+		   FROM erp_customer_receive re,
+		   erp_customer c,
+		        hl_customer_relationship p
+		   WHERE re.branchcompanyid = p.id 
+		   	 and re.examdate<=('@filter_and_createTime_LE_T@')
+		     and re.returnflag='Yes'
+		     and re.ISMATCH=1
+		     and c.code=re.SERVICECODE
+		     and c.is_deleted=0
+         and re.SERVICECODE like'W%') as 生物电检测总,
+aa.wc,
+bb.swd
+from		    
+( SELECT 
+      re.examdate as a,
+     count(*) as wc
+		   FROM erp_customer_receive re,
+		   erp_customer c,
+		        hl_customer_relationship p
+		   WHERE re.branchcompanyid = p.id
+			 and re.examdate<=('@filter_and_createTime_LE_T@') 
+		     and re.returnflag='Yes'
+		     and re.ISMATCH=1
+		     and c.code=re.SERVICECODE
+		     and c.is_deleted=0
+         and re.SERVICECODE like'C%'
+         group by re.examdate ) aa,
+( SELECT 
+      re.examdate as b,
+     count(*) as swd
+		   FROM erp_customer_receive re,
+		   erp_customer c,
+		        hl_customer_relationship p
+		   WHERE re.branchcompanyid = p.id
+		   	 and re.examdate<=('@filter_and_createTime_LE_T@') 
+		     and re.returnflag='Yes'
+		     and re.ISMATCH=1
+		     and c.code=re.SERVICECODE
+		     and c.is_deleted=0
+         and re.SERVICECODE like'W%'
+         group by re.examdate) bb
+  where aa.a=bb.b
+  order by aa.a desc
+                ]]>
+			</sql>
+			<summary>filter_and_createTime_LE_T</summary>
+            <params>filter_and_createTime_LE_T</params><!--  sql对应的参数类似于报表工具的配置   -->
+            <paramsflag></paramsflag>  <!--  sql对应的参数做特殊处理添加单引号   -->
+		</sqls>
+	</query>
+	
+	<!-- 
+		create by wuhao 20161222 收样组快递费用明细		
+	 --> 
+	<query config_id="stat135">
+		<sqls>
+			<sql>
+				<![CDATA[     
+              		SELECT 
+      BATCHNO,
+      EVENTS_NO,
+      to_char(EVENT_DATE,'yyyy-mm-dd') AS eventdate,
+      BRANCH_COMPANY,
+      OWNED_COMPANY,
+      yl,
+      yjs,
+      aa.EXPRESS_NUM 快递单号,
+      DICTNAME,
+      totalcost,
+      round(totalcost/jszs*yjs ,2)as avgcost,
+      receivesendtype,
+      to_char(RECEIVE_SEND_DATE,'yyyy-mm-dd') AS reveivesenddate,
+      expresscontent,
+      isbill
+      from
+      (SELECT e.BATCHNO,
+          e.EVENTS_NO,
+          e.EVENT_DATE,
+          e.BRANCH_COMPANY,
+          e.OWNED_COMPANY,
+          c.SAMPLE_EXPRESS_ID,
+     (SELECT count(*)
+      FROM erp_customer cu
+      WHERE cu.events_no=e.events_no
+        AND cu.is_deleted=0) as yl,
+          count(*) as yjs,
+          m.EXPRESS_NUM,
+          co.DICTNAME,
+          m.TOTAL_COST as totalcost,
+        (case when m.RECEIVE_SEND_TYPE=1 then '收样' when m.RECEIVE_SEND_TYPE=2 then '寄样' end) as receivesendtype,
+          m.RECEIVE_SEND_DATE,
+        (case when m.EXPRESS_CONTENT=1 then '样本同意书' when m.EXPRESS_CONTENT=2 then '样本' when m.EXPRESS_CONTENT=3 then '同意书' end) as expresscontent,
+        (case when m.ISBILL=0 then '无' when m.ISBILL=1 then '有' end) as isbill
+   FROM erp_events e,
+        ERP_SAMPLE_EXPRESS_MGR m,
+        ERP_SAMPLE_EXPRESS_CUSTOMER c,
+        sys_dicttype co
+   WHERE m.ID=c.SAMPLE_EXPRESS_ID
+     and c.EVENTS_ID=e.ID
+     and m.ISDELETED=0
+     and e.IS_DELETED=0
+     and co.ID=m.EXPRESS_COMPANY_ID
+     and c.ISDELETED=0     		
+   GROUP BY e.BATCHNO,
+            e.EVENTS_NO,
+            e.EVENT_DATE,
+            e.BRANCH_COMPANY,
+            e.OWNED_COMPANY,
+            c.SAMPLE_EXPRESS_ID,
+            m.EXPRESS_NUM,
+            m.TOTAL_COST,
+            m.RECEIVE_SEND_TYPE,
+            m.RECEIVE_SEND_DATE,                      
+            co.DICTNAME,
+            m.EXPRESS_CONTENT,
+            m.ISBILL) aa LEFT  JOIN
+  (SELECT m.EXPRESS_NUM, COUNT(*) as jszs
+   FROM ERP_SAMPLE_EXPRESS_CUSTOMER c,ERP_SAMPLE_EXPRESS_MGR m
+   WHERE m.ID=c.SAMPLE_EXPRESS_ID
+     and c.ISDELETED=0
+     and m.isdeleted=0
+   GROUP BY m.EXPRESS_NUM) aaa
+ ON aa.EXPRESS_NUM=aaa.EXPRESS_NUM
+            where 1=1
+            and aa.RECEIVE_SEND_DATE >= to_date('@filter_and_eventDate_GE_T@ 00:00:00', 'yyyy-MM-dd hh24:mi:ss')
+    and aa.RECEIVE_SEND_DATE <= to_date('@filter_and_eventDate_LE_T@ 23:59:59', 'yyyy-MM-dd hh24:mi:ss')
+  			order by RECEIVE_SEND_DATE,SAMPLE_EXPRESS_ID
+                ]]>
+			</sql>
+			<summary>filter_and_eventDate_GE_T,filter_and_eventDate_LE_T</summary>
+            <params>filter_and_eventDate_GE_T,filter_and_eventDate_LE_T</params><!--  sql对应的参数类似于报表工具的配置   -->
+            <paramsflag></paramsflag>  <!--  sql对应的参数做特殊处理添加单引号   -->
+		</sqls>
+	</query>
+	
+	<!-- 
+		create by wuhao 20161222 收样组快递费用汇总		
+	 --> 
+	<query config_id="stat136">
+		<sqls>
+			<sql>
+				<![CDATA[     
+              		 select 
+    to_char(RECEIVE_SEND_DATE,'yyyy-mm'),
+    PROJECT_CODE,
+    PROJECT_OWNER,
+    PROJECT_NAME,
+    projecttypename,
+    EVENTS_NO,
+    sum(round(TOTAL_COST/jszs*yjs ,2))as avgcost
+    from   ( SELECT m.EXPRESS_NUM, COUNT(*) as jszs
+   FROM ERP_SAMPLE_EXPRESS_CUSTOMER c,ERP_SAMPLE_EXPRESS_MGR m
+   WHERE m.ID=c.SAMPLE_EXPRESS_ID
+     AND c.ISDELETED=0
+   GROUP BY m.EXPRESS_NUM) aa left join        
+     (select 
+  m.RECEIVE_SEND_DATE,
+  m.EXPRESS_NUM,
+  pr.PROJECT_CODE, 
+  pr.PROJECT_OWNER ,
+  pr.PROJECT_NAME,
+  count(*) as yjs,
+  (select t.project_type_name from t_project_type t where pr.PROJECT_TYPE=t.id ) as projecttypename,
+  e.EVENTS_NO,
+  m.TOTAL_COST 
+from hl_customer_relationship_pro pr,ERP_SAMPLE_EXPRESS_MGR m,erp_events e,ERP_SAMPLE_EXPRESS_CUSTOMER c
+where c.EVENTS_ID=e.ID 
+  and m.ID=c.SAMPLE_EXPRESS_ID 
+  and e.CUSTOMERRELATIONSHIPPRO_ID=pr.ID 
+  and m.ISDELETED=0 
+  and e.IS_DELETED=0
+  and c.isdeleted=0
+  group by m.RECEIVE_SEND_DATE,
+  m.EXPRESS_NUM,
+  pr.PROJECT_CODE, 
+  pr.PROJECT_OWNER ,
+  pr.PROJECT_NAME,
+  pr.PROJECT_TYPE ,
+  e.EVENTS_NO,
+  m.TOTAL_COST) aaa on aaa.EXPRESS_NUM=aa.EXPRESS_NUM
+  where 1=1
+  and aaa.RECEIVE_SEND_DATE >= to_date('@filter_and_eventDate_GE_T@ 00:00:00', 'yyyy-MM-dd hh24:mi:ss')
+  and aaa.RECEIVE_SEND_DATE <= to_date('@filter_and_eventDate_LE_T@ 23:59:59', 'yyyy-MM-dd hh24:mi:ss')
+  group by to_char(RECEIVE_SEND_DATE,'yyyy-mm'),PROJECT_CODE,
+    PROJECT_OWNER,
+    PROJECT_NAME,
+    projecttypename,
+    EVENTS_NO
+  
+                ]]>
+			</sql>
+			<summary>filter_and_eventDate_GE_T,filter_and_eventDate_LE_T</summary>
+            <params>filter_and_eventDate_GE_T,filter_and_eventDate_LE_T</params><!--  sql对应的参数类似于报表工具的配置   -->
+            <paramsflag></paramsflag>  <!--  sql对应的参数做特殊处理添加单引号   -->
+		</sqls>
+	</query>
+	
+	<!-- 
+		create by wuhao 20170323 收寄样本快递统计		
+	 --> 
+	<query config_id="stat160">
+		<sqls>
+			<sql>
+				<![CDATA[     
+    select 
+    PROJECT_CODE,
+    PROJECT_NAME,
+    PROJECT_OWNER,
+    dictname,
+    sum(round(TOTAL_COST/jszs*yjs ,2))as avgcost
+    from   ( SELECT m.EXPRESS_NUM, COUNT(*) as jszs
+   FROM ERP_SAMPLE_EXPRESS_CUSTOMER c,ERP_SAMPLE_EXPRESS_MGR m
+   WHERE m.ID=c.SAMPLE_EXPRESS_ID
+     AND c.ISDELETED=0
+   GROUP BY m.EXPRESS_NUM) aa left join        
+     (select 
+  m.RECEIVE_SEND_DATE,
+  co.dictname,
+  m.EXPRESS_NUM,
+  pr.PROJECT_CODE, 
+  pr.PROJECT_OWNER ,
+  pr.PROJECT_NAME,
+  count(*) as yjs,
+  m.TOTAL_COST 
+from hl_customer_relationship_pro pr,SYS_DICTTYPE co,ERP_SAMPLE_EXPRESS_MGR m,ERP_SAMPLE_EXPRESS_CUSTOMER c,erp_events e
+where c.EVENTS_ID=e.ID 
+  and m.ID=c.SAMPLE_EXPRESS_ID 
+  and e.CUSTOMERRELATIONSHIPPRO_ID=pr.ID 
+  and co.id=m.express_company_id 
+  and m.ISDELETED=0 
+  and e.IS_DELETED=0
+  and c.isdeleted=0
+  group by m.RECEIVE_SEND_DATE,
+  m.EXPRESS_NUM,
+  pr.PROJECT_CODE, 
+  pr.PROJECT_OWNER ,
+  pr.PROJECT_NAME,
+  co.dictname,
+  m.TOTAL_COST) aaa on aaa.EXPRESS_NUM=aa.EXPRESS_NUM
+  where 1=1
+  and aaa.RECEIVE_SEND_DATE >= to_date('@filter_and_eventDate_GE_T@ 00:00:00', 'yyyy-MM-dd hh24:mi:ss')
+  and aaa.RECEIVE_SEND_DATE <= to_date('@filter_and_eventDate_LE_T@ 23:59:59', 'yyyy-MM-dd hh24:mi:ss')
+  group by PROJECT_CODE,
+    PROJECT_OWNER,
+    PROJECT_NAME,
+    dictname
+  
+                ]]>
+			</sql>
+			<summary>filter_and_eventDate_GE_T,filter_and_eventDate_LE_T</summary>
+            <params>filter_and_eventDate_GE_T,filter_and_eventDate_LE_T</params><!--  sql对应的参数类似于报表工具的配置   -->
+            <paramsflag></paramsflag>  <!--  sql对应的参数做特殊处理添加单引号   -->
+		</sqls>
+	</query>
+	
+	<!-- 
+		create by wuhao 20161226 无创低端场次信息		
+	 --> 
+	<query config_id="stat137">
+		<sqls>
+			<sql>
+				<![CDATA[     
+              	
+SELECT q.events_no,
+       q.batch_no,
+       to_char(q.events_date,'yyyy-mm-dd'),
+  (SELECT r.region_name
+   FROM hl_region r
+   WHERE r.id=q.province_id),
+  (SELECT r.region_name
+   FROM hl_region r
+   WHERE r.id=q.city_id),
+  e.branch_company,--支公司名称
+  (SELECT u.dept_name
+   FROM um_dept u
+   WHERE u.id=
+       (SELECT o.owned_company
+        FROM hl_customer_relationship o
+        WHERE o.id=q.banchcompany_id)),
+        c.project_code,
+        c.project_owner,
+        c.project_name,
+        c.link_name,
+  (SELECT count(*)
+   FROM erp_customer m
+   WHERE m.events_no=q.events_no
+     AND m.is_deleted=0),
+  (SELECT count(*)
+   FROM erp_customer m
+   WHERE m.events_no=q.events_no
+     AND m.is_deleted=0
+     AND m.pdffilepath IS NULL ) ,
+  (SELECT count(*)
+   FROM erp_customer m
+   WHERE m.events_no=q.events_no
+     AND m.is_deleted=0
+     AND m.pdffilepath IS NOT NULL ) , q.UPDATE_TIME,CASE
+                                           WHEN q.push_status='1' THEN '已推送'
+                                           WHEN q.push_status=0 THEN '未推送'
+                                       END
+FROM erp_qrcode q ,hl_customer_relationship_pro c,erp_events e 
+WHERE (q.batch_no LIKE '%WD%' 
+  or q.batch_no LIKE '%JSLD%')
+  and q.events_no=e.events_no
+  and e.customerrelationshippro_id=c.id
+  and c.customer_relationship_id = q.banchcompany_id
+  and q.events_no = '@filter_and_eventsNo_LIKE_S@'
+  and q.batch_no = '@filter_and_batchNo_LIKE_S@'
+  and q.events_date >= to_date('@filter_and_eventDate_GE_T@ 00:00:00', 'yyyy-MM-dd hh24:mi:ss')
+  and q.events_date <= to_date('@filter_and_eventDate_LE_T@ 23:59:59', 'yyyy-MM-dd hh24:mi:ss')
+  and q.UPDATE_TIME >= to_date('@filter_and_createTime_GE_T@ 00:00:00', 'yyyy-MM-dd hh24:mi:ss') 
+  and q.UPDATE_TIME <= to_date('@filter_and_createTime_LE_T@ 23:59:59', 'yyyy-MM-dd hh24:mi:ss')
+  and e.branch_company = '@filter_and_branchCompanyId_EQ_S@'
+  and q.province_id = '@filter_and_provice_EQ_S@'
+  and q.city_id = '@filter_and_city_EQ_S@'
+  and q.push_status='@filter_and_pushStatus_S@'
+                ]]>
+			</sql>
+			<summary>filter_and_createTime_GE_T,filter_and_createTime_LE_T,filter_and_eventDate_GE_T,filter_and_pushStatus_S,filter_and_eventDate_LE_T,filter_and_branchCompanyId_EQ_S,filter_and_eventsNo_LIKE_S,filter_and_batchNo_LIKE_S,filter_and_provice_EQ_S,filter_and_city_EQ_S</summary>
+            <params>filter_and_createTime_GE_T,filter_and_createTime_LE_T,filter_and_eventDate_GE_T,filter_and_pushStatus_S,filter_and_eventDate_LE_T,filter_and_branchCompanyId_EQ_S,filter_and_eventsNo_LIKE_S,filter_and_batchNo_LIKE_S,filter_and_provice_EQ_S,filter_and_city_EQ_S</params><!--  sql对应的参数类似于报表工具的配置   -->
+            <paramsflag></paramsflag>  <!--  sql对应的参数做特殊处理添加单引号   -->
+		</sqls>
+	</query>
+	
+	<!-- 
+		create by wuhao 20161226 营销员统计		
+	 --> 
+	<query config_id="stat138">
+		<sqls>
+			<sql>
+				<![CDATA[     
+              	 SELECT
+  (SELECT n.region_name
+   FROM hl_region n
+   WHERE n.id = r.province),
+  (SELECT n.region_name
+   FROM hl_region n
+   WHERE n.id = r.citey), count(DISTINCT w.sales_man_no)
+FROM erp_customer_temp_wuchuang w,
+     hl_customer_relationship r
+WHERE w.branch_company_id = r.id
+	and r.province ='@filter_and_provice_EQ_S@'
+    and r.branch_commany = '@filter_and_branchCompanyId_EQ_S@'
+    and w.create_time >= to_date('@filter_and_createTime_GE_T@ 00:00:00', 'yyyy-MM-dd hh24:mi:ss')
+  and w.create_time <= to_date('@filter_and_createTime_LE_T@ 23:59:59', 'yyyy-MM-dd hh24:mi:ss')
+GROUP BY r.province,
+         r.citey
+                ]]>
+			</sql>
+			<summary>filter_and_createTime_GE_T,filter_and_createTime_LE_T,filter_and_branchCompanyId_EQ_S,filter_and_provice_EQ_S</summary>
+            <params>filter_and_createTime_GE_T,filter_and_createTime_LE_T,filter_and_branchCompanyId_EQ_S,filter_and_provice_EQ_S</params><!--  sql对应的参数类似于报表工具的配置   -->
+            <paramsflag></paramsflag>  <!--  sql对应的参数做特殊处理添加单引号   -->
+		</sqls>
+	</query>
+
+<query config_id="stat141"> 
+       <sqls> 
+           <sql> <!--  查询sql   配置方式类似于报表工具   -->
+              <![CDATA[     
+              select h.product_name as f1,h.card_num as f2,h.no_of_tour as f3,h.package_tour as f4,
+						h.user_name as f5,h.mobile1 as f6,h.idcard_num as f7,h.create_time as f8,
+						h.emergency_contact as f9,h.recvisits as s1,
+						h.customer_name as s2
+				  from hl_web_product_member_new h,hl_product p
+				  where 1=1 
+				  and substr(h.create_time,0,10)>='@filter_and_createTime_GE_T@'
+				  and substr(h.create_time,0,10)<='@filter_and_createTime_LE_T@'
+				  and p.product_code in (@filter_and_productId_EQ_S@)
+				  and h.product_id=p.id
+				  order by h.customer_name
+              ]]>
+           </sql>  
+           <summary>filter_and_createTime_GE_T,filter_and_createTime_LE_T,filter_and_productId_EQ_S</summary>
+           <params>filter_and_createTime_GE_T,filter_and_createTime_LE_T,filter_and_productId_EQ_S</params><!--  sql对应的参数类似于报表工具的配置   -->
+           <paramsflag></paramsflag>  <!--  sql对应的参数做特殊处理添加单引号   -->
+        </sqls> 
+     </query> 
+     
+     
+     <!-- 
+		create by wuhao 20170224 申友已出报告客户信息		
+	 --> 
+	<query config_id="stat148">
+		<sqls>
+			<sql>
+				<![CDATA[
+				  SELECT 
+i.batch, 
+       i.code,
+       i.name,
+       i.sex,
+       i.phone,
+       i.combo,
+       case when c.pdffilepath is null  then '没报告'
+  else '有报告' end,
+       i.REPORT_LAUNCH_DATE,
+       c.note,
+       i.id  
+FROM ERP_REPORT_CUSTOMER_INFO i 
+   left join  erp_customer c 
+on i.code=c.code  
+and i.name=c.name 
+and c.IS_DELETED=0 
+where 1=1 
+  and i.code='@filter_and_code_LIKE_S@' 
+  and i.batch='@filter_and_batchNo_LIKE_S@' 
+  and i.REPORT_LAUNCH_DATE >= to_date('@filter_and_reportLaunchDate_GE_T@ 00:00:00', 'yyyy-MM-dd hh24:mi:ss') 
+  and i.REPORT_LAUNCH_DATE <= to_date('@filter_and_reportLaunchDate_LE_T@ 23:59:59', 'yyyy-MM-dd hh24:mi:ss') 
+  and i.CREATE_TIME >= to_date('@filter_and_createTime_GE_T@ 00:00:00', 'yyyy-MM-dd hh24:mi:ss') 
+  and i.CREATE_TIME <= to_date('@filter_and_createTime_LE_T@ 23:59:59', 'yyyy-MM-dd hh24:mi:ss') 
+  and c.PDFFILEPATH  @filter_and_filePathStatus_S@ 
+                ]]>
+			</sql>
+			<summary>filter_and_createTime_GE_T,filter_and_createTime_LE_T,filter_and_reportLaunchDate_GE_T,filter_and_reportLaunchDate_LE_T,filter_and_batchNo_LIKE_S,filter_and_code_LIKE_S,filter_and_filePathStatus_S</summary>
+            <params>filter_and_createTime_GE_T,filter_and_createTime_LE_T,filter_and_reportLaunchDate_GE_T,filter_and_reportLaunchDate_LE_T,filter_and_batchNo_LIKE_S,filter_and_code_LIKE_S,filter_and_filePathStatus_S</params><!--  sql对应的参数类似于报表工具的配置   -->
+            <paramsflag></paramsflag>  <!--  sql对应的参数做特殊处理添加单引号   -->
+		</sqls>
+	</query>
+     
+<query config_id="stat101"> 
+       <sqls> 
+           <sql> <!--  查询sql   配置方式类似于报表工具   -->
+              <![CDATA[     
+              select t1.s1, t1.f1,t1.f2,t2.f3,decode(t1.f2,0,'0%', round(t2.f3/t1.f2,2)*100||'%') as f4 from
+         (select COMPANY_NAME as s1,
+          sum(case when  status!=0 then BARCODE_COUNT else 0 end) as f1,
+          sum(case when  status=2  then BARCODE_COUNT else 0 end) as f2
+          from erp_bar_code_issue   where 1=1 and is_deleted=0  
+          group by COMPANY_NAME
+         ）t1,
+         (select BRANCH_COMPANY as s1,count(*) as f3 from erp_customer
+          where  IS_DELETED=0 
+          group by BRANCH_COMPANY
+          ) t2 where t1.s1=t2.s1
+              ]]>
+           </sql>  
+           <summary></summary>
+           <params></params><!--  sql对应的参数类似于报表工具的配置   -->
+           <paramsflag></paramsflag>  <!--  sql对应的参数做特殊处理添加单引号   -->
+        </sqls> 
+     </query> 
+  <query config_id="stat102"> 
+       <sqls> 
+           <sql> <!--  查询sql   配置方式类似于报表工具   -->
+              <![CDATA[     
+				select nvl(t1.f1,0), nvl(t1.f2,0), nvl(t2.f3,0), nvl((t1.f2-t2.f3),0) as f5, nvl(t2.f4,0), nvl(t3.f6,0) from
+			(select  '1' as s1,
+				sum(bat_actual_count) as f1 ,
+				sum(case when status=3 then bat_actual_count else 0 end)  as f2
+				from erp_bar_code_bat  
+			) t1,
+			(select '1' as s1,
+				sum(case when status!=0 then BARCODE_COUNT else 0 end) as f3 ,
+				sum(case when status=2  then BARCODE_COUNT else 0 end) as f4
+				from erp_bar_code_issue where is_deleted=0
+			) t2,  
+			(
+			select  '1' as s1,COUNT(*) as f6 from ERP_BAR_CODE_DETAIL
+			WHERE is_effective=1
+			) t3
+				where t1.s1=t2.s1 and t1.s1=t3.s1
+              ]]>
+           </sql>  
+           <summary></summary>
+           <params></params><!--  sql对应的参数类似于报表工具的配置   -->
+           <paramsflag></paramsflag>  <!--  sql对应的参数做特殊处理添加单引号   -->
+        </sqls> 
+     </query> 
+      <query config_id="stat103"> 
+       <sqls> 
+           <sql> <!--  查询sql   配置方式类似于报表工具   -->
+              <![CDATA[     
+				SELECT SUBSTR(BATCHNO,0,8),NVL(SUM(XLSTOTAL),0),NVL(SUM(PDFTOTAL),0),NVL(SUM(XLSPDFTOTAL),0) FROM epr_report_batch 
+ 				GROUP BY SUBSTR(BATCHNO,0,8) ORDER BY  SUBSTR(BATCHNO,0,8) DESC
+              ]]>
+           </sql>  
+           <summary></summary>
+           <params></params><!--  sql对应的参数类似于报表工具的配置   -->
+           <paramsflag></paramsflag>  <!--  sql对应的参数做特殊处理添加单引号   -->
+        </sqls> 
+     </query> 
+     <query config_id="stat104"> 
+       <sqls> 
+           <sql> <!--  查询sql   配置方式类似于报表工具   -->
+              <![CDATA[     
+				SELECT t1.rq,t2.ccsl,t1.khsl FROM 
+				(SELECT to_char(C.create_time,'yyyy/mm/dd') rq, COUNT(*) khsl FROM erp_customer C where C.IS_DELETED=0
+				 GROUP BY to_char(C.create_time,'yyyy/mm/dd')  ORDER BY  to_char(C.create_time,'yyyy/mm/dd') DESC
+				) t1,
+				(SELECT to_char(E.create_time,'yyyy/mm/dd') rq, COUNT(*) ccsl FROM erp_events E where E.IS_DELETED=0
+				 GROUP BY to_char(E.create_time,'yyyy/mm/dd')  ORDER BY  to_char(E.create_time,'yyyy/mm/dd') DESC
+				) t2
+				WHERE t1.rq=t2.rq  
+              ]]>
+           </sql>  
+           <summary></summary>
+           <params></params><!--  sql对应的参数类似于报表工具的配置   -->
+           <paramsflag></paramsflag>  <!--  sql对应的参数做特殊处理添加单引号   -->
+        </sqls> 
+     </query> 
+     
+
+	 <query config_id="stat105"> 
+       <sqls> 
+           <sql> <!--  查询sql   配置方式类似于报表工具   --> 
+              <![CDATA[     
+             	select 
+					decode(grouping(to_char(CREATE_TIME,'yyyy-mm-dd')),0,to_char(CREATE_TIME,'yyyy-mm-dd'),'合计') as s1,
+					count(*) as f1 ,
+					sum(case when IDENTITY_STATUS='0' then 1 else 0 end) as f2,
+					sum(case when IDENTITY_STATUS='1' then 1 else 0 end) as f3,
+					sum(case when IDENTITY_STATUS='2' then 1 else 0 end) as f4,
+					sum(case when IDENTITY_STATUS='3' then 1 else 0 end) as f5,
+					sum(case when IDENTITY_STATUS in('1','2','3') then 1 else 0 end) as f6,
+					sum(case when REPORT_STATUS='1' then 1 else 0 end) as p1,
+					sum(case when REPORT_STATUS='0' then 1 else 0 end) as p2,
+					round(sum(case when REPORT_STATUS='1' then 1 else 0 end)*100/count(*),2) || '%' as b1,
+					       (case
+					        when sum(case
+					                  when REPORT_STATUS = '1' then
+					                   1
+					                  else
+					                   0
+					                 end) > 0 then
+					 			round(sum(case
+					                    when REPORT_STATUS = '1' then
+					                     1
+					                    else
+					                     0
+					                   end) * 100 / sum(case
+					                                     when IDENTITY_STATUS in ('1', '2', '3') then
+					                                      1
+					                                     else
+					                                      0
+					                                    end),2)        
+					        else
+					        	0.00
+					       end) || '%' as b2
+					from GENE_LOG_INFO
+					where CREATE_TIME>=to_date('@filter_and_createTime_GE_T@ 00:00:00','yyyy-mm-dd hh24:mi:ss')
+					and CREATE_TIME<=to_date('@filter_and_createTime_LE_T@ 23:59:59','yyyy-mm-dd hh24:mi:ss')
+					group by rollup(to_char(CREATE_TIME,'yyyy-mm-dd'))
+					order by to_char(CREATE_TIME,'yyyy-mm-dd') DESC
+              ]]>
+           </sql>  
+           
+           <sqltotal>
+           <![CDATA[
+           		select 
+                 	 count(*)
+      			    from (  select 
+							decode(grouping(to_char(CREATE_TIME,'yyyy-mm-dd')),0,to_char(CREATE_TIME,'yyyy-mm-dd'),'合计') as s1,
+							count(*) as f1 ,
+							sum(case when IDENTITY_STATUS='0' then 1 else 0 end) as f2,
+							sum(case when IDENTITY_STATUS='1' then 1 else 0 end) as f3,
+							sum(case when IDENTITY_STATUS='2' then 1 else 0 end) as f4,
+							sum(case when IDENTITY_STATUS='3' then 1 else 0 end) as f5,
+							sum(case when IDENTITY_STATUS in('1','2','3') then 1 else 0 end) as f6,
+							sum(case when REPORT_STATUS='1' then 1 else 0 end) as p1,
+							sum(case when REPORT_STATUS='0' then 1 else 0 end) as p2,
+							round(sum(case when REPORT_STATUS='1' then 1 else 0 end)*100/count(*),2) || '%' as b1,
+							       (case
+							        when sum(case
+							                  when REPORT_STATUS = '1' then
+							                   1
+							                  else
+							                   0
+							                 end) > 0 then
+							 			round(sum(case
+							                    when REPORT_STATUS = '1' then
+							                     1
+							                    else
+							                     0
+							                   end) * 100 / sum(case
+							                                     when IDENTITY_STATUS in ('1', '2', '3') then
+							                                      1
+							                                     else
+							                                      0
+							                                    end),2)        
+							        else
+							        	0.00
+							       end) || '%' as b2
+							from GENE_LOG_INFO
+							where CREATE_TIME>=to_date('@filter_and_createTime_GE_T@ 00:00:00','yyyy-mm-dd hh24:mi:ss')
+							and CREATE_TIME<=to_date('@filter_and_createTime_LE_T@ 23:59:59','yyyy-mm-dd hh24:mi:ss')
+							group by rollup(to_char(CREATE_TIME,'yyyy-mm-dd'))
+							order by to_char(CREATE_TIME,'yyyy-mm-dd') DESC )
+           ]]>
+           </sqltotal>
+           
+	        <listsql field="f105_1">
+	        	<sql>
+		           <![CDATA[
+	       				select t.name,
+						       t.idcard,
+						       t.tel,
+						       t.code,
+						       decode(t.identity_status, '0', '不匹配', '1', '匹配') identityStatus,
+						       decode(t.report_status, '0', '无报告', '1', '有报告') reportStatus,
+						       t.pdf_path,
+						       t.create_time
+						  from gene_log_info t
+						 where 1 = 1
+						   and t.create_time >= to_date('@filter_and_createTime_GE_T@ 00:00:00','yyyy-mm-dd hh24:mi:ss')
+						   and t.create_time <= to_date('@filter_and_createTime_LE_T@ 23:59:59','yyyy-mm-dd hh24:mi:ss')
+						   and t.identity_status = '@filter_and_identityStatus_EQ_T@'
+						   and t.name like '%@filter_and_name_LIKE_S@%'
+						   and t.code like '%@filter_and_code_LIKE_S@%'
+						 order by t.name desc	       
+	   				]]>
+	        	</sql>
+	        	<sqltotal>
+	        		<![CDATA[
+	        			select count(1) from (
+   	       					select t.name,
+							       t.idcard,
+							       t.tel,
+							       t.code,
+							       decode(t.identity_status, '0', '不匹配', '1', '匹配') identityStatus,
+							       decode(t.report_status, '0', '无报告', '1', '有报告') reportStatus,
+							       t.pdf_path,
+							       t.create_time
+							  from gene_log_info t
+							 where 1 = 1
+							   and t.create_time >= to_date('@filter_and_createTime_GE_T@ 00:00:00','yyyy-mm-dd hh24:mi:ss')
+						   	   and t.create_time <= to_date('@filter_and_createTime_LE_T@ 23:59:59','yyyy-mm-dd hh24:mi:ss')
+							   and t.identity_status = '@filter_and_identityStatus_EQ_T@'
+							   and t.name like '%@filter_and_name_LIKE_S@%'
+							   and t.code like '%@filter_and_code_LIKE_S@%'
+							 order by t.name desc	     			
+	        			)
+	        		]]>
+	        	</sqltotal>
+	        </listsql>
+            
+           <summary>filter_and_createTime_GE_T,filter_and_createTime_LE_T,filter_and_createTime_EQ_T,filter_and_identityStatus_EQ_T,filter_and_name_LIKE_S,filter_and_code_LIKE_S</summary>
+           <params>filter_and_createTime_GE_T,filter_and_createTime_LE_T,filter_and_createTime_EQ_T,filter_and_identityStatus_EQ_T,filter_and_name_LIKE_S,filter_and_code_LIKE_S</params><!--  sql对应的参数类似于报表工具的配置   -->
+           <paramsflag></paramsflag>  <!--  sql对应的参数做特殊处理添加单引号   -->
+        </sqls> 
+     </query> 
+     
+     <query config_id="stat106"> 
+       <sqls> 
+           <sql> <!--  查询sql   配置方式类似于报表工具   -->
+              <![CDATA[     
+            select t1.events_no,t1.event_date,t1.province,t1.city,t1.branch_commany,t1.owned_company,t1.comboname,t1.levelname,t1.batchno,t1.headcount,
+t2.f1,t2.f2,t2.f3 from
+(
+select e.events_no,e.event_date , ---场次日期
+e.headcount,
+(select r.region_name  from  HL_REGION r  where  r.PARENT_ID = '0' and e.province=r.id) as province, ---省
+(select r.region_name  from  HL_REGION r  where  r.PARENT_ID <> '0' and e.city=r.id) as city, ---市
+(select s.branch_commany from HL_CUSTOMER_RELATIONSHIP s where e.branch_company_id=s.id and s.is_deleted=0) as branch_commany,--子公司
+(select d.dept_name from UM_DEPT d where d.id=e.owned_company_id and d.is_deleted=0) as owned_company,--公司
+(select j.combo_name from HL_JY_COMBO j where j.id=e.combo_id and j.is_delete=0) as  comboname,  ---套餐
+(select y.dictname from SYS_DICTTYPE y where y.dictid=e.level2) as  levelname, --级别
+e.batchno
+from erp_events e  
+where e.is_deleted=0 
+and e.create_time>=to_date('@filter_and_createTime_GE_T@ 00:00:00','yyyy-mm-dd hh24:mi:ss')
+and e.create_time<=to_date('@filter_and_createTime_LE_T@ 23:59:59','yyyy-mm-dd hh24:mi:ss')
+/*and e.events_no=''
+and e.batchno=''
+and e.province=''
+and e.city=''
+and e.level2=''
+and e.owned_company_id=''
+and e.branch_company_id=''*/
+) t1,
+(
+select  e.events_no, count(*) as f1,
+count(case when c.pdffilepath is not null then 1 end) as f2,
+count(case when c.pdffilepath is null then 1 end) as f3
+from erp_events e ,erp_customer c where 
+e.events_no=c.events_no 
+and e.is_deleted=0 and c.is_deleted=0
+and e.create_time>=to_date('@filter_and_createTime_GE_T@ 00:00:00','yyyy-mm-dd hh24:mi:ss')
+and e.create_time<=to_date('@filter_and_createTime_LE_T@ 23:59:59','yyyy-mm-dd hh24:mi:ss')
+/*and e.batchno=''
+and e.events_no=''
+and e.province=''
+and e.city=''
+and e.level2=''
+and e.owned_company_id=''
+and e.branch_company_id=''*/
+group by e.events_no
+) t2 where t1.events_no=t2.events_no(+)
+              ]]>
+           </sql>  
+           <summary>filter_and_createTime_GE_T,filter_and_createTime_LE_T</summary>
+           <params>filter_and_createTime_GE_T,filter_and_createTime_LE_T</params><!--  sql对应的参数类似于报表工具的配置   -->
+           <paramsflag></paramsflag>  <!--  sql对应的参数做特殊处理添加单引号   -->
+        </sqls> 
+     </query>
+     
+     <query config_id="stat107">
+ 		<sqls>
+ 			<sql>
+ 			 <![CDATA[  
+			select 
+                ERP_COMM_PKG.findRegionName(s.province_id) province_name,
+                  s.province_id,
+                  s.events_num,
+                  s.total_pdf_num,
+                  s.pdf_num,
+                  s.no_pdf_num
+             from (select 
+                   t.province province_id,
+                   count(distinct(t.events_no)) events_num,
+                   count(distinct(r.id)) total_pdf_num,
+                   count(distinct(r.pdffilepath)) pdf_num,
+                   (count(distinct(r.id)) - count(distinct(r.pdffilepath))) no_pdf_num
+              from erp_events t, erp_customer r
+             where t.province = r.provice
+             group by t.province
+             ) s 
+          where 1=1 
+		      and s.province_id = '@filter_and_provice_EQ_S@'
+ 			]]>
+ 			</sql>
+            
+            <listsql field="f107_1">
+            	<sql><![CDATA[
+					select s.batchno,
+					       s.provice,
+					       s.city,
+					       s.id,
+					       s.events_no,
+					       s.code,
+					       s.name,
+					       s.phone,
+					       s.document_type,
+					       s.idno,
+					       s.setmeal_name,
+					       s.sex,
+					       s.age,
+					       s.branch_company,
+					       s.branch_company_id,
+					       s.is_deleted,
+					       s.sales_man,
+					       s.owned_company,
+					       s.owned_company_id,
+					       s.is_deleted,
+					       s.sales_man,
+					       s.branch_company,
+					       s.branch_company_id,
+					       s.ym_salesman,
+					       s.pdffilepath,
+					       s.sampling_date,
+					       s.family_history,
+					       s.note
+					  from (select e.batchno,
+					               c.provice,
+					               c.city,
+					               c.id,
+					               c.events_no,
+					               c.code,
+					               c.name,
+					               c.phone,
+					               c.document_type,
+					               c.idno,
+					               c.setmeal_name,
+					               c.sex,
+					               c.age,
+					               c.branch_company,
+					               c.branch_company_id,
+					               c.is_deleted,
+					               c.sales_man,
+					               c.owned_company,
+					               c.owned_company_id,
+					               c.Ym_Salesman,
+					               c.pdffilepath,
+					               c.sampling_date,
+					               c.family_history,
+					               c.note
+					          from ERP_CUSTOMER c, ERP_EVENTS e
+					         where c.EVENTS_NO = e.EVENTS_NO) s
+					 where 1 = 1
+					and s.provice = '@filter_and_provice_EQ_S@'
+				    and s.name like '%@filter_and_name_LIKE_S@%'
+				    and s.code like '%@filter_and_code_LIKE_S@%'
+				    and s.setmeal_name like '%@filter_and_setmealName_LIKE_S@%'
+				    and s.sampling_date < '@filter_and_samplingDate_GEST_T@'
+				    and s.sampling_date > '@filter_and_samplingDate_LEET_T@'
+                   ]]>
+                </sql>
+                <sqltotal><![CDATA[
+                 select 
+                 	 count(*)
+      			    from (select e.batchno,
+								   c.provice,
+								   c.city,
+								   c.id,
+								   c.events_no,
+								   c.code,
+								   c.name,
+								   c.phone,
+								   c.document_type,
+								   c.idno,
+								   c.setmeal_name,
+								   c.sex,
+								   c.age,
+								   c.branch_company,
+								   c.branch_company_id,
+								   c.is_deleted,
+								   c.sales_man,
+								   c.owned_company,
+								   c.owned_company_id,
+								   c.Ym_Salesman,
+								   c.pdffilepath,
+								   c.sampling_date,
+								   c.family_history,
+                   				   c.note
+							  from ERP_CUSTOMER c, ERP_EVENTS e
+							 where c.EVENTS_NO = e.EVENTS_NO) s
+					where 1=1
+					and s.provice = '@filter_and_provice_EQ_S@'
+				    and s.name like '%@filter_and_name_LIKE_S@%'
+				    and s.code like '%@filter_and_code_LIKE_S@%'
+				    and s.setmeal_name like '%@filter_and_setmealName_LIKE_S@%'
+				    and s.sampling_date < '@filter_and_samplingDate_GEST_T@'
+				    and s.sampling_date > '@filter_and_samplingDate_LEET_T@'
+			        ]]>
+            </sqltotal>
+           </listsql> 
+              
+           <listsql field="f107_2">
+            	<sql><![CDATA[
+					select s.batchno,
+					       s.provice,
+					       s.city,
+					       s.id,
+					       s.events_no,
+					       s.code,
+					       s.name,
+					       s.phone,
+					       s.document_type,
+					       s.idno,
+					       s.setmeal_name,
+					       s.sex,
+					       s.age,
+					       s.branch_company,
+					       s.branch_company_id,
+					       s.is_deleted,
+					       s.sales_man,
+					       s.owned_company,
+					       s.owned_company_id,
+					       s.is_deleted,
+					       s.sales_man,
+					       s.branch_company,
+					       s.branch_company_id,
+					       s.ym_salesman,
+					       s.pdffilepath,
+					       s.sampling_date,
+					       s.family_history,
+					       s.note
+					  from (select e.BATCHNO,
+								   c.provice,
+								   c.city,
+								   c.id,
+								   c.events_no,
+								   c.code,
+								   c.name,
+								   c.phone,
+								   c.document_type,
+								   c.idno,
+								   c.setmeal_name,
+								   c.sex,
+								   c.age,
+								   c.branch_company,
+								   c.branch_company_id,
+								   c.is_deleted,
+								   c.sales_man,
+								   c.owned_company,
+								   c.owned_company_id,
+								   c.Ym_Salesman,
+								   c.pdffilepath,
+								   c.sampling_date,
+							       c.family_history,
+                   				   c.note
+							  from ERP_CUSTOMER c, ERP_EVENTS e
+							 where c.EVENTS_NO = e.EVENTS_NO) s
+					where 1=1
+					and s.provice = '@filter_and_provice_EQ_S@'
+					and s.pdffilepath is not null
+				    and s.name like '%@filter_and_name_LIKE_S@%'
+				    and s.code like '%@filter_and_code_LIKE_S@%'
+				    and s.setmeal_name like '%@filter_and_setmealName_LIKE_S@%'
+				    and s.sampling_date < '@filter_and_samplingDate_GEST_T@'
+				    and s.sampling_date > '@filter_and_samplingDate_LEET_T@'
+                   ]]>
+                </sql>
+                <sqltotal><![CDATA[
+                 select 
+                 	 count(*)
+      			    from (select e.BATCHNO,
+								   c.provice,
+								   c.city,
+								   c.id,
+								   c.events_no,
+								   c.code,
+								   c.name,
+								   c.phone,
+								   c.document_type,
+								   c.idno,
+								   c.setmeal_name,
+								   c.sex,
+								   c.age,
+								   c.branch_company,
+								   c.branch_company_id,
+								   c.is_deleted,
+								   c.sales_man,
+								   c.owned_company,
+								   c.owned_company_id,
+								   c.Ym_Salesman,
+								   c.pdffilepath,
+								   c.sampling_date,
+								   c.family_history,
+                   				   c.note
+							  from ERP_CUSTOMER c, ERP_EVENTS e
+							 where c.EVENTS_NO = e.EVENTS_NO) s
+					where 1=1
+					and s.provice = '@filter_and_provice_EQ_S@'
+					and s.pdffilepath is not null
+				    and s.name like '%@filter_and_name_LIKE_S@%'
+				    and s.code like '%@filter_and_code_LIKE_S@%'
+				    and s.setmeal_name like '%@filter_and_setmealName_LIKE_S@%'
+				    and s.sampling_date < '@filter_and_samplingDate_GEST_T@'
+				    and s.sampling_date > '@filter_and_samplingDate_LEET_T@'
+			        ]]>
+            </sqltotal>
+           </listsql> 
+           
+             <listsql field="f107_3">
+            	<sql><![CDATA[
+					select s.batchno,
+					       s.provice,
+					       s.city,
+					       s.id,
+					       s.events_no,
+					       s.code,
+					       s.name,
+					       s.phone,
+					       s.document_type,
+					       s.idno,
+					       s.setmeal_name,
+					       s.sex,
+					       s.age,
+					       s.branch_company,
+					       s.branch_company_id,
+					       s.is_deleted,
+					       s.sales_man,
+					       s.owned_company,
+					       s.owned_company_id,
+					       s.is_deleted,
+					       s.sales_man,
+					       s.branch_company,
+					       s.branch_company_id,
+					       s.ym_salesman,
+					       s.pdffilepath,
+					       s.sampling_date,
+					       s.family_history,
+					       s.note
+					  from (select e.BATCHNO,
+								   c.provice,
+								   c.city,
+								   c.id,
+								   c.events_no,
+								   c.code,
+								   c.name,
+								   c.phone,
+								   c.document_type,
+								   c.idno,
+								   c.setmeal_name,
+								   c.sex,
+								   c.age,
+								   c.branch_company,
+								   c.branch_company_id,
+								   c.is_deleted,
+								   c.sales_man,
+								   c.owned_company,
+								   c.owned_company_id,
+								   c.Ym_Salesman,
+								   c.pdffilepath,
+								   c.sampling_date,
+							       c.family_history,
+                   				   c.note
+							  from ERP_CUSTOMER c, ERP_EVENTS e
+							 where c.EVENTS_NO = e.EVENTS_NO) s
+					where 1=1
+					and s.provice = '@filter_and_provice_EQ_S@'
+					and s.pdffilepath is null
+				    and s.name like '%@filter_and_name_LIKE_S@%'
+				    and s.code like '%@filter_and_code_LIKE_S@%'
+				    and s.setmeal_name like '%@filter_and_setmealName_LIKE_S@%'
+				    and s.sampling_date < '@filter_and_samplingDate_GEST_T@'
+				    and s.sampling_date > '@filter_and_samplingDate_LEET_T@'
+                   ]]>
+                </sql>
+                <sqltotal><![CDATA[
+                 select 
+                 	 count(*)
+      			    from (select e.BATCHNO,
+								   c.provice,
+								   c.city,
+								   c.id,
+								   c.events_no,
+								   c.code,
+								   c.name,
+								   c.phone,
+								   c.document_type,
+								   c.idno,
+								   c.setmeal_name,
+								   c.sex,
+								   c.age,
+								   c.branch_company,
+								   c.branch_company_id,
+								   c.is_deleted,
+								   c.sales_man,
+								   c.owned_company,
+								   c.owned_company_id,
+								   c.Ym_Salesman,
+								   c.pdffilepath,
+								   c.sampling_date,
+								   c.family_history,
+                   				   c.note
+							  from ERP_CUSTOMER c, ERP_EVENTS e
+							 where c.EVENTS_NO = e.EVENTS_NO) s
+					where 1=1
+					and s.provice = '@filter_and_provice_EQ_S@'
+					and s.pdffilepath is null
+				    and s.name like '%@filter_and_name_LIKE_S@%'
+				    and s.code like '%@filter_and_code_LIKE_S@%'
+				    and s.setmeal_name like '%@filter_and_setmealName_LIKE_S@%'
+				    and s.sampling_date < '@filter_and_samplingDate_GEST_T@'
+				    and s.sampling_date > '@filter_and_samplingDate_LEET_T@'
+			        ]]>
+            </sqltotal>
+           </listsql> 
+           
+        	<summary>filter_and_provice_EQ_S,filter_and_city_EQ_S,filter_and_branchCompany_EQ_S,filter_and_branchCompanyId_EQ_S
+				,filter_and_name_LIKE_S,filter_and_code_LIKE_S,filter_and_setmealName_LIKE_S,filter_and_samplingDate_GEST_T,filter_and_samplingDate_LEET_T
+				</summary>
+            <params>filter_and_provice_EQ_S,filter_and_city_EQ_S,filter_and_branchCompany_EQ_S,filter_and_branchCompanyId_EQ_S
+            		,filter_and_name_LIKE_S,filter_and_code_LIKE_S,filter_and_setmealName_LIKE_S,filter_and_samplingDate_GEST_T,filter_and_samplingDate_LEET_T
+            		</params>
+            <paramsflag></paramsflag>  <!--  sql对应的参数做特殊处理添加单引号   -->
+ 		</sqls>
+     </query>
+         
+<query config_id="stat108"> 
+       <sqls> 
+           <sql> <!--  查询sql   配置方式类似于报表工具   -->
+              <![CDATA[     
+            select e.events_no,e.event_date,e.branch_company,e.owned_company from erp_events  e where e.is_deleted=0 
+	and e.create_time>=to_date('@filter_and_createTime_GE_T@ 00:00:00','yyyy-mm-dd hh24:mi:ss')
+	and e.create_time<=to_date('@filter_and_createTime_LE_T@ 23:59:59','yyyy-mm-dd hh24:mi:ss')
+              ]]>
+           </sql>  
+           <summary>filter_and_createTime_GE_T,filter_and_createTime_LE_T</summary>
+           <params>filter_and_createTime_GE_T,filter_and_createTime_LE_T</params><!--  sql对应的参数类似于报表工具的配置   -->
+           <paramsflag></paramsflag>  <!--  sql对应的参数做特殊处理添加单引号   -->
+        </sqls> 
+     </query> 
+     
+     <query config_id="stat120"> 
+       <sqls> 
+           <sql> <!--  查询sql   配置方式类似于报表工具   -->
+              <![CDATA[     
+			select to_char(t.monthYear, 'yyyymm'),
+	           t.proCode,
+	           t.proOwner,
+	           t.proName,
+	           t.project_type_name,
+	           count(t.customerId) as sumNum,
+	           sum(t.companyPrice),
+	           sum(t.comboPrice),
+	           events_no,
+             TEST_INSTITUTION 
+	      from (select rpd.createdate as monthYear,
+	                   p.project_code as proCode,
+	                   p.project_name as proName,
+	                   p.project_owner as proOwner,
+	                   (select y.project_type_name from t_project_type y where y.id=p.project_type) as project_type_name,
+	                   r.branch_commany as branchCompany,
+	                   r.customer_name_simple as owCompany,
+	                   c.id as customerId,
+	                   case when length(c.code) = length(replace(c.code, 'SJ', '')) 
+                and (select count(*)
+                       from erp_customer ct
+                      where ct.code = 'SJ' || c.code) > 0 then 0
+                 else
+                 case when (select count(*)
+                     from erp_customer_settle_bx sb
+                    where sb.code = c.code
+                      and sb.events_no = c.events_no
+                      and sb.name = c.name
+                      and sb.status <> -1
+                      and sb.combo_price_actual is not null ) > 0
+                      then (select sb.combo_price_actual
+                                                       from erp_customer_settle_bx sb
+                                                      where sb.code = c.code
+                                                        and sb.events_no =
+                                                            c.events_no
+                                                        and sb.name = c.name
+                                                        and sb.status<>-1
+                                                        and sb.combo_price_actual is not null
+                                                        and rownum=1 )
+                                                        else (select cp.combo_price
+                                                                                      from ERP_COMPANY_COMBO_PRICE cp
+                                                                                     where cp.combo =
+                                                                                           c.setmeal_name
+                                                                                       and cp.company_id =
+                                                                                           c.branch_company_id
+                                                                                       and rownum = 1) end  end   as companyPrice,
+	                   (select op.price
+	                      from ERP_COMBO_PRICE op
+	                     where 1 = 1
+	                       and op.comboname = rpd.setmeal_name
+	                       and op.genecompany = c.test_institution || '基因公司'
+	                       and rownum = 1) as comboPrice,
+	                   rpd.createdate,
+	                   c.events_no ,
+	                   c.TEST_INSTITUTION
+	              from erp_customer                 c,
+	                   erp_events                   e,
+	                   hl_customer_relationship_pro p,
+	                   hl_customer_relationship     r,
+	                   erp_reportdetail_pdfcontent rpd
+	             where c.events_no = e.events_no
+	               and e.customerrelationshippro_id = p.id
+	               and p.customer_relationship_id = r.id
+	               and c.is_deleted = 0
+	               and c.pdffilepath is not null 
+	               and rpd.filepath like '%.pdf%'
+	               and rpd.code=c.code and rpd.username=c.name and rpd.filepath is not null and rpd.matchstate=2) t
+	     where 1 = 1
+	       and t.createdate >= to_date('@filter_and_createTime_GE_T@ 00:00:00','yyyy-mm-dd hh24:mi:ss')
+	       and t.createdate <= to_date('@filter_and_createTime_LE_T@ 23:59:59','yyyy-mm-dd hh24:mi:ss')       
+	     group by to_char(t.monthYear, 'yyyymm'),
+	              t.proCode,
+	              t.proName,
+	              t.proOwner,
+	              t.project_type_name,
+	              t.events_no,
+	              t.TEST_INSTITUTION
+		              ]]>
+           </sql> 
+           
+           <summary>filter_and_createTime_GE_T,filter_and_createTime_LE_T</summary>
+           <params>filter_and_createTime_GE_T,filter_and_createTime_LE_T</params><!--  sql对应的参数类似于报表工具的配置   -->
+           <paramsflag></paramsflag>  <!--  sql对应的参数做特殊处理添加单引号   -->
+        </sqls> 
+     </query> 
+     
+     <query config_id="stat121"> 
+       <sqls> 
+           <sql> <!--  查询sql   配置方式类似于报表工具   -->
+              <![CDATA[     
+		 select to_char(t.monthYear, 'yyyymm'),
+		        t.proCode,
+		       t.proOwner,
+		       t.proName,
+		       t.project_type_name,
+		       count(t.customerId) as sumNum,
+		       sum(t.companyPrice),
+		       sum(t.comboPrice) 
+		  from (select c.create_time as monthYear,
+		               p.project_code as proCode,
+		               p.project_name as proName,
+		               p.project_owner as proOwner,
+		               (select y.project_type_name from t_project_type y where y.id=p.project_type) as project_type_name,
+		               r.branch_commany as branchCompany,
+		               r.customer_name_simple as owCompany,
+		               c.id as customerId,
+		               (select cp.combo_price
+		                  from ERP_COMPANY_COMBO_PRICE cp
+		                 where cp.combo = c.setmeal_name
+		                   and cp.company_id = c.branch_company_id
+		                   and rownum = 1) as companyPrice,
+		               (select op.price
+		                  from ERP_COMBO_PRICE op
+		                 where 1 = 1
+		                   and op.comboname = c.setmeal_name
+		                   and op.genecompany = c.test_institution || '基因公司'
+		                   and rownum = 1) as comboPrice,
+		               c.create_time
+		          from erp_customer                 c,
+		               erp_events                   e,
+		               hl_customer_relationship_pro p,
+		               hl_customer_relationship     r
+		         where c.events_no = e.events_no
+		           and e.customerrelationshippro_id = p.id
+		           and p.customer_relationship_id = r.id
+		           and c.is_deleted = 0) t
+		 where 1 = 1
+		   and t.create_time >= to_date('@filter_and_createTime_GE_T@ 00:00:00','yyyy-mm-dd hh24:mi:ss')
+		   and t.create_time <= to_date('@filter_and_createTime_LE_T@ 23:59:59','yyyy-mm-dd hh24:mi:ss')
+		 group by to_char(t.monthYear, 'yyyymm'),
+		          t.proCode,
+		          t.proName,
+		          t.proOwner,
+		          t.project_type_name
+              ]]>
+           </sql>
+            
+           <summary>filter_and_createTime_GE_T,filter_and_createTime_LE_T</summary>
+           <params>filter_and_createTime_GE_T,filter_and_createTime_LE_T</params><!--  sql对应的参数类似于报表工具的配置   -->
+           <paramsflag></paramsflag>  <!--  sql对应的参数做特殊处理添加单引号   -->
+        </sqls> 
+     </query>
+     
+     <query config_id="stat122"> 
+       <sqls> 
+           <sql> <!--  查询sql   配置方式类似于报表工具   -->
+              <![CDATA[
+               SELECT to_char(t.CONFERENCE_DATE, 'yyyymm'),
+       t.progectcode,
+       t.projectowner,
+       t.projectname,
+       t.projecttype,
+       t.CONFERENCE_NO,
+       t.cu,
+       sum(t.produce_cost)
+FROM
+  (SELECT to_char(c.CONFERENCE_DATE, 'yyyymm'),
+     r.PROJECT_CODE AS progectcode,
+     r.PROJECT_OWNER AS projectowner,
+     r.PROJECT_NAME AS projectname,
+     (SELECT p.PROJECT_TYPE_NAME
+      FROM T_PROJECT_TYPE p
+      WHERE p.ID=r.PROJECT_TYPE) AS projecttype,
+        c.CONFERENCE_NO,
+         (select count(*) from erp_customer cus where cus.events_no=c.conference_no and cus.is_deleted=0) as cu, 
+        c.produce_cost,
+        c.CONFERENCE_DATE
+   FROM ERP_CONFERENCE c,
+        HL_CUSTOMER_RELATIONSHIP_PRO r
+   WHERE c.is_deleted!=1
+   and r.ID=c.CUSTOMERRELATIONSHIPPRO_ID and c.produce_cost != 0) t
+WHERE 1=1 
+          and t.CONFERENCE_DATE >= to_date('@filter_and_createTime_GE_T@ 00:00:00','yyyy-mm-dd hh24:mi:ss')
+		    	 and t.CONFERENCE_DATE <= to_date('@filter_and_createTime_LE_T@ 23:59:59','yyyy-mm-dd hh24:mi:ss')
+GROUP BY to_char(t.CONFERENCE_DATE, 'yyyymm'),
+         t.CONFERENCE_NO,
+         t.progectcode,
+         t.projectowner,
+         t.projectname,
+         t.projecttype,
+         t.cu   
+              ]]>
+           </sql>
+            
+           <summary>filter_and_createTime_GE_T,filter_and_createTime_LE_T</summary>
+           <params>filter_and_createTime_GE_T,filter_and_createTime_LE_T</params><!--  sql对应的参数类似于报表工具的配置   -->
+           <paramsflag></paramsflag>  <!--  sql对应的参数做特殊处理添加单引号   -->
+        </sqls> 
+     </query>
+     
+     <query config_id="stat139"> 
+       <sqls> 
+           <sql> <!--  查询sql   配置方式类似于报表工具   -->
+              <![CDATA[
+               select 
+  TO_CHAR(p.CREATETIME,'yyyy-mm'),
+  pro.PROJECT_CODE , 
+  pro.PROJECT_OWNER,
+  pro.PROJECT_NAME,
+  t.project_type_name,
+  p.PRINTCOMPANY,
+  s.COMBO,
+  p.printtaskno,    
+  sum(s.PAYEDPRICE) 
+from erp_printtask p ,ERP_PRINT_TASK_SETTLEMENT s ,erp_customer c,erp_events e,t_project_type t,
+HL_CUSTOMER_RELATIONSHIP_PRO pro
+where p.printtaskno=s.PRINTTASKNO 
+  and s.CUSTOMERID=c.id
+  and c.EVENTS_NO=e.EVENTS_NO
+  and pro.PROJECT_TYPE=t.id
+  and e.CUSTOMERRELATIONSHIPPRO_ID=pro.ID
+  and p.SETTLEMENTSTATE=2
+  and c.IS_DELETED=0
+  and p.CREATETIME >= to_date('@filter_and_createTime_GE_T@ 00:00:00','yyyy-mm-dd hh24:mi:ss')
+  and p.CREATETIME <= to_date('@filter_and_createTime_LE_T@ 23:59:59','yyyy-mm-dd hh24:mi:ss')
+  and p.PRINTCOMPANY= '@filter_and_printCompany_EQ_S@'
+  group by TO_CHAR(p.CREATETIME,'yyyy-mm'),
+  pro.PROJECT_CODE , 
+  pro.PROJECT_OWNER,
+  pro.PROJECT_NAME,
+  t.project_type_name,
+  p.PRINTCOMPANY,
+  s.COMBO,
+  p.printtaskno
+              ]]>
+           </sql>
+            
+           <summary>filter_and_createTime_GE_T,filter_and_createTime_LE_T,filter_and_printCompany_EQ_S</summary>
+           <params>filter_and_createTime_GE_T,filter_and_createTime_LE_T,filter_and_printCompany_EQ_S</params><!--  sql对应的参数类似于报表工具的配置   -->
+           <paramsflag></paramsflag>  <!--  sql对应的参数做特殊处理添加单引号   -->
+        </sqls> 
+     </query>
+     
+     <query config_id="stat140"> 
+       <sqls> 
+           <sql> <!--  查询sql   配置方式类似于报表工具   -->
+              <![CDATA[
+               select 
+  TO_CHAR(p.CREATETIME,'yyyy-mm'),
+  pro.PROJECT_CODE , 
+  pro.PROJECT_OWNER,
+  pro.PROJECT_NAME,
+  t.project_type_name,   
+  sum(s.PAYEDPRICE) 
+from erp_printtask p ,ERP_PRINT_TASK_SETTLEMENT s ,erp_customer c,erp_events e,t_project_type t,
+HL_CUSTOMER_RELATIONSHIP_PRO pro
+where p.printtaskno=s.PRINTTASKNO 
+  and s.CUSTOMERID=c.id
+  and c.EVENTS_NO=e.EVENTS_NO
+  and pro.PROJECT_TYPE=t.id
+  and e.CUSTOMERRELATIONSHIPPRO_ID=pro.ID
+  and p.SETTLEMENTSTATE=2
+  and c.IS_DELETED=0
+  and p.CREATETIME >= to_date('@filter_and_createTime_GE_T@ 00:00:00','yyyy-mm-dd hh24:mi:ss')
+  and p.CREATETIME <= to_date('@filter_and_createTime_LE_T@ 23:59:59','yyyy-mm-dd hh24:mi:ss')
+  group by TO_CHAR(p.CREATETIME,'yyyy-mm'),
+  pro.PROJECT_CODE , 
+  pro.PROJECT_OWNER,
+  pro.PROJECT_NAME,
+  t.project_type_name
+              ]]>
+           </sql>
+            
+           <summary>filter_and_createTime_GE_T,filter_and_createTime_LE_T</summary>
+           <params>filter_and_createTime_GE_T,filter_and_createTime_LE_T</params><!--  sql对应的参数类似于报表工具的配置   -->
+           <paramsflag></paramsflag>  <!--  sql对应的参数做特殊处理添加单引号   -->
+        </sqls> 
+     </query>
+     
+     <query config_id="stat123"> <!-- 统计报表-保险公司报表-无创项目体检客户信息 -->
+       <sqls> 
+           <sql> <!--  查询sql   配置方式类似于报表工具   -->
+              <![CDATA[     
+		 select 
+		 		(select r.customer_name_simple
+		        from hl_customer_relationship r
+		        where r.id = e.branch_company_id),
+		 		(select hr.region_name from hl_region hr where hr.id = e.city) as pcity,
+		 		(select o.branch_commany from hl_customer_relationship o where o.id=c.other_company_id) as qrCodeBranchCompany,
+		 		(select r.branch_commany
+		          from hl_customer_relationship r
+		         where r.id = e.branch_company_id),
+		       c.sales_man,
+		       c.sales_man_no,
+		       c.code,
+		       c.name,
+		       c.age,
+		       c.sex,
+		       c.idno,
+		       c.phone,
+		       c.height,
+		       c.weight,
+		       c.sampling_date,
+		       (case when c.STATUS_YM=150 then '样本已获取' when c.STATUS_YM=200 then '样本已送检' 
+     				when c.STATUS_YM=300 then '电子报告已出具' when c.STATUS_YM=400 then '报告已下载' 
+     				when c.STATUS_YM=500 then '报告已打印' when c.STATUS_YM=600 then '报告已寄送' end) as status,
+     				(SELECT wm_concat(re.express_no)
+   FROM erp_report_express re
+   WHERE re.code=c.code
+     AND re.name=c.name and re.express_delete=0) AS expressNo, c.setmeal_name 
+		  from erp_events e, erp_customer c, hl_customer_relationship_pro pr
+		 where c.events_no = e.events_no
+		   and c.is_deleted = 0
+		   and e.province = '@filter_and_provice_EQ_S@'
+		   and e.owned_company_id = '@filter_and_deptId_EQ_S@' 
+		   and e.customerrelationshippro_id = pr.id 
+		   and pr.project_code in (@filter_and_projectcode_like_S@)
+		   and e.city = '@filter_and_city_EQ_S@'
+		   and e.BRANCH_COMPANY ='@filter_and_branchCompanyId_EQ_S@'
+		   and c.idno like '%@filter_and_idno_EQ_S@%'
+		   and c.phone like '%@filter_and_phone_EQ_S@%'
+		   and c.sales_man like '%@filter_and_salesMan_LIKE_S@%' 
+		   and c.name like '%@filter_and_name_LIKE_S@%' 
+		   and c.sampling_date >= to_date('@filter_and_samplingDate_GE_T@ 00:00:00','yyyy-mm-dd hh24:mi:ss')
+		   and c.sampling_date <= to_date('@filter_and_samplingDate_LE_T@ 23:59:59','yyyy-mm-dd hh24:mi:ss')
+		    
+              ]]>
+           </sql>
+            
+           <summary>filter_and_phone_EQ_S,filter_and_idno_EQ_S,filter_and_branchCompanyId_EQ_S,filter_and_city_EQ_S,filter_and_salesMan_LIKE_S,filter_and_provice_EQ_S,filter_and_deptId_EQ_S,filter_and_projectcode_like_S,filter_and_name_LIKE_S,filter_and_samplingDate_GE_T,filter_and_samplingDate_LE_T</summary>
+           <params>filter_and_phone_EQ_S,filter_and_idno_EQ_S,filter_and_branchCompanyId_EQ_S,filter_and_city_EQ_S,filter_and_salesMan_LIKE_S,filter_and_provice_EQ_S,filter_and_deptId_EQ_S,filter_and_projectcode_like_S,filter_and_name_LIKE_S,filter_and_samplingDate_GE_T,filter_and_samplingDate_LE_T</params><!--  sql对应的参数类似于报表工具的配置   -->
+           <paramsflag></paramsflag>  <!--  sql对应的参数做特殊处理添加单引号   -->
+        </sqls> 
+     </query>
+     
+     <query config_id="stat124"> <!-- 统计报表-保险公司报表-邀约客户信息 -->
+       <sqls> 
+           <sql> <!--  查询sql   配置方式类似于报表工具   -->
+              <![CDATA[     
+		 select    
+		 		 g.owned_company,
+		 		 (select rg.region_name from hl_region rg where rg.id=(
+			        select r.citey from hl_customer_relationship r where r.id=g.branch_company_id
+			        ) 
+			        ) as city,
+			       g.branch_company,
+			       g.sales_man,
+			       g.sales_man_no, 
+			       g.code,
+			       g.name,
+			       g.idno,
+			       g.sex,
+			       g.age,
+			       g.birthday，
+			       g.phone,
+			       g.height,
+			       g.weight,
+			      g.create_time       
+			  from erp_customer_temp_wuchuang g,hl_customer_relationship p,hl_customer_relationship_pro pr
+			  where 1=1
+			  and g.owned_company_id='@filter_and_deptId_EQ_S@'
+           	  and g.branch_company_id=p.id
+           	  and p.province='@filter_and_provice_EQ_S@'
+           	  and p.id=pr.customer_relationship_id
+           	  and pr.project_code in (@filter_and_projectcode_like_S@)
+           	  and g.name like '%@filter_and_name_LIKE_S@%'
+           	  and g.idno like '%@filter_and_idno_EQ_S@%'
+           	  and g.phone like '%@filter_and_phone_EQ_S@%'
+           	  and g.code like '%@filter_and_code_EQ_S@%'
+           	  and g.sales_man_no like '%@filter_and_salesManNo_LIKE_S@%'
+		   	  and g.sales_man like '%@filter_and_salesMan_LIKE_S@%'
+		   	  and g.branch_company like '%@filter_and_branchCompanyId_EQ_S@%' 
+		   	  and g.create_time >= to_date('@filter_and_createTime_GE_T@ 00:00:00','yyyy-mm-dd hh24:mi:ss') 
+		      and g.create_time <= to_date('@filter_and_createTime_LE_T@ 23:59:59','yyyy-mm-dd hh24:mi:ss') 
+		   	  order by city,g.branch_company,g.sales_man 
+              ]]>
+           </sql>
+            
+           <summary>filter_and_salesMan_LIKE_S,filter_and_phone_EQ_S,filter_and_code_EQ_S,filter_and_salesManNo_LIKE_S,filter_and_name_LIKE_S,filter_and_idno_EQ_S,filter_and_branchCompanyId_EQ_S,filter_and_provice_EQ_S,filter_and_deptId_EQ_S,filter_and_projectcode_like_S,filter_and_createTime_GE_T,filter_and_createTime_LE_T</summary>
+           <params>filter_and_salesMan_LIKE_S,filter_and_phone_EQ_S,filter_and_code_EQ_S,filter_and_salesManNo_LIKE_S,filter_and_name_LIKE_S,filter_and_idno_EQ_S,filter_and_branchCompanyId_EQ_S,filter_and_provice_EQ_S,filter_and_deptId_EQ_S,filter_and_projectcode_like_S,filter_and_createTime_GE_T,filter_and_createTime_LE_T</params><!--  sql对应的参数类似于报表工具的配置   -->
+           <paramsflag></paramsflag>  <!--  sql对应的参数做特殊处理添加单引号   -->
+        </sqls> 
+     </query>
+     
+     <query config_id="stat125"> <!-- 统计报表-保险公司报表-无创项目体检客户信息(市) -->
+       <sqls> 
+           <sql> <!--  查询sql   配置方式类似于报表工具   -->
+              <![CDATA[     
+		 select (select r.customer_name_simple
+			          from hl_customer_relationship r
+			         where r.id = e.branch_company_id) ,
+			       (select g.region_name from hl_region g where g.id = e.city) ,
+			       (select o.branch_commany
+			          from hl_customer_relationship o
+			         where o.id = c.other_company_id) ,
+			       (select r.branch_commany
+			          from hl_customer_relationship r
+			         where r.id = e.branch_company_id) ,
+			       c.sales_man ,
+			       c.sales_man_no ,
+			       c.code ,
+			       c.name ,
+			       c.age ,
+			       c.sex ,
+			       c.idno ,
+			       c.phone ,
+			       c.height ,
+			       c.weight ,
+			       c.sampling_date,
+			       (case when c.STATUS_YM=150 then '样本已获取' when c.STATUS_YM=200 then '样本已送检' 
+     				when c.STATUS_YM=300 then '电子报告已出具' when c.STATUS_YM=400 then '报告已下载' 
+     				when c.STATUS_YM=500 then '报告已打印' when c.STATUS_YM=600 then '报告已寄送' end) as status,
+     				(SELECT wm_concat(re.express_no)
+   FROM erp_report_express re
+   WHERE re.code=c.code
+     AND re.name=c.name and re.express_delete=0) AS expressNo ,c.setmeal_name 
+			  from erp_events e, erp_customer c, hl_customer_relationship_pro pr
+			 where c.events_no = e.events_no
+			   and c.is_deleted = 0 
+			   and e.province = '@filter_and_provice_EQ_S@'
+       		   and e.city='@filter_and_city_EQ_S@'
+       		   and e.owned_company_id = '@filter_and_deptId_EQ_S@'
+       		   and e.customerrelationshippro_id = pr.id 
+       		   and pr.project_code in (@filter_and_projectcode_like_S@)
+			   and e.BRANCH_COMPANY ='@filter_and_branchCompanyId_EQ_S@'
+		  	   and c.idno like '%@filter_and_idno_EQ_S@%'
+		       and c.phone like '%@filter_and_phone_EQ_S@%'
+		       and c.sales_man like '%@filter_and_salesMan_LIKE_S@%' 
+		       and c.name like '%@filter_and_name_LIKE_S@%'  
+			   and c.sampling_date >= to_date('@filter_and_samplingDate_GE_T@ 00:00:00','yyyy-mm-dd hh24:mi:ss')
+			   and c.sampling_date <= to_date('@filter_and_samplingDate_LE_T@ 23:59:59','yyyy-mm-dd hh24:mi:ss')
+              ]]>
+           </sql>
+            
+           <summary>filter_and_phone_EQ_S,filter_and_idno_EQ_S,filter_and_branchCompanyId_EQ_S,filter_and_salesMan_LIKE_S,filter_and_deptId_EQ_S,filter_and_projectcode_like_S,filter_and_name_LIKE_S,filter_and_provice_EQ_S,filter_and_city_EQ_S,filter_and_samplingDate_GE_T,filter_and_samplingDate_LE_T</summary>
+           <params>filter_and_phone_EQ_S,filter_and_idno_EQ_S,filter_and_branchCompanyId_EQ_S,filter_and_salesMan_LIKE_S,filter_and_deptId_EQ_S,filter_and_projectcode_like_S,filter_and_name_LIKE_S,filter_and_provice_EQ_S,filter_and_city_EQ_S,filter_and_samplingDate_GE_T,filter_and_samplingDate_LE_T</params><!--  sql对应的参数类似于报表工具的配置   -->
+           <paramsflag></paramsflag>  <!--  sql对应的参数做特殊处理添加单引号   -->
+        </sqls> 
+     </query>
+     
+     <query config_id="stat145"> <!-- 统计报表-保险公司报表-(支公司)无创项目体检客户信息 -->
+       <sqls> 
+           <sql> <!--  查询sql   配置方式类似于报表工具   -->
+              <![CDATA[     
+		 select 
+         (select r.customer_name_simple
+            from hl_customer_relationship r
+            where r.id = e.branch_company_id),
+         (select hr.region_name from hl_region hr where hr.id = e.city) as pcity,
+         (select o.branch_commany from hl_customer_relationship o where o.id=c.other_company_id) as qrCodeBranchCompany,
+         (select r.branch_commany
+              from hl_customer_relationship r
+             where r.id = e.branch_company_id),
+           c.sales_man,
+           c.sales_man_no,
+           c.code,
+           c.name,
+           c.age,
+           c.sex,
+           c.idno,
+           c.phone,
+           c.height,
+           c.weight,
+           c.sampling_date,
+           (case when c.STATUS_YM=150 then '样本已获取' when c.STATUS_YM=200 then '样本已送检' 
+     				when c.STATUS_YM=300 then '电子报告已出具' when c.STATUS_YM=400 then '报告已下载' 
+     				when c.STATUS_YM=500 then '报告已打印' when c.STATUS_YM=600 then '报告已寄送' end) as status,
+     				(SELECT wm_concat(re.express_no)
+   FROM erp_report_express re
+   WHERE re.code=c.code
+     AND re.name=c.name and re.express_delete=0) AS expressNo ,c.setmeal_name 
+      from erp_events e, erp_customer c, hl_customer_relationship_pro pr
+     where c.events_no = e.events_no
+       and c.is_deleted = 0
+       and pr.customer_relationship_id='@filter_and_jobnumber_EQ_S@'
+       and e.owned_company_id = '@filter_and_deptId_EQ_S@'
+       and e.customerrelationshippro_id = pr.id 
+       and pr.project_code in (@filter_and_projectcode_like_S@)
+       and c.idno like '%@filter_and_idno_EQ_S@%'
+	   and c.phone like '%@filter_and_phone_EQ_S@%'
+       and c.sales_man like '%@filter_and_salesMan_LIKE_S@%' 
+       and c.name like '%@filter_and_name_LIKE_S@%' 
+       and c.sampling_date >= to_date('@filter_and_samplingDate_GE_T@ 00:00:00','yyyy-mm-dd hh24:mi:ss')
+       and c.sampling_date <= to_date('@filter_and_samplingDate_LE_T@ 23:59:59','yyyy-mm-dd hh24:mi:ss')
+       order by pcity,qrCodeBranchCompany
+              ]]>
+           </sql>
+            
+           <summary>filter_and_idno_EQ_S,filter_and_phone_EQ_S,filter_and_salesMan_LIKE_S,filter_and_jobnumber_EQ_S,filter_and_deptId_EQ_S,filter_and_projectcode_like_S,filter_and_name_LIKE_S,filter_and_samplingDate_GE_T,filter_and_samplingDate_LE_T</summary>
+           <params>filter_and_idno_EQ_S,filter_and_phone_EQ_S,filter_and_salesMan_LIKE_S,filter_and_jobnumber_EQ_S,filter_and_deptId_EQ_S,filter_and_projectcode_like_S,filter_and_name_LIKE_S,filter_and_samplingDate_GE_T,filter_and_samplingDate_LE_T</params><!--  sql对应的参数类似于报表工具的配置   -->
+           <paramsflag></paramsflag>  <!--  sql对应的参数做特殊处理添加单引号   -->
+        </sqls> 
+     </query>
+        
+     <query config_id="stat126"> <!-- 统计报表-保险公司报表-邀约客户信息(市) -->
+       <sqls> 
+           <sql> <!--  查询sql   配置方式类似于报表工具   -->
+              <![CDATA[     
+		 select g.owned_company ,
+			       (select rg.region_name from hl_region rg where rg.id=(
+              select r.citey from hl_customer_relationship r where r.id=g.branch_company_id
+              ) 
+              ) as city,
+			       g.branch_company ,
+			       g.sales_man ,
+			       g.sales_man_no ,
+			       g.code ,
+			       g.name ,
+			       g.idno ,
+			       g.sex ,
+			       g.age ,
+			       g.birthday ,
+			       g.phone ,
+			       g.height ,
+			       g.weight,
+			       g.create_time 
+			  from erp_customer_temp_wuchuang g, hl_customer_relationship p,hl_customer_relationship_pro pr
+			 where 1=1 
+			   and p.province = '@filter_and_provice_EQ_S@' 
+       		   and p.citey='@filter_and_city_EQ_S@'
+       		   and g.owned_company_id = '@filter_and_deptId_EQ_S@'
+       		   and g.branch_company_id=p.id
+       		   and p.id=pr.customer_relationship_id 
+       		   and pr.project_code in (@filter_and_projectcode_like_S@)
+			   and g.name like '%@filter_and_name_LIKE_S@%'
+           	   and g.idno like '%@filter_and_idno_EQ_S@%'
+           	   and g.phone like '%@filter_and_phone_EQ_S@%'
+           	   and g.code like '%@filter_and_code_EQ_S@%'
+           	   and g.sales_man_no like '%@filter_and_salesManNo_LIKE_S@%'
+		   	   and g.sales_man like '%@filter_and_salesMan_LIKE_S@%'
+		   	   and g.branch_company like '%@filter_and_branchCompanyId_EQ_S@%'  
+			   and g.create_time >= to_date('@filter_and_createTime_GE_T@ 00:00:00','yyyy-mm-dd hh24:mi:ss') 
+			   and g.create_time <= to_date('@filter_and_createTime_LE_T@ 23:59:59','yyyy-mm-dd hh24:mi:ss')
+			   order by city,g.branch_company,g.sales_man 
+              ]]>
+           </sql>
+            
+           <summary>filter_and_salesMan_LIKE_S,filter_and_phone_EQ_S,filter_and_code_EQ_S,filter_and_salesManNo_LIKE_S,filter_and_name_LIKE_S,filter_and_idno_EQ_S,filter_and_branchCompanyId_EQ_S,filter_and_deptId_EQ_S,filter_and_projectcode_like_S,filter_and_provice_EQ_S,filter_and_city_EQ_S,filter_and_createTime_GE_T,filter_and_createTime_LE_T</summary>
+           <params>filter_and_salesMan_LIKE_S,filter_and_phone_EQ_S,filter_and_code_EQ_S,filter_and_salesManNo_LIKE_S,filter_and_name_LIKE_S,filter_and_idno_EQ_S,filter_and_branchCompanyId_EQ_S,filter_and_deptId_EQ_S,filter_and_projectcode_like_S,filter_and_provice_EQ_S,filter_and_city_EQ_S,filter_and_createTime_GE_T,filter_and_createTime_LE_T</params><!--  sql对应的参数类似于报表工具的配置   -->
+           <paramsflag></paramsflag>  <!--  sql对应的参数做特殊处理添加单引号   -->
+        </sqls> 
+     </query>
+     
+     <query config_id="stat146"> <!-- 统计报表-保险公司报表-邀约客户信息(支公司) -->
+       <sqls> 
+           <sql> <!--  查询sql   配置方式类似于报表工具   -->
+              <![CDATA[     
+		 select    
+          g.owned_company,
+          (select rg.region_name from hl_region rg where rg.id=(
+              select r.citey from hl_customer_relationship r where r.id=g.branch_company_id
+              ) 
+              ) as city,
+             g.branch_company,
+             g.sales_man,
+             g.sales_man_no, 
+             g.code,
+             g.name,
+             g.idno,
+             g.sex,
+             g.age,
+             g.birthday，
+             g.phone,
+             g.height,
+             g.weight,
+            g.create_time       
+        from erp_customer_temp_wuchuang g,hl_customer_relationship p,hl_customer_relationship_pro pr 
+        where 1=1  
+           and g.owned_company_id='@filter_and_deptId_EQ_S@'
+           and g.branch_company_id=p.id
+           and g.branch_company_id='@filter_and_jobnumber_EQ_S@'
+           and p.id=pr.customer_relationship_id
+           and pr.project_code in (@filter_and_projectcode_like_S@)
+           and g.name like '%@filter_and_name_LIKE_S@%'
+           and g.idno like '%@filter_and_idno_EQ_S@%'
+           and g.phone like '%@filter_and_phone_EQ_S@%'
+           and g.code like '%@filter_and_code_EQ_S@%'
+           and g.sales_man_no like '%@filter_and_salesManNo_LIKE_S@%'
+		   and g.sales_man like '%@filter_and_salesMan_LIKE_S@%'
+		   and g.branch_company like '%@filter_and_branchCompanyId_EQ_S@%' 
+           and g.create_time >= to_date('@filter_and_createTime_GE_T@ 00:00:00','yyyy-mm-dd hh24:mi:ss') 
+          and g.create_time <= to_date('@filter_and_createTime_LE_T@ 23:59:59','yyyy-mm-dd hh24:mi:ss') 
+           order by city,g.branch_company,g.sales_man 
+              ]]>
+           </sql>
+            
+           <summary>filter_and_salesMan_LIKE_S,filter_and_phone_EQ_S,filter_and_code_EQ_S,filter_and_salesManNo_LIKE_S,filter_and_name_LIKE_S,filter_and_idno_EQ_S,filter_and_branchCompanyId_EQ_S,filter_and_jobnumber_EQ_S,filter_and_deptId_EQ_S,filter_and_projectcode_like_S,filter_and_createTime_GE_T,filter_and_createTime_LE_T</summary>
+           <params>filter_and_salesMan_LIKE_S,filter_and_phone_EQ_S,filter_and_code_EQ_S,filter_and_salesManNo_LIKE_S,filter_and_name_LIKE_S,filter_and_idno_EQ_S,filter_and_branchCompanyId_EQ_S,filter_and_jobnumber_EQ_S,filter_and_deptId_EQ_S,filter_and_projectcode_like_S,filter_and_createTime_GE_T,filter_and_createTime_LE_T</params><!--  sql对应的参数类似于报表工具的配置   -->
+           <paramsflag></paramsflag>  <!--  sql对应的参数做特殊处理添加单引号   -->
+        </sqls> 
+     </query>
+     
+     <query config_id="stat147"> <!-- 统计报表-基因部门报表-检测客户信息查询（太平微磁） -->
+       <sqls> 
+           <sql> <!--  查询sql   配置方式类似于报表工具   -->
+              <![CDATA[     
+		 SELECT ectw.open_id,
+       ectw.name,
+       ectw.phone,
+       ectw.code,
+       ectw.idno,
+       ectw.birthday,
+       ectw.sales_man,
+       ectw.sales_man_no,
+       esi.employee_phone,
+       (ecr.examdate ||' '|| ecr.examtime) AS examtime,
+
+  (SELECT pc.createdate
+   FROM erp_reportdetail_pdfcontent pc
+   WHERE pc.code=ectw.code
+     and pc.username=ectw.name
+     and pc.filepath IS NOT NULL
+     and pc.matchstate=2) AS reportdate
+FROM erp_customer_temp_wuchuang ectw,
+     ERP_SALEMANNUM_INFO_PRE esi,
+     erp_customer_receive ecr
+WHERE 1=1
+  and ectw.branch_company_id=esi.ym_company_id
+  and ectw.owned_company_id=esi.ym_owncompany_id
+  and ectw.sales_man_no=esi.employee_no
+   and esi.mark = 'taipingwc'
+  and ectw.sales_channel = 'taipingwc'
+  and ectw.sales_man=esi.salesman
+  and ectw.code=ecr.SERVICECODE(+)
+  and ectw.sales_man like '%@filter_and_salesMan_LIKE_S@%'
+  and ectw.sales_man_no like '%@filter_and_salesManNo_LIKE_S@%'
+  and ectw.name like '%@filter_and_name_LIKE_S@%'
+  and ectw.create_time >= to_date('@filter_and_createTime_GE_T@ 00:00:00','yyyy-mm-dd hh24:mi:ss')
+  and ectw.create_time <= to_date('@filter_and_createTime_LE_T@ 23:59:59','yyyy-mm-dd hh24:mi:ss') ]]>
+           </sql>
+            
+           <summary>filter_and_salesMan_LIKE_S,filter_and_salesManNo_LIKE_S,filter_and_name_LIKE_S,filter_and_createTime_GE_T,filter_and_createTime_LE_T</summary>
+           <params>filter_and_salesMan_LIKE_S,filter_and_salesManNo_LIKE_S,filter_and_name_LIKE_S,filter_and_createTime_GE_T,filter_and_createTime_LE_T</params><!--  sql对应的参数类似于报表工具的配置   -->
+           <paramsflag></paramsflag>  <!--  sql对应的参数做特殊处理添加单引号   -->
+        </sqls> 
+     </query>
+     
+     <query config_id="stat127"> <!-- 统计报表-基因部门报表-无创邀约客户信息查询 -->
+       <sqls> 
+           <sql> <!--  查询sql   配置方式类似于报表工具   -->
+              <![CDATA[     
+		 select g.owned_company,
+       rg.region_name as city,
+       g.branch_company,
+       g.sales_man,
+       g.sales_man_no,
+       (select ty.project_type_name from t_project_type ty where ty.project_type=g.project_type) as projectType,
+       g.code,
+       g.name,
+       g.idno,
+       g.sex,
+       g.age,
+       substr(g.birthday,0,10), 
+       g.phone,
+       g.height,
+       g.weight,
+       to_char(g.create_time,'yyyy-mm-dd hh24:mi:ss')
+  from erp_customer_temp_wuchuang g, hl_region rg,hl_customer_relationship r
+ where 1=1 
+ 			  and g.branch_company_id=r.id
+   			  and rg.id=r.citey
+		   	  and g.name like '%@filter_and_name_LIKE_S@%'
+		   	  and g.branch_company like '%@filter_and_branchCompany_EQ_S@%' 
+		   	  and g.idno like '%@filter_and_idno_EQ_S@%' 
+		   	  and g.code ='@filter_and_code_EQ_S@'
+		   	  and g.sales_man_no like '%@filter_and_salesmanno_EQ_S@%'
+		   	  and g.phone like '%@filter_and_phone_EQ_S@%'
+		   	  and r.province= '@filter_and_provice_EQ_S@'
+		   	  and r.citey= '@filter_and_city_EQ_S@'
+		   	  and r.customer_name_simple like '%@filter_and_ownedCompanyId_EQ_S@%'
+		   	  and g.project_type='@filter_and_projecttype_S@'
+		   	  and g.create_time >= to_date('@filter_and_createTime_GE_T@ 00:00:00','yyyy-mm-dd hh24:mi:ss')
+			  and g.create_time <= to_date('@filter_and_createTime_LE_T@ 23:59:59','yyyy-mm-dd hh24:mi:ss') 
+		   	  order by city,g.branch_company,g.sales_man 
+              ]]>
+           </sql>
+            
+           <summary>filter_and_name_LIKE_S,filter_and_salesmanno_EQ_S,filter_and_createTime_GE_T,filter_and_createTime_LE_T,filter_and_code_EQ_S,filter_and_branchCompany_EQ_S,filter_and_projecttype_S,filter_and_provice_EQ_S,filter_and_city_EQ_S,filter_and_ownedCompanyId_EQ_S,filter_and_idno_EQ_S,filter_and_phone_EQ_S</summary>
+           <params>filter_and_name_LIKE_S,filter_and_salesmanno_EQ_S,filter_and_createTime_GE_T,filter_and_createTime_LE_T,filter_and_code_EQ_S,filter_and_branchCompany_EQ_S,filter_and_projecttype_S,filter_and_provice_EQ_S,filter_and_city_EQ_S,filter_and_ownedCompanyId_EQ_S,filter_and_idno_EQ_S,filter_and_phone_EQ_S</params><!--  sql对应的参数类似于报表工具的配置   -->
+           <paramsflag></paramsflag>  <!--  sql对应的参数做特殊处理添加单引号   -->
+        </sqls> 
+     </query>
+     
+          <query config_id="stat128"> <!-- 统计报表-销售部报表-客户查询（新） -->
+       <sqls> 
+           <sql> <!--  查询sql   配置方式类似于报表工具   -->
+              <![CDATA[     
+		 select c.events_no,
+			       e.batchno,
+			       c.code,
+			       c.name,
+			       c.sex,
+			       c.age,
+			       c.department,
+			       e.branch_company,
+			       c.setmeal_name,
+			       c.sampling_date,
+			       case when (select count(*) from erp_reportdetail_pdfcontent pd where pd.code=c.code and pd.matchstate=2)=0
+  then '没有报告'
+    when (select count(*) from erp_reportdetail_pdfcontent pd where pd.code=c.code and pd.matchstate=2)!=0
+    then '有报告' end as pdf,
+			       (select r.region_name from hl_region r where r.id = e.province) as province,
+			       (select r.region_name from hl_region r where r.id = e.city) as city,
+			       c.sales_man,
+			       c.sales_man_no,
+			       (select pc.branch_commany
+			          from hl_customer_relationship pc
+			         where pc.id = c.other_company_id),
+			       (SELECT wm_concat(re.express_no)
+   FROM erp_report_express re
+   WHERE re.code=c.code
+     AND re.name=c.name and re.express_delete=0) AS expressNo ,
+     				pr.project_code,
+     				(case when c.STATUS_YM=150 then '样本已获取' when c.STATUS_YM=200 then '样本已送检' 
+     				when c.STATUS_YM=300 then '电子报告已出具' when c.STATUS_YM=400 then '报告已下载' 
+     				when c.STATUS_YM=500 then '报告已打印' when c.STATUS_YM=600 then '报告已寄送' end) as status,c.NOTE,
+			         c.phone,
+			       c.idno
+			  from erp_customer c, erp_events e, hl_customer_relationship_pro pr
+			 where pr.id = e.customerrelationshippro_id
+			   and e.events_no = c.events_no
+			   and e.is_deleted = 0 
+			   and c.is_deleted = 0 
+			   and (pr.project_owner = '@filter_and_projectOwner_EQ_S@'  or pr.link_name='@filter_and_projectOwner_EQ_S@') 
+			   and c.sampling_date >= to_date('@filter_and_samplingDate_GE_T@ 00:00:00','yyyy-mm-dd hh24:mi:ss') 
+			   and c.sampling_date <= to_date('@filter_and_samplingDate_LE_T@ 23:59:59','yyyy-mm-dd hh24:mi:ss') 	
+			   and c.events_no = '@filter_and_eventsNo_EQ_S@' 
+			   and c.name like '%@filter_and_name_LIKE_S@%' 
+			   and c.code = '@filter_and_code_EQ_S@' 
+			   and c.setmeal_name like '%@filter_and_setmealName_LIKE_S@%' 
+			   and c.phone = '@filter_and_phone_EQ_S@' 
+			   and c.idno = '@filter_and_idno_EQ_S@' 
+			   and e.PROVINCE= '@filter_and_provice_EQ_S@' 
+			   and e.CITY= '@filter_and_city_EQ_S@' 
+			   and e.batchno like '%@filter_and_batchNo_LIKE_S@%' 
+              ]]>
+           </sql>
+            
+           <summary>filter_and_projectOwner_EQ_S,filter_and_provice_EQ_S,filter_and_city_EQ_S,filter_and_samplingDate_GE_T,filter_and_samplingDate_LE_T,filter_and_eventsNo_EQ_S,filter_and_name_LIKE_S,filter_and_code_EQ_S,filter_and_setmealName_LIKE_S,filter_and_phone_EQ_S,filter_and_idno_EQ_S,filter_and_batchNo_LIKE_S</summary>
+           <params>filter_and_projectOwner_EQ_S,filter_and_provice_EQ_S,filter_and_city_EQ_S,filter_and_samplingDate_GE_T,filter_and_samplingDate_LE_T,filter_and_eventsNo_EQ_S,filter_and_name_LIKE_S,filter_and_code_EQ_S,filter_and_setmealName_LIKE_S,filter_and_phone_EQ_S,filter_and_idno_EQ_S,filter_and_batchNo_LIKE_S</params><!--  sql对应的参数类似于报表工具的配置   -->
+           <paramsflag></paramsflag>  <!--  sql对应的参数做特殊处理添加单引号   -->
+        </sqls> 
+     </query>
+     
+     <query config_id="stat129"> <!-- 统计报表-基因部门报表-客户信息核对 -->
+       <sqls> 
+           <sql> <!--  查询sql   配置方式类似于报表工具   -->
+              <![CDATA[     
+		 select 
+			  p.project_code,
+			  p.project_name,
+			  p.project_owner,
+			  c.events_no,
+			  e.batchno,
+			  c.code,
+			  c.name,
+			  c.sex,
+			  c.age,
+			  c.department,
+			  r.branch_commany,
+			  c.setmeal_name, 
+			   (select cp.combo_price
+			                        from ERP_COMPANY_COMBO_PRICE cp
+			                       where cp.combo = c.setmeal_name
+			                         and cp.company_id = c.branch_company_id
+			                         and rownum = 1) as companyPrice,
+			                     (select op.price
+			                        from ERP_COMBO_PRICE op
+			                       where 1 = 1
+				                       and op.comboname = c.setmeal_name
+				                       and op.genecompany = c.test_institution || '基因公司'
+				                       and rownum = 1) as comboPrice,
+			  case when rpd.filepath is not null then '有报告'
+			    when rpd.filepath is null then '无报告'  end                      
+			                from erp_customer                 c,
+			                     erp_events                   e,
+			                     hl_customer_relationship_pro p,
+			                     hl_customer_relationship     r,
+			                     erp_reportdetail_pdfcontent rpd
+			               where c.events_no = e.events_no
+			                 and e.customerrelationshippro_id = p.id
+			                 and p.customer_relationship_id = r.id
+			                 and c.is_deleted = 0
+			                 and c.pdffilepath is not null 
+			                 and rpd.filepath like '%.pdf%'
+			                 and rpd.code=c.code and rpd.username=c.name and rpd.filepath is not null and rpd.matchstate=2 
+                 			 and c.events_no = '@filter_and_eventsNo_EQ_S@' 
+                 			 and p.project_code = '@filter_and_projectCode_EQ_S@' 
+                 			 and p.project_name like '%@filter_and_projectName_LIKE_S@%' 
+              ]]>
+           </sql>
+            
+           <summary>filter_and_projectCode_EQ_S,filter_and_eventsNo_EQ_S,filter_and_projectName_LIKE_S</summary>
+           <params>filter_and_projectCode_EQ_S,filter_and_eventsNo_EQ_S,filter_and_projectName_LIKE_S</params><!--  sql对应的参数类似于报表工具的配置   -->
+           <paramsflag></paramsflag>  <!--  sql对应的参数做特殊处理添加单引号   -->
+        </sqls> 
+     </query>
+     
+          <query config_id="stat130"> <!-- 统计报表-保险公司报表-预约客户统计 -->
+       <sqls> 
+           <sql> <!--  查询sql   配置方式类似于报表工具   -->
+              <![CDATA[     
+		 select *
+			  from (select r.region_name,
+			               t.branch_company,
+			               t.sales_man,
+			               t.sales_man_no,
+			               count(*) as num1
+			          from erp_customer_temp_wuchuang t,
+			               hl_customer_relationship   p,
+			               hl_region                  r
+			         where t.branch_company_id = p.id
+			           and t.owned_company_id = '@filter_and_deptId_EQ_S@' 
+			           and p.province = '@filter_and_regionId_EQ_S@'
+			           and p.citey = r.id
+			           and t.create_time >= to_date('@filter_and_createTime_GE_T@ 00:00:00','yyyy-mm-dd hh24:mi:ss')
+			           and t.create_time <= to_date('@filter_and_createTime_LE_T@ 23:59:59','yyyy-mm-dd hh24:mi:ss')
+			         group by r.region_name,
+			                  t.branch_company,
+			                  t.sales_man,
+			                  t.sales_man_no)
+			 order by num1 desc
+              ]]>
+           </sql>
+            
+           <summary>filter_and_regionId_EQ_S,filter_and_deptId_EQ_S,filter_and_createTime_GE_T,filter_and_createTime_LE_T</summary>
+           <params>filter_and_regionId_EQ_S,filter_and_deptId_EQ_S,filter_and_createTime_GE_T,filter_and_createTime_LE_T</params><!--  sql对应的参数类似于报表工具的配置   -->
+           <paramsflag></paramsflag>  <!--  sql对应的参数做特殊处理添加单引号   -->
+        </sqls> 
+     </query>
+     
+     <query config_id="stat150"> <!-- 统计报表-库存报表-省公司物料申请统计 -->
+       <sqls> 
+           <sql> <!--  查询sql   配置方式类似于报表工具   -->
+              <![CDATA[     
+		 select (
+		SELECT re.region_name
+		FROM hl_region re
+		WHERE re.id = r.PROVINCE
+		) AS province, (
+		SELECT re.region_name
+		FROM hl_region re
+		WHERE re.id = r.citey
+		) AS city, r.BRANCH_COMMANY , d.PRODUCT_NAME , sum(d.APPLICATION_COUNT) 
+			          from HL_CUSTOMER_RELATIONSHIP r,
+			               ERP_APPLICATION_DETAIL   d,
+			               ERP_APPLICATION                  a
+			         where 1=1 
+			       and   a.id = d.APPLICATION_ID 
+	 and a.project_code in (@filter_and_projectcode_like_S@) 
+	 and a.BANNY_COMPANY_ID = r.id 
+	 and a.IS_DELETED = 0 
+	 and r.province ='@filter_and_provice_EQ_S@'
+	 and r.branch_commany = '@filter_and_branchCompanyId_EQ_S@' 
+	  and r.CITEY = '@filter_and_city_EQ_S@' 
+	  and a.CREATE_TIME >= to_date('@filter_and_createTime_GE_T@ 00:00:00', 'yyyy-mm-dd hh24:mi:ss') 
+	  and a.CREATE_TIME <= to_date('@filter_and_createTime_LE_T@ 23:59:59', 'yyyy-mm-dd hh24:mi:ss') 
+	  group by r.province,r.citey,r.BRANCH_COMMANY,d.PRODUCT_NAME
+	
+	]]>
+           </sql> 
+           <summary>filter_and_provice_EQ_S,filter_and_branchCompanyId_EQ_S,filter_and_city_EQ_S,filter_and_projectcode_like_S,filter_and_createTime_GE_T,filter_and_createTime_LE_T</summary>
+           <params>filter_and_provice_EQ_S,filter_and_branchCompanyId_EQ_S,filter_and_city_EQ_S,filter_and_projectcode_like_S,filter_and_createTime_GE_T,filter_and_createTime_LE_T</params><!--  sql对应的参数类似于报表工具的配置   -->
+           <paramsflag></paramsflag>  <!--  sql对应的参数做特殊处理添加单引号   -->
+        </sqls> 
+     </query>
+     
+     <query config_id="stat151"> <!-- 统计报表-库存报表-市公司物料申请统计 -->
+       <sqls> 
+           <sql> <!--  查询sql   配置方式类似于报表工具   -->
+              <![CDATA[     
+		 select (
+		SELECT re.region_name
+		FROM hl_region re
+		WHERE re.id = r.PROVINCE
+		) AS province, (
+		SELECT re.region_name
+		FROM hl_region re
+		WHERE re.id = r.citey
+		) AS city, r.BRANCH_COMMANY , d.PRODUCT_NAME , sum(d.APPLICATION_COUNT) 
+			          from HL_CUSTOMER_RELATIONSHIP r,
+			               ERP_APPLICATION_DETAIL   d,
+			               ERP_APPLICATION                  a
+			         where 1=1 
+			       and   a.id = d.APPLICATION_ID 
+	 and a.project_code in (@filter_and_projectcode_like_S@) 
+	 and r.PROVINCE = '@filter_and_provice_EQ_S@' 
+	 and a.BANNY_COMPANY_ID = r.id 
+	 and a.IS_DELETED = 0 
+	 and r.branch_commany = '@filter_and_branchCompanyId_EQ_S@' 
+	  and r.CITEY = '@filter_and_city_EQ_S@' 
+	  and a.CREATE_TIME >= to_date('@filter_and_createTime_GE_T@ 00:00:00', 'yyyy-mm-dd hh24:mi:ss') 
+	  and a.CREATE_TIME <= to_date('@filter_and_createTime_LE_T@ 23:59:59', 'yyyy-mm-dd hh24:mi:ss') 
+	  group by r.province,r.citey,r.BRANCH_COMMANY,d.PRODUCT_NAME
+	
+	]]>
+           </sql> 
+           <summary>filter_and_branchCompanyId_EQ_S,filter_and_city_EQ_S,filter_and_provice_EQ_S,filter_and_projectcode_like_S,filter_and_createTime_GE_T,filter_and_createTime_LE_T</summary>
+           <params>filter_and_branchCompanyId_EQ_S,filter_and_city_EQ_S,filter_and_provice_EQ_S,filter_and_projectcode_like_S,filter_and_createTime_GE_T,filter_and_createTime_LE_T</params><!--  sql对应的参数类似于报表工具的配置   -->
+           <paramsflag></paramsflag>  <!--  sql对应的参数做特殊处理添加单引号   -->
+        </sqls> 
+     </query>
+     
+     
+     <query config_id="stat152"> <!-- 统计报表-库存报表-市公司物料申请统计 -->
+       <sqls> 
+           <sql> <!--  查询sql   配置方式类似于报表工具   -->
+              <![CDATA[     
+		 select (
+		SELECT re.region_name
+		FROM hl_region re
+		WHERE re.id = r.PROVINCE
+		)  province, (
+		SELECT re.region_name
+		FROM hl_region re
+		WHERE re.id = r.citey
+		)  city, r.BRANCH_COMMANY , d.PRODUCT_NAME , sum(d.APPLICATION_COUNT) 
+			          from HL_CUSTOMER_RELATIONSHIP r,
+			               ERP_APPLICATION_DETAIL   d,
+			               ERP_APPLICATION                  a
+			         where 1=1 
+			       and   a.id = d.APPLICATION_ID 
+	 and a.project_code in (@filter_and_projectcode_like_S@)  
+	 and a.BANNY_COMPANY_ID = r.id 
+	 and a.IS_DELETED = 0 
+	 and r.id = '@filter_and_jobnumber_EQ_S@'  
+	  and a.CREATE_TIME >= to_date('@filter_and_createTime_GE_T@ 00:00:00', 'yyyy-mm-dd hh24:mi:ss') 
+	  and a.CREATE_TIME <= to_date('@filter_and_createTime_LE_T@ 23:59:59', 'yyyy-mm-dd hh24:mi:ss') 
+	  group by r.province,r.citey,r.BRANCH_COMMANY,d.PRODUCT_NAME
+	
+	]]>
+           </sql> 
+           <summary>filter_and_jobnumber_EQ_S,filter_and_projectcode_like_S,filter_and_createTime_GE_T,filter_and_createTime_LE_T</summary>
+           <params>filter_and_jobnumber_EQ_S,filter_and_projectcode_like_S,filter_and_createTime_GE_T,filter_and_createTime_LE_T</params><!--  sql对应的参数类似于报表工具的配置   -->
+           <paramsflag></paramsflag>  <!--  sql对应的参数做特殊处理添加单引号   -->
+        </sqls> 
+     </query>
+     
+     <query config_id="stat153"> <!-- 统计报表-库存报表-省公司检测客户汇总表 -->
+       <sqls> 
+           <sql> <!--  查询sql   配置方式类似于报表工具   -->
+              <![CDATA[     
+		 select to_char(c.sampling_date,'yyyy-mm-dd') ,
+       (select hr.region_name from hl_region hr where hr.id = e.PROVINCE) as PROVINCE,
+		 		(select hr.region_name from hl_region hr where hr.id = e.city) as city,
+		 		(select r.branch_commany
+		          from hl_customer_relationship r
+		         where r.id = e.branch_company_id) as branch_commany,
+		       count(*) 
+		  from erp_events e, erp_customer c, hl_customer_relationship_pro pr 
+		 where c.events_no = e.events_no 
+		   and c.is_deleted = 0 
+       and e.is_deleted = 0 
+		   and e.province = '@filter_and_provice_EQ_S@' 
+		   and e.owned_company_id = '@filter_and_deptId_EQ_S@' 
+		   and e.customerrelationshippro_id = pr.id 
+		   and pr.project_code in (@filter_and_projectcode_like_S@) 
+           and e.city ='@filter_and_city_EQ_S@' 
+		   and c.sampling_date >= to_date('@filter_and_samplingDate_GE_T@ 00:00:00','yyyy-mm-dd hh24:mi:ss') 
+		   and c.sampling_date <= to_date('@filter_and_samplingDate_LE_T@ 23:59:59','yyyy-mm-dd hh24:mi:ss') 
+		   group by e.city,e.PROVINCE,to_char(c.sampling_date,'yyyy-mm-dd'),e.branch_company_id 
+		   order by to_char(c.sampling_date,'yyyy-mm-dd') desc, e.branch_company_id desc
+	
+	]]>
+           </sql> 
+           <summary>filter_and_city_EQ_S,filter_and_provice_EQ_S,filter_and_projectcode_like_S,filter_and_deptId_EQ_S,filter_and_samplingDate_GE_T,filter_and_samplingDate_LE_T</summary>
+           <params>filter_and_city_EQ_S,filter_and_provice_EQ_S,filter_and_projectcode_like_S,filter_and_deptId_EQ_S,filter_and_samplingDate_GE_T,filter_and_samplingDate_LE_T</params><!--  sql对应的参数类似于报表工具的配置   -->
+           <paramsflag></paramsflag>  <!--  sql对应的参数做特殊处理添加单引号   -->
+        </sqls> 
+     </query>
+     
+     <query config_id="stat154"> <!-- 统计报表-保险公司报表-省公司邀约客户信息汇总 -->
+       <sqls> 
+           <sql> <!--  查询sql   配置方式类似于报表工具   -->
+              <![CDATA[     
+		 select  
+             to_char(g.CREATE_TIME,'yyyy-mm-dd') ,
+		 		(select rg.region_name from hl_region rg where rg.id=p.province) as province,
+		 		 (select rg.region_name from hl_region rg where rg.id=p.citey) as city,
+			       g.branch_company,
+			      count(*)        
+			  from erp_customer_temp_wuchuang g,hl_customer_relationship p,hl_customer_relationship_pro pr 
+			  where 1=1 
+             and g.owned_company_id='@filter_and_deptId_EQ_S@' 
+           	  and g.branch_company_id=p.id 
+           	  and p.province='@filter_and_provice_EQ_S@' 
+           	  and p.id=pr.customer_relationship_id 
+           	  and pr.project_code in (@filter_and_projectcode_like_S@) 
+            and p.citey = '@filter_and_city_EQ_S@' 
+		   	  and g.create_time >= to_date('@filter_and_createTime_GE_T@ 00:00:00','yyyy-mm-dd hh24:mi:ss') 
+		      and g.create_time <= to_date('@filter_and_createTime_LE_T@ 23:59:59','yyyy-mm-dd hh24:mi:ss') 
+		   	  group by  p.province,p.citey,g.branch_company,to_char(g.CREATE_TIME,'yyyy-mm-dd') 
+		   	  order by to_char(g.CREATE_TIME,'yyyy-mm-dd') desc,g.branch_company desc
+              ]]>
+           </sql>
+            
+           <summary>filter_and_city_EQ_S,filter_and_provice_EQ_S,filter_and_deptId_EQ_S,filter_and_projectcode_like_S,filter_and_createTime_GE_T,filter_and_createTime_LE_T</summary>
+           <params>filter_and_city_EQ_S,filter_and_provice_EQ_S,filter_and_deptId_EQ_S,filter_and_projectcode_like_S,filter_and_createTime_GE_T,filter_and_createTime_LE_T</params><!--  sql对应的参数类似于报表工具的配置   -->
+           <paramsflag></paramsflag>  <!--  sql对应的参数做特殊处理添加单引号   -->
+        </sqls> 
+     </query>
+     
+     <query config_id="stat155"> <!-- 统计报表-库存报表-市公司检测客户汇总表 -->
+       <sqls> 
+           <sql> <!--  查询sql   配置方式类似于报表工具   -->
+              <![CDATA[     
+		 select to_char(c.sampling_date,'yyyy-mm-dd') ,
+       (select hr.region_name from hl_region hr where hr.id = e.PROVINCE) as PROVINCE,
+		 		(select hr.region_name from hl_region hr where hr.id = e.city) as city,
+		 		(select r.branch_commany
+		          from hl_customer_relationship r
+		         where r.id = e.branch_company_id) as branch_commany,
+		       count(*) 
+		  from erp_events e, erp_customer c, hl_customer_relationship_pro pr 
+		 where c.events_no = e.events_no 
+		   and c.is_deleted = 0 
+       and e.is_deleted = 0 
+		   and e.province = '@filter_and_provice_EQ_S@' 
+		   and e.owned_company_id = '@filter_and_deptId_EQ_S@' 
+		   and e.customerrelationshippro_id = pr.id 
+		   and pr.project_code in (@filter_and_projectcode_like_S@) 
+           and e.city ='@filter_and_city_EQ_S@' 
+		   and c.sampling_date >= to_date('@filter_and_samplingDate_GE_T@ 00:00:00','yyyy-mm-dd hh24:mi:ss') 
+		   and c.sampling_date <= to_date('@filter_and_samplingDate_LE_T@ 23:59:59','yyyy-mm-dd hh24:mi:ss') 
+		   group by e.city,e.PROVINCE,to_char(c.sampling_date,'yyyy-mm-dd'),e.branch_company_id 
+		   order by to_char(c.sampling_date,'yyyy-mm-dd') desc, e.branch_company_id desc
+	
+	]]>
+           </sql> 
+           <summary>filter_and_city_EQ_S,filter_and_provice_EQ_S,filter_and_projectcode_like_S,filter_and_deptId_EQ_S,filter_and_samplingDate_GE_T,filter_and_samplingDate_LE_T</summary>
+           <params>filter_and_city_EQ_S,filter_and_provice_EQ_S,filter_and_projectcode_like_S,filter_and_deptId_EQ_S,filter_and_samplingDate_GE_T,filter_and_samplingDate_LE_T</params><!--  sql对应的参数类似于报表工具的配置   -->
+           <paramsflag></paramsflag>  <!--  sql对应的参数做特殊处理添加单引号   -->
+        </sqls> 
+     </query>
+     
+     <query config_id="stat156"> <!-- 统计报表-保险公司报表-市公司邀约客户信息汇总 -->
+       <sqls> 
+           <sql> <!--  查询sql   配置方式类似于报表工具   -->
+              <![CDATA[     
+		 select  
+             to_char(g.CREATE_TIME,'yyyy-mm-dd') ,
+		 		(select rg.region_name from hl_region rg where rg.id=p.province) as province,
+		 		 (select rg.region_name from hl_region rg where rg.id=p.citey) as city,
+			       g.branch_company,
+			      count(*)        
+			  from erp_customer_temp_wuchuang g,hl_customer_relationship p,hl_customer_relationship_pro pr 
+			  where 1=1 
+             and g.owned_company_id='@filter_and_deptId_EQ_S@' 
+           	  and g.branch_company_id=p.id 
+           	  and p.province='@filter_and_provice_EQ_S@' 
+           	  and p.id=pr.customer_relationship_id 
+           	  and pr.project_code in (@filter_and_projectcode_like_S@) 
+            and p.citey = '@filter_and_city_EQ_S@' 
+		   	  and g.create_time >= to_date('@filter_and_createTime_GE_T@ 00:00:00','yyyy-mm-dd hh24:mi:ss') 
+		      and g.create_time <= to_date('@filter_and_createTime_LE_T@ 23:59:59','yyyy-mm-dd hh24:mi:ss') 
+		   	  group by  p.province,p.citey,g.branch_company,to_char(g.CREATE_TIME,'yyyy-mm-dd') 
+		   	  order by to_char(g.CREATE_TIME,'yyyy-mm-dd') desc,g.branch_company desc
+              ]]>
+           </sql>
+            
+           <summary>filter_and_city_EQ_S,filter_and_provice_EQ_S,filter_and_deptId_EQ_S,filter_and_projectcode_like_S,filter_and_createTime_GE_T,filter_and_createTime_LE_T</summary>
+           <params>filter_and_city_EQ_S,filter_and_provice_EQ_S,filter_and_deptId_EQ_S,filter_and_projectcode_like_S,filter_and_createTime_GE_T,filter_and_createTime_LE_T</params><!--  sql对应的参数类似于报表工具的配置   -->
+           <paramsflag></paramsflag>  <!--  sql对应的参数做特殊处理添加单引号   -->
+        </sqls> 
+     </query>
+     
+     <query config_id="stat157"> <!-- 统计报表-库存报表-支公司检测客户汇总表 -->
+       <sqls> 
+           <sql> <!--  查询sql   配置方式类似于报表工具   -->
+              <![CDATA[     
+		 select to_char(c.sampling_date,'yyyy-mm-dd') ,
+       (select hr.region_name from hl_region hr where hr.id = e.PROVINCE) as PROVINCE,
+		 		(select hr.region_name from hl_region hr where hr.id = e.city) as city,
+		 		(select r.branch_commany
+		          from hl_customer_relationship r
+		         where r.id = e.branch_company_id) as branch_commany,
+		       count(*) 
+		  from erp_events e, erp_customer c, hl_customer_relationship_pro pr 
+		 where c.events_no = e.events_no 
+		   and c.is_deleted = 0 
+       and e.is_deleted = 0  
+		   and e.owned_company_id = '@filter_and_deptId_EQ_S@' 
+		   and e.customerrelationshippro_id = pr.id 
+		   and pr.project_code in (@filter_and_projectcode_like_S@)  
+           and e.branch_company_id ='@filter_and_jobnumber_EQ_S@' 
+		   and c.sampling_date >= to_date('@filter_and_samplingDate_GE_T@ 00:00:00','yyyy-mm-dd hh24:mi:ss') 
+		   and c.sampling_date <= to_date('@filter_and_samplingDate_LE_T@ 23:59:59','yyyy-mm-dd hh24:mi:ss') 
+		   group by e.city,e.PROVINCE,to_char(c.sampling_date,'yyyy-mm-dd'),e.branch_company_id 
+		   order by to_char(c.sampling_date,'yyyy-mm-dd') desc, e.branch_company_id desc
+	
+	]]>
+           </sql> 
+           <summary>filter_and_jobnumber_EQ_S,filter_and_projectcode_like_S,filter_and_deptId_EQ_S,filter_and_samplingDate_GE_T,filter_and_samplingDate_LE_T</summary>
+           <params>filter_and_jobnumber_EQ_S,filter_and_projectcode_like_S,filter_and_deptId_EQ_S,filter_and_samplingDate_GE_T,filter_and_samplingDate_LE_T</params><!--  sql对应的参数类似于报表工具的配置   -->
+           <paramsflag></paramsflag>  <!--  sql对应的参数做特殊处理添加单引号   -->
+        </sqls> 
+     </query>
+     
+     <query config_id="stat149"> <!-- 统计报表-基因部门报表-基因决策委员会报表 -->
+       <sqls> 
+           <sql> <!--  查询sql   配置方式类似于报表工具   -->
+              <![CDATA[     
+SELECT a.pn, COUNT(DISTINCT replace(a.code, 'SJ', '')), reportNum
+FROM (SELECT (
+			SELECT t.project_type_name 
+			FROM t_project_type t 
+			WHERE t.id = pr.project_type 
+			) AS pn, CASE WHEN c.pdffilepath IS NOT NULL THEN '有报告' ELSE '无报告' END AS reportNum, pr.project_type, c.*
+	FROM erp_events e, erp_customer c, hl_customer_relationship_pro pr 
+	WHERE e.events_no = c.events_no 
+		and e.customerrelationshippro_id = pr.id 
+		and c.is_deleted = 0 
+		 and  c.sampling_date >= to_date('@filter_and_samplingDate_GE_T@ 00:00:00','yyyy-mm-dd hh24:mi:ss') 
+		 and  c.sampling_date <= to_date('@filter_and_samplingDate_LE_T@ 23:59:59','yyyy-mm-dd hh24:mi:ss') 
+		 and c.create_time >= to_date('@filter_and_createTime_GE_T@ 00:00:00', 'yyyy-MM-dd hh24:mi:ss') 
+		 and c.create_time <= to_date('@filter_and_createTime_LE_T@ 23:59:59', 'yyyy-MM-dd hh24:mi:ss') 
+	) a
+GROUP BY a.pn, a.reportNum
+	]]>
+           </sql> 
+           <summary>filter_and_createTime_GE_T,filter_and_createTime_LE_T,filter_and_samplingDate_GE_T,filter_and_samplingDate_LE_T</summary>
+           <params>filter_and_createTime_GE_T,filter_and_createTime_LE_T,filter_and_samplingDate_GE_T,filter_and_samplingDate_LE_T</params><!--  sql对应的参数类似于报表工具的配置   -->
+           <paramsflag></paramsflag>  <!--  sql对应的参数做特殊处理添加单引号   -->
+        </sqls> 
+     </query>
+     
+     <query config_id="stat158"> <!-- 统计报表-保险公司报表-支公司邀约客户信息汇总 -->
+       <sqls> 
+           <sql> <!--  查询sql   配置方式类似于报表工具   -->
+              <![CDATA[     
+		 select  
+             to_char(g.CREATE_TIME,'yyyy-mm-dd') ,
+		 		(select rg.region_name from hl_region rg where rg.id=p.province) as province,
+		 		 (select rg.region_name from hl_region rg where rg.id=p.citey) as city,
+			       g.branch_company,
+			      count(*)        
+			  from erp_customer_temp_wuchuang g,hl_customer_relationship p,hl_customer_relationship_pro pr 
+			  where 1=1 
+             and g.owned_company_id='@filter_and_deptId_EQ_S@' 
+           	  and g.branch_company_id=p.id 
+           	  and p.id=pr.customer_relationship_id 
+           	  and pr.project_code in (@filter_and_projectcode_like_S@) 
+            and g.BRANCH_COMPANY_ID ='@filter_and_jobnumber_EQ_S@' 
+		   	  and g.create_time >= to_date('@filter_and_createTime_GE_T@ 00:00:00','yyyy-mm-dd hh24:mi:ss') 
+		      and g.create_time <= to_date('@filter_and_createTime_LE_T@ 23:59:59','yyyy-mm-dd hh24:mi:ss') 
+		   	  group by  p.province,p.citey,g.branch_company,to_char(g.CREATE_TIME,'yyyy-mm-dd') 
+		   	  order by to_char(g.CREATE_TIME,'yyyy-mm-dd') desc,g.branch_company desc
+              ]]>
+           </sql>
+            
+           <summary>filter_and_jobnumber_EQ_S,filter_and_deptId_EQ_S,filter_and_projectcode_like_S,filter_and_createTime_GE_T,filter_and_createTime_LE_T</summary>
+           <params>filter_and_jobnumber_EQ_S,filter_and_deptId_EQ_S,filter_and_projectcode_like_S,filter_and_createTime_GE_T,filter_and_createTime_LE_T</params><!--  sql对应的参数类似于报表工具的配置   -->
+           <paramsflag></paramsflag>  <!--  sql对应的参数做特殊处理添加单引号   -->
+        </sqls> 
+     </query>
+     
+     <query config_id="stat159"> <!-- 统计报表-销售部报表-保险公司套餐价格 -->
+       <sqls> 
+           <sql> <!--  查询sql   配置方式类似于报表工具   -->
+              <![CDATA[     
+		 SELECT 
+		 ( 
+		SELECT d.dept_name 
+		FROM um_dept d 
+		WHERE d.id = p.owned_company 
+		), 
+		p.branch_commany, 
+		pr.project_code, 
+		pr.project_name, 
+		pr.project_owner, 
+		cc.combo, 
+		cc.combo_price 
+	FROM hl_customer_relationship_pro pr, erp_company_combo_price cc, hl_customer_relationship p 
+	WHERE p.id = pr.customer_relationship_id 
+		and cc.company_id = p.id 
+		and cc.project_code = pr.project_code 
+		and (pr.project_owner = '@filter_and_projectOwner_EQ_S@' 
+			or pr.link_name = '@filter_and_projectOwner_EQ_S@')  
+		 and  pr.project_code = '@filter_and_projectcode_like_S@' 
+		 and  p.branch_commany = '@filter_and_branchCompanyId_EQ_S@' 
+		 and  cc.combo like '%@filter_and_setmealName_LIKE_S@%' 
+              ]]>
+           </sql>
+            
+           <summary>filter_and_projectOwner_EQ_S,filter_and_projectcode_like_S,filter_and_branchCompanyId_EQ_S,filter_and_setmealName_LIKE_S</summary>
+           <params>filter_and_projectOwner_EQ_S,filter_and_projectcode_like_S,filter_and_branchCompanyId_EQ_S,filter_and_setmealName_LIKE_S</params><!--  sql对应的参数类似于报表工具的配置   -->
+           <paramsflag></paramsflag>  <!--  sql对应的参数做特殊处理添加单引号   -->
+        </sqls> 
+     </query>
+     
+     <query config_id="reportFileTaskJY">
+		<sqls>
+			<sql>
+				<![CDATA[ 
+				 select k.date_sum,
+           k.pdfcount,
+           (select count(*)
+          from erp_report_url_jy u
+         where u.is_deleted = 0
+           and u.FILE_TYPE='jpg'
+           and to_char(u.CREATE_TIME, 'yyyy-mm-dd') = k.date_sum) as jpgcount,
+           k.ppcg,
+           k.wppcg,
+           k.ywc,
+           k.wwc
+  from (select to_char(s.CREATE_TIME, 'yyyy-mm-dd') date_sum,           
+               count(s.id) as pdfcount,
+               sum(case
+                    when s.STATUS = '0' or s.STATUS = '1' then
+                     1
+                    else
+                     0
+                   end) as ppcg,
+               sum(case
+                    when s.STATUS = '9' then
+                     1
+                    else
+                     0
+                   end) as wppcg,
+               sum(case
+                    when s.STATUS = '1' then
+                     1
+                    else
+                     0
+                   end) as ywc,
+               sum(case
+                    when s.STATUS = '0' then
+                     1
+                    else
+                     0
+                   end) as wwc
+          from ERP_REPORT_SCHEDULE_JY s
+         where 1 = 1
+           and s.IS_DELETED = '0'
+            and s.CREATE_TIME >= to_date('@filter_and_createTime_GE_T@ 00:00:00','yyyy-mm-dd hh24:mi:ss')
+		   and s.CREATE_TIME <= to_date('@filter_and_createTime_LE_T@ 23:59:59','yyyy-mm-dd hh24:mi:ss')
+         group by to_char(s.CREATE_TIME, 'yyyy-mm-dd')) k
+ order by k.date_sum 
+									
+                ]]>
+			</sql>
+			<summary>filter_and_createTime_GE_T,filter_and_createTime_LE_T</summary>
+            <params>filter_and_createTime_GE_T,filter_and_createTime_LE_T</params><!--  sql对应的参数类似于报表工具的配置   -->
+            <paramsflag></paramsflag>  <!--  sql对应的参数做特殊处理添加单引号   -->
+		</sqls>
+	</query>
+
+</root> 

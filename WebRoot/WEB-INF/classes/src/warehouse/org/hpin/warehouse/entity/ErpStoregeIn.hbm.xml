@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping>
+    <class name="org.hpin.warehouse.entity.ErpStoregeIn" table="ERP_STOREGE_IN">
+        <id name="id" type="java.lang.String">
+			<column name="ID" />
+			<generator class="uuid" />
+		</id>
+        
+        <property name="storegeId" type="java.lang.String">
+            <column name="STOREGE_ID"/>
+        </property>
+        <property name="productId" type="java.lang.String">
+            <column name="PRODUCT_ID"/>
+        </property>
+        <property name="price" type="java.math.BigDecimal">
+            <column name="PRICE"/>
+        </property>
+        <property name="quantity" type="java.lang.Integer">
+            <column name="QUANTITY"/>
+        </property>
+        <property name="amount" type="java.math.BigDecimal">
+            <column name="AMOUNT"/>
+        </property>
+        <property name="standard" type="java.lang.String">
+            <column name="STANDARD"/>
+        </property>
+        <property name="describe" type="java.lang.String">
+            <column name="DESCRIBE"/>
+        </property>
+        <property name="useableQuantity" type="java.lang.Integer">
+            <column name="USEABLE_QUANTITY"/>
+        </property>
+        <property name="cardNum" type="java.lang.String">
+            <column name="CARD_NUM"/>
+        </property>
+        <property name="cardStart" type="java.lang.String">
+            <column name="CARD_START"/>
+        </property>
+        <property name="cardEnd" type="java.lang.String">
+            <column name="CARD_END"/>
+        </property>
+        <property name="userCardNum" type="java.lang.String">
+            <column name="USER_CARD_NUM"/>
+        </property>
+        
+        <property name="productType" type="java.lang.String">
+            <column name="PRODUCT_TYPE"/>
+        </property>
+        
+        <property name="createUserId" type="java.lang.String">
+            <column name="CREATE_USER_ID"/>
+        </property>
+        <property name="createTime" type="java.util.Date">
+            <column name="CREATE_TIME"/>
+        </property>
+        <property name="updateUserId" type="java.lang.String">
+            <column name="UPDATE_USER_ID"/>
+        </property>
+        <property name="updateTime" type="java.util.Date">
+            <column name="UPDATE_TIME" />
+        </property>
+        <property name="isDeleted" type="java.lang.Integer">
+            <column name="IS_DELETED" precision="4" scale="0" />
+        </property>
+        <property name="remark" type="java.lang.String">
+            <column name="REMARK"/>
+        </property>
+        <property name="supplierId" type="java.lang.String">
+            <column name="SUPPLIER_ID"/>
+        </property>
+        <property name="serialNo" type="java.lang.String">
+            <column name="SERIAL_NO"/>
+        </property>
+        <property name="settleStatus" type="java.lang.Integer">
+            <column name="SETTLE_STATUS"/>
+        </property>
+        <property name="serialNoOA" type="java.lang.String">
+            <column name="SERIAL_NO_OA"/>
+        </property>
+        <property name="storegeStatus" type="java.lang.Integer">
+            <column name="STOREGE_STATUS"/>
+        </property>
+    </class>
+</hibernate-mapping>

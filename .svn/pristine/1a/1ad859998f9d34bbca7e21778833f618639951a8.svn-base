@@ -1,0 +1,148 @@
+package org.hpin.foreign.service;
+
+import org.hpin.common.core.orm.BaseService;
+import org.hpin.foreign.dao.ErpMessagePushDao;
+import org.hpin.foreign.entity.ErpMessagePush;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
+
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * 消息推送表Service
+ * Created by Damian on 17-1-1.
+ */
+@Service("org.hpin.foreign.service.ErpMessagePushService")
+@Transactional
+public class ErpMessagePushService extends BaseService {
+
+    @Autowired
+    private ErpMessagePushDao dao;
+
+    /**
+     * 根据条件是否严格查找
+     * @param params 条件集合
+     * @param isExact true:equal查找，false:like查找
+     * @return List
+     */
+    public List<ErpMessagePush> listByProps(Map<String,String> params, boolean isExact) throws Exception {
+        return dao.listByProps(params,isExact);
+    }
+
+
+    /**
+     * 根据条件严格查找
+     * @param params 条件集合
+     * @return List
+     */
+    public List<ErpMessagePush> listByProps(Map<String,String> params) throws Exception{
+        return dao.listByProps(params);
+    }
+
+    /**
+     * 把太平微磁相关的信息保存到消息推送表中
+     * @param projCode 项目编号
+     * @param mark 渠道标识
+     * @return int 保存的数量
+     * @throws Exception
+     * @author Damian
+     * @since 2017-02-17
+     */
+    public int savePushInfoTPWC(String projCode, String mark) throws Exception {
+        int count = 0;
+        List<Map<String,Object>> list = dao.findPushInfoTPWC(projCode, mark);
+        if (!CollectionUtils.isEmpty(list)){
+            List<ErpMessagePush> msgList = this.infoTPWCToMsg(list);
+            if (!CollectionUtils.isEmpty(msgList)){
+                count = this.saveList(msgList);
+            }
+        }
+        return count;
+    }
+
+    /**
+     * 转换成消息List
+     * @param list Map
+     * @return List
+     * @author Damian
+     * @since 2017-02-17
+     */
+    private List<ErpMessagePush> infoTPWCToMsg(List<Map<String,Object>> list){
+        List<ErpMessagePush> msgList = null;
+        if (!CollectionUtils.isEmpty(list)){
+            msgList = new ArrayList<ErpMessagePush>();
+            for (Map<String,Object> item:list){
+                ErpMessagePush obj = this.mapToEntityTPWC(item);
+                if (obj!=null){
+                    msgList.add(obj);
+                }
+            }
+        }
+        return msgList;
+    }
+
+    /**
+     * 根据Map组装对象
+     * @param map
+     * @return ErpMessagePush
+     * @author Damian
+     * @since 2017-02-17
+     */
+    private ErpMessagePush mapToEntityTPWC(Map<String,Object> map) {
+        ErpMessagePush obj = null;
+        if (!CollectionUtils.isEmpty(map)){
+            obj = new ErpMessagePush();
+
+            obj.setCode((String) map.get("code"));
+            obj.setName((String) map.get("name"));
+            obj.setPhone((String) map.get("phone"));
+            obj.setPushName("太平无创");
+            obj.setKeyWord("TPWC");
+
+            obj.setMessage(mapToMsgTPWC(map));
+            obj.setStatusYm(300);
+            obj.setStatus(0); //未发送
+            obj.setCounter(0);
+            obj.setCreateUserName("ymjy");//创建人为web项目名称
+
+            obj.setCreateTime(Calendar.getInstance().getTime());
+        }
+        return obj;
+    }
+
+    /**
+     * 根据Map组装XML格式
+     * @param map
+     * @return XML格式的字符串
+     * @author Damian
+     * @since 2017-02-17
+     */
+    private String mapToMsgTPWC(Map<String,Object> map){
+        return "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n" + "<message>"
+                + "<barCode>"+map.get("code")+"</barCode>"
+                + "<name>"+map.get("name")+"</name>"
+                + "<phone>"+map.get("phone")+"</phone>"
+                + "<status>300</status>"
+                + "<expressNo></expressNo>"
+                + "<salesManPhone>"+map.get("employee_phone")+"</salesManPhone>"
+                + "<salesChannel>"+map.get("mark")+"</salesChannel>"
+                + "</message>";
+    }
+
+    /**
+     * 批量保存
+     * @param list
+     * @return 保存的数量
+     * @throws Exception
+     * @author Damian
+     * @since 2017-02-17
+     */
+    public int saveList(List<ErpMessagePush> list) throws Exception{
+        return dao.saveList(list);
+    }
+}

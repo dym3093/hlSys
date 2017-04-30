@@ -1,0 +1,51 @@
+package org.hpin.reportdetail.service;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.log4j.Logger;
+import org.hpin.common.core.orm.BaseService;
+import org.hpin.common.widget.pagination.Page;
+import org.hpin.reportdetail.dao.ErpReportdetailImgtaskDao;
+import org.hpin.reportdetail.web.ErpReportdetailImgTaskAction;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service(value = "org.hpin.reportdetail.service.ErpReportdetailImgtaskService")
+@Transactional()
+public class ErpReportdetailImgtaskService extends BaseService {
+	private Logger log = Logger.getLogger(ErpReportdetailImgtaskService.class);
+	
+	@Autowired
+	ErpReportdetailImgtaskDao dao;
+	
+	/**
+	 * 分页获取用户
+	 * @param page
+	 * @param searchMap
+	 * @return
+	 */
+	public List findByPage(Page page, Map searchMap){
+		return dao.findByPage(page, searchMap);
+	}
+	
+	/**
+	 * 获取 erp_customer_temp_wuchuang 的code和age
+	 * @param code
+	 * @return
+	 * @author LeslieTong
+	 * @date 2017-3-30上午11:59:49
+	 */
+	public Map<String, Object> getCustomerWuChuangByCode(String code){
+		Map<String, Object> map = new HashMap<String, Object>();
+		List<Map<String, Object>> result = dao.getCustomerWuChuangByCode(code);
+		if(result!=null&&result.size()>0){
+			log.info("getCustomerWuChuangByCode -- "+result.toString());
+			map = result.get(0);
+		}
+		return map;
+	}
+	
+}

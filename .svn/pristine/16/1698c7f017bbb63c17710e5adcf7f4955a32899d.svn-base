@@ -1,0 +1,129 @@
+package org.hpin.reportdetail.entity;
+
+import java.io.Serializable;
+import java.math.BigDecimal;
+import java.util.Date;
+
+import org.hpin.common.core.orm.BaseEntity;
+
+
+/**
+ * @author machuan
+ * @date 2016年12月12日
+ * 报告寄送表
+ */
+public class ErpReportExpress extends BaseEntity implements Serializable{
+	
+	private String id;
+	private String eventsNo;	//场次号
+	private String code;		//条形码
+	private String name;		//客户姓名
+	private String expressCommany;//快递公司
+	private String expressNo;	//快递单号
+	private BigDecimal totalCost;   //快递总费用
+	private BigDecimal expressCost; //快递费用
+	private String expressWeight;//快递重量
+	private Date expressDate; //寄送时间
+	private String userName;    //操作人员
+	private String expressDelete;//状态 0正常，1删除
+	private String batchNo; 	//批次号
+	private String reportId;	//寄送批次ID
+	private Date createTime;	//创建时间
+	private Date updateTime;    //修改时间
+	public String getId() {
+		return id;
+	}
+	public void setId(String id) {
+		this.id = id;
+	}
+	public String getEventsNo() {
+		return eventsNo;
+	}
+	public void setEventsNo(String eventsNo) {
+		this.eventsNo = eventsNo;
+	}
+	public String getCode() {
+		return code;
+	}
+	public void setCode(String code) {
+		this.code = code;
+	}
+	public String getName() {
+		return name;
+	}
+	public void setName(String name) {
+		this.name = name;
+	}
+	public String getExpressNo() {
+		return expressNo;
+	}
+	public void setExpressNo(String expressNo) {
+		this.expressNo = expressNo;
+	}
+	public BigDecimal getTotalCost() {
+		return totalCost;
+	}
+	public void setTotalCost(BigDecimal totalCost) {
+		this.totalCost = totalCost;
+	}
+	public BigDecimal getExpressCost() {
+		return expressCost;
+	}
+	public void setExpressCost(BigDecimal expressCost) {
+		this.expressCost = expressCost;
+	}
+	public String getExpressWeight() {
+		return expressWeight;
+	}
+	public void setExpressWeight(String expressWeight) {
+		this.expressWeight = expressWeight;
+	}
+	public Date getExpressDate() {
+		return expressDate;
+	}
+	public void setExpressDate(Date expressDate) {
+		this.expressDate = expressDate;
+	}
+	public String getUserName() {
+		return userName;
+	}
+	public void setUserName(String userName) {
+		this.userName = userName;
+	}
+	public String getExpressDelete() {
+		return expressDelete;
+	}
+	public void setExpressDelete(String expressDelete) {
+		this.expressDelete = expressDelete;
+	}
+	public String getReportId() {
+		return reportId;
+	}
+	public void setReportId(String reportId) {
+		this.reportId = reportId;
+	}
+	public Date getCreateTime() {
+		return createTime;
+	}
+	public void setCreateTime(Date createTime) {
+		this.createTime = createTime;
+	}
+	public Date getUpdateTime() {
+		return updateTime;
+	}
+	public void setUpdateTime(Date updateTime) {
+		this.updateTime = updateTime;
+	}
+	public String getExpressCommany() {
+		return expressCommany;
+	}
+	public void setExpressCommany(String expressCommany) {
+		this.expressCommany = expressCommany;
+	}
+	public String getBatchNo() {
+		return batchNo;
+	}
+	public void setBatchNo(String batchNo) {
+		this.batchNo = batchNo;
+	}
+}

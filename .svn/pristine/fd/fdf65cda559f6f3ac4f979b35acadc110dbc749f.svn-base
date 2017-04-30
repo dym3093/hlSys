@@ -1,0 +1,525 @@
+/**
+ * @author DengYouming
+ * @since 2016-5-6 下午5:17:28
+ */
+package org.hpin.settlementManagement.entity;
+
+import java.io.Serializable;
+import java.math.BigDecimal;
+import java.util.Date;
+
+import org.hpin.common.core.orm.BaseEntity;
+
+/**
+ * 会员表(只用于保险公司结算任务): ERP_CUSTOMER_SETTLE_BX
+ * @author DengYouming
+ * @since 2016-5-6 下午5:17:28
+ */
+public class ErpCustomerSettleBX extends BaseEntity implements Serializable{
+
+	private static final long serialVersionUID = -8726327368342446664L;
+	
+	/** 1.	ID	VARCHAR2(100)	*/
+	private String id;
+	/** 2.	场次号	VARCHAR2(50)	*/
+	private String eventsNo;
+	/** 3.	条形码	VARCHAR2(50)	*/
+	private String code;
+	/** 4.	姓名	VARCHAR2(50)	*/
+	private String name;
+	/** 5.	电话号码	VARCHAR2(50)	*/
+	private String phone;
+	/** 6.	证件类型	VARCHAR2(50)	*/
+	private String documentType;
+	/** 7.	证件号	VARCHAR2(50)	*/
+	private String idno;
+	/** 8.	套餐名	VARCHAR2(50)	*/
+	private String combo;
+	/** 9.	套餐ID	VARCHAR2(100)	*/
+	private String comboId;
+	/** 10.	套餐价格	NUMBER(20,2)	*/	
+	private BigDecimal comboPrice;
+	/** 11.	性别	VARCHAR2(50)	*/
+	private String sex;
+	/** 12.	年龄	VARCHAR2(50)	*/
+	private String age;
+	/** 13.	支公司	VARCHAR2(100)	*/
+	private String company;
+	/** 14.	支公司ID 	VARCHAR2(100)	*/	
+	private String companyId;
+	/** 15.	所属公司	VARCHAR2(100)	*/
+	private String ownedCompany;
+	/** 16.	所属公司ID	VARCHAR2(100)	*/
+	private String ownedCompanyId;
+	/** 17.	销售人员	VARCHAR2(100)	*/	
+	private String salesMan;
+	/** 18.	销售人员ID	VARCHAR2(100)	*/
+	private String salesManId;
+	/** 20.	采样时间	DATE	*/	
+	private String sampleType;
+	private Date samplingDate;
+	/** 21.	家族病史	VARCHAR2(512)	*/
+	private String familyHistory;
+	/** 22.	省份	VARCHAR2(50)	*/	
+	private String provice;
+	/** 23.	省份ID	VARCHAR2(100)	*/
+	private String proviceId;
+	/** 24.	市	VARCHAR2(50)	*/
+	private String city;
+	/** 25.	市ID	VARCHAR2(100)	*/	
+	private String cityId;
+	/** 26.	是否匹配基因报告	VARCHAR2(50)	*/	
+	private String isMatchreport;
+	/** 27.	PDF文件路径	VARCHAR2(512)	*/
+	private String pdfFilepath;
+	/** 28.	创建时间	DATE	*/		
+	private Date createTime;
+	/** 29.	创建人ID	VARCHAR2(100)	*/	
+	private String createUserId;
+	/** 30.	创建人姓名	VARCHAR2(256)	*/	
+	private String createUser;
+	/** 31.	修改时间	DATE	*/		
+	private Date updateTime;
+	/** 32.	修改人ID	VARCHAR2(100)	*/
+	private String updateUserId;
+	/** 33.	修改人姓名	VARCHAR2(256)	*/
+	private String updateUser;
+	/** 34.	状态(结算流转状态[-1 : 删除， 0：未收款（即新增）, 1：待收款， 2：已收款， 3：变更收款 ])	VARCHAR2(36)	*/
+	private String status;
+	/** 35.	版本号	NUMBER	*/	
+	private Integer version;
+	/** 36.	备注	VARCHAR2(1000)	*/
+	private String remark;
+	/** 37. 结算任务ID VARCHAR2(1000) */
+	private String settleId;
+	/** 38. 远盟对接人 VARCHAR2(256) */
+	private String salesManYM;
+	/** 39. 远盟对接人ID VARCHAR2(100) */
+	private String salesManIdYM;
+	/** 40. EPR_CUSTOMER表中的对应会员ID VARCHAR2(32) */
+	private String customerId;
+	
+	/** 41. (套餐的)实际价格*/
+	private BigDecimal comboPriceActual;  //add 2016-08-29
+	/** 42. 检测机构  */
+	private String testInstitution; //add 2016-08-29
+	
+	private BigDecimal discount;
+
+	public BigDecimal getDiscount() {
+		return discount;
+	}
+
+	public void setDiscount(BigDecimal discount) {
+		this.discount = discount;
+	}
+
+	public static final String F_ID = "id";
+	public static final String F_EVENTSNO = "eventsNo";
+	public static final String F_CODE = "code";
+	public static final String F_NAME = "name";
+	public static final String F_PHONE = "phone";
+	public static final String F_DOCUMENTTYPE = "documentType";
+	public static final String F_IDNO = "idno";
+	public static final String F_COMBO = "combo";
+	public static final String F_COMBOID = "comboId";
+	public static final String F_COMBOPRICE = "comboPrice";
+	public static final String F_SEX = "sex";
+	public static final String F_AGE = "age";
+	public static final String F_COMPANY = "company";
+	public static final String F_COMPANYID = "companyId";
+	public static final String F_OWNEDCOMPANY = "ownedCompany";
+	public static final String F_OWNEDCOMPANYID = "ownedCompanyId";
+	public static final String F_SALESMAN = "salesMan";
+	public static final String F_SALESMANID = "salesManId";
+	public static final String F_SAMPLETYPE = "sampleType";
+	public static final String F_SAMPLINGDATE = "samplingDate";
+	public static final String F_FAMILYHISTORY = "familyHistory";
+	public static final String F_PROVICE = "provice";
+	public static final String F_PROVICEID = "proviceId";
+	public static final String F_CITY = "city";
+	public static final String F_CITYID = "cityId";
+	public static final String F_ISMATCHREPORT = "isMatchreport";
+	public static final String F_PDFFILEPATH = "pdfFilepath";
+	public static final String F_CREATETIME = "createTime";
+	public static final String F_CREATEUSERID = "createUserId";
+	public static final String F_CREATEUSER = "createUser";
+	public static final String F_UPDATETIME = "updateTime";
+	public static final String F_UPDATEUSERID = "updateUserId";
+	public static final String F_UPDATEUSER = "updateUser";
+	public static final String F_STATUS = "status";
+	public static final String F_VERSION = "version";
+	public static final String F_REMARK = "remark";
+	public static final String F_SETTLEID = "settleId";
+	public static final String F_SALESMANYM = "salesManYM";
+	public static final String F_SALESMANIDYM = "salesManIdYM";
+	public static final String F_CUSTOMERID = "customerId";
+	public static final String F_COMBOPRICEACTUAL = "comboPriceActual";
+	public static final String F_TESTINSTITUTION = "testInstitution";
+	
+	public ErpCustomerSettleBX() {
+		super();
+	}
+
+	public String getId() {
+		return id;
+	}
+
+	public void setId(String id) {
+		this.id = id;
+	}
+
+	public String getEventsNo() {
+		return eventsNo;
+	}
+
+	public void setEventsNo(String eventsNo) {
+		this.eventsNo = eventsNo;
+	}
+
+	public String getCode() {
+		return code;
+	}
+
+	public void setCode(String code) {
+		this.code = code;
+	}
+
+	public String getName() {
+		return name;
+	}
+
+	public void setName(String name) {
+		this.name = name;
+	}
+
+	public String getPhone() {
+		return phone;
+	}
+
+	public void setPhone(String phone) {
+		this.phone = phone;
+	}
+
+	public String getDocumentType() {
+		return documentType;
+	}
+
+	public void setDocumentType(String documentType) {
+		this.documentType = documentType;
+	}
+
+	public String getIdno() {
+		return idno;
+	}
+
+	public void setIdno(String idno) {
+		this.idno = idno;
+	}
+
+	public String getCombo() {
+		return combo;
+	}
+
+	public void setCombo(String combo) {
+		this.combo = combo;
+	}
+
+	public String getComboId() {
+		return comboId;
+	}
+
+	public void setComboId(String comboId) {
+		this.comboId = comboId;
+	}
+
+	public BigDecimal getComboPrice() {
+		return comboPrice;
+	}
+
+	public void setComboPrice(BigDecimal comboPrice) {
+		this.comboPrice = comboPrice;
+	}
+
+	public String getSex() {
+		return sex;
+	}
+
+	public void setSex(String sex) {
+		this.sex = sex;
+	}
+
+	public String getAge() {
+		return age;
+	}
+
+	public void setAge(String age) {
+		this.age = age;
+	}
+
+	public String getCompany() {
+		return company;
+	}
+
+	public void setCompany(String company) {
+		this.company = company;
+	}
+
+	public String getCompanyId() {
+		return companyId;
+	}
+
+	public void setCompanyId(String companyId) {
+		this.companyId = companyId;
+	}
+
+	public String getOwnedCompany() {
+		return ownedCompany;
+	}
+
+	public void setOwnedCompany(String ownedCompany) {
+		this.ownedCompany = ownedCompany;
+	}
+
+	public String getOwnedCompanyId() {
+		return ownedCompanyId;
+	}
+
+	public void setOwnedCompanyId(String ownedCompanyId) {
+		this.ownedCompanyId = ownedCompanyId;
+	}
+
+	public String getSalesMan() {
+		return salesMan;
+	}
+
+	public void setSalesMan(String salesMan) {
+		this.salesMan = salesMan;
+	}
+
+	public String getSalesManId() {
+		return salesManId;
+	}
+
+	public void setSalesManId(String salesManId) {
+		this.salesManId = salesManId;
+	}
+
+	public String getSampleType() {
+		return sampleType;
+	}
+
+	public void setSampleType(String sampleType) {
+		this.sampleType = sampleType;
+	}
+
+	public Date getSamplingDate() {
+		return samplingDate;
+	}
+
+	public void setSamplingDate(Date samplingDate) {
+		this.samplingDate = samplingDate;
+	}
+
+	public String getFamilyHistory() {
+		return familyHistory;
+	}
+
+	public void setFamilyHistory(String familyHistory) {
+		this.familyHistory = familyHistory;
+	}
+
+	public String getProvice() {
+		return provice;
+	}
+
+	public void setProvice(String provice) {
+		this.provice = provice;
+	}
+
+	public String getProviceId() {
+		return proviceId;
+	}
+
+	public void setProviceId(String proviceId) {
+		this.proviceId = proviceId;
+	}
+
+	public String getCity() {
+		return city;
+	}
+
+	public void setCity(String city) {
+		this.city = city;
+	}
+
+	public String getCityId() {
+		return cityId;
+	}
+
+	public void setCityId(String cityId) {
+		this.cityId = cityId;
+	}
+
+	public String getIsMatchreport() {
+		return isMatchreport;
+	}
+
+	public void setIsMatchreport(String isMatchreport) {
+		this.isMatchreport = isMatchreport;
+	}
+
+	public String getPdfFilepath() {
+		return pdfFilepath;
+	}
+
+	public void setPdfFilepath(String pdfFilepath) {
+		this.pdfFilepath = pdfFilepath;
+	}
+
+	public Date getCreateTime() {
+		return createTime;
+	}
+
+	public void setCreateTime(Date createTime) {
+		this.createTime = createTime;
+	}
+
+	public String getCreateUserId() {
+		return createUserId;
+	}
+
+	public void setCreateUserId(String createUserId) {
+		this.createUserId = createUserId;
+	}
+
+	public String getCreateUser() {
+		return createUser;
+	}
+
+	public void setCreateUser(String createUser) {
+		this.createUser = createUser;
+	}
+
+	public Date getUpdateTime() {
+		return updateTime;
+	}
+
+	public void setUpdateTime(Date updateTime) {
+		this.updateTime = updateTime;
+	}
+
+	public String getUpdateUserId() {
+		return updateUserId;
+	}
+
+	public void setUpdateUserId(String updateUserId) {
+		this.updateUserId = updateUserId;
+	}
+
+	public String getUpdateUser() {
+		return updateUser;
+	}
+
+	public void setUpdateUser(String updateUser) {
+		this.updateUser = updateUser;
+	}
+
+	public String getStatus() {
+		return status;
+	}
+
+	public void setStatus(String status) {
+		this.status = status;
+	}
+
+	public Integer getVersion() {
+		return version;
+	}
+
+	public void setVersion(Integer version) {
+		this.version = version;
+	}
+
+	public String getRemark() {
+		return remark;
+	}
+
+	public void setRemark(String remark) {
+		this.remark = remark;
+	}
+
+	public String getSettleId() {
+		return settleId;
+	}
+
+	public void setSettleId(String settleId) {
+		this.settleId = settleId;
+	}
+
+	public String getSalesManYM() {
+		return salesManYM;
+	}
+
+	public void setSalesManYM(String salesManYM) {
+		this.salesManYM = salesManYM;
+	}
+
+	public String getSalesManIdYM() {
+		return salesManIdYM;
+	}
+
+	public void setSalesManIdYM(String salesManIdYM) {
+		this.salesManIdYM = salesManIdYM;
+	}
+
+	public String getCustomerId() {
+		return customerId;
+	}
+
+	public void setCustomerId(String customerId) {
+		this.customerId = customerId;
+	}
+
+	public BigDecimal getComboPriceActual() {
+		return comboPriceActual;
+	}
+
+	public void setComboPriceActual(BigDecimal comboPriceActual) {
+		this.comboPriceActual = comboPriceActual;
+	}
+
+	public String getTestInstitution() {
+		return testInstitution;
+	}
+
+	public void setTestInstitution(String testInstitution) {
+		this.testInstitution = testInstitution;
+	}
+
+	@Override
+	public String toString() {
+		return "ErpCustomerSettleBX [id=" + id + ", eventsNo=" + eventsNo
+				+ ", code=" + code + ", name=" + name + ", phone=" + phone
+				+ ", documentType=" + documentType + ", idno=" + idno
+				+ ", combo=" + combo + ", comboId=" + comboId + ", comboPrice="
+				+ comboPrice + ", sex=" + sex + ", age=" + age + ", company="
+				+ company + ", companyId=" + companyId + ", ownedCompany="
+				+ ownedCompany + ", ownedCompanyId=" + ownedCompanyId
+				+ ", salesMan=" + salesMan + ", salesManId=" + salesManId
+				+ ", sampleType=" + sampleType + ", samplingDate="
+				+ samplingDate + ", familyHistory=" + familyHistory
+				+ ", provice=" + provice + ", proviceId=" + proviceId
+				+ ", city=" + city + ", cityId=" + cityId + ", isMatchreport="
+				+ isMatchreport + ", pdfFilepath=" + pdfFilepath
+				+ ", createTime=" + createTime + ", createUserId="
+				+ createUserId + ", createUser=" + createUser + ", updateTime="
+				+ updateTime + ", updateUserId=" + updateUserId
+				+ ", updateUser=" + updateUser + ", status=" + status
+				+ ", version=" + version + ", remark=" + remark + ", settleId="
+				+ settleId + ", salesManYM=" + salesManYM + ", salesManIdYM="
+				+ salesManIdYM + ", customerId=" + customerId
+				+ ", comboPriceActual=" + comboPriceActual + "]";
+	}
+	
+}

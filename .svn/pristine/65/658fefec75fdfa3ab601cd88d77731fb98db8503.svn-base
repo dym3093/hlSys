@@ -1,0 +1,233 @@
+package org.hpin.events.service;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.commons.lang.StringUtils;
+import org.hpin.base.customerrelationship.dao.CustomerRelationshipDao;
+import org.hpin.base.customerrelationship.entity.CustomerRelationShip;
+import org.hpin.common.core.orm.BaseService;
+import org.hpin.common.util.PropsUtils;
+import org.hpin.common.widget.pagination.Page;
+import org.hpin.events.dao.SampleExpressMgrDao;
+import org.hpin.events.entity.ErpCustomer;
+import org.hpin.events.entity.SampleExpCustomer;
+import org.hpin.events.entity.SampleExpressMgr;
+import org.hpin.events.entity.vo.SampleExpEventsVo;
+import org.hpin.events.entity.vo.SampleExpressMgrVo;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.BeanPropertyRowMapper;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+/**
+ * 样本快递费管理Service层
+ * @author ybc
+ * @since 2016/12/14
+ */
+@Service(value = "org.hpin.events.service.SampleExpressMgrService")
+@Transactional()
+public class SampleExpressMgrService extends BaseService  {
+	
+	@Autowired
+	private SampleExpressMgrDao sampleExpressMgrDao;
+	
+	@Autowired
+	private CustomerRelationshipDao csDao;
+	
+	@Autowired
+	private ErpCustomerService customerService;
+	
+	public void saveSampleExpCustomer(List<SampleExpCustomer> list) throws Exception{
+		for(SampleExpCustomer customer : list){
+			sampleExpressMgrDao.save(customer);
+		}
+	}
+	
+	@SuppressWarnings("rawtypes")
+	public void getSamExpCusByExpId(Page page,String expId) throws Exception{
+		String hql = "from SampleExpCustomer where sampleExpMgrId=? and isdeleted=0 order by createDate desc";
+		sampleExpressMgrDao.findByHql(page, hql, new String[]{expId});
+	}
+	
+	//获取样本快递费基本信息
+	public SampleExpressMgr getSamExpMgrById(String sampleExpMgrId) throws Exception{
+		StringBuffer hql = new StringBuffer("from SampleExpressMgr where id=? and isdeleted=0");
+		List<SampleExpressMgr> list = sampleExpressMgrDao.findByHql(hql, new String[]{sampleExpMgrId});
+		if(list.isEmpty()){
+			return null;
+		}
+		return list.get(0);
+	}
+	
+	//删除客户
+	public int delSamExpCus(String expCusid) throws Exception{
+		return sampleExpressMgrDao.delSamExpCus(expCusid);
+	}
+	
+	//查询此快递单号的客户数量
+	public int getCountExpHeadByMgrId(String sampleExpMgrId){
+		String sql = "select count(1) from ERP_SAMPLE_EXPRESS_CUSTOMER where SAMPLE_EXPRESS_ID= '"+ sampleExpMgrId +"' and ISDELETED=0";
+		return sampleExpressMgrDao.getJdbcTemplate().queryForInt(sql);
+	}
+	
+	//样本快递费管理页面查询
+	@SuppressWarnings("rawtypes")
+	public void findSampleExpMgrList(Page page, Map<String, String> params){
+		StringBuilder jdbcSql = this.sampleExpressMgrDao.findSamExpMgrSql();
+		
+		if(StringUtils.isNotEmpty(params.get("eventsBatchno"))) {
+			StringBuilder batchnoSts = new StringBuilder();
+			String batchnos[] = params.get("eventsBatchno").trim().split(",");
+			for(int i=0;i<batchnos.length;i++){
+				if(i==batchnos.length-1){
+					batchnoSts.append("'").append(batchnos[i]).append("'");
+				}else{
+					batchnoSts.append("'").append(batchnos[i]).append("',");
+				}
+			}
+			jdbcSql.append(" and event.batchno in (").append(batchnoSts.toString()).append(")");
+		}
+		
+		if(StringUtils.isNotEmpty(params.get("expressNum"))) {
+			jdbcSql.append(" and mgr.express_num = '").append(params.get("expressNum").trim()).append("'");
+		}
+		
+		if(StringUtils.isNotEmpty(params.get("expressCompanyId"))) {
+			jdbcSql.append(" and mgr.express_company_id = '").append(params.get("expressCompanyId").trim()).append("'");
+		}
+		
+		if(StringUtils.isNotEmpty(params.get("receiveSendDate_gest"))) {
+			jdbcSql.append(" and mgr.receive_send_date >= to_date('").append(params.get("receiveSendDate_gest").trim()).append("','yyyy-mm-dd')");
+		}
+		
+		if(StringUtils.isNotEmpty(params.get("receiveSendDate_leet"))) {
+			jdbcSql.append(" and mgr.receive_send_date <= to_date('").append(params.get("receiveSendDate_leet").trim()).append("','yyyy-mm-dd')");
+		}
+		
+		if(StringUtils.isNotEmpty(params.get("createDate_gest"))) {
+			jdbcSql.append(" and mgr.CREATE_DATE >= to_date('").append(params.get("createDate_gest").trim()).append("','yyyy-mm-dd')");
+		}
+		
+		if(StringUtils.isNotEmpty(params.get("createDate_leet"))) {
+			jdbcSql.append(" and mgr.CREATE_DATE <= to_date('").append(params.get("createDate_leet").trim()).append("','yyyy-mm-dd')");
+		}
+		
+		if(StringUtils.isNotEmpty(params.get("receiveSendType"))) {
+			jdbcSql.append(" and mgr.receive_send_type = '").append(params.get("receiveSendType").trim()).append("'");
+		}
+		
+		if(StringUtils.isNotEmpty(params.get("isbill"))) {
+			jdbcSql.append(" and mgr.isbill = '").append(params.get("isbill").trim()).append("'");
+		}
+		
+		if(StringUtils.isNotEmpty(params.get("expressContent"))) {
+			jdbcSql.append(" and mgr.express_content = '").append(params.get("expressContent").trim()).append("'");
+		}
+		jdbcSql.append(" order by mgr.CREATE_DATE desc");
+		//参数
+		List<Object> objs = new ArrayList<Object>();
+		
+		//count
+		long count = this.sampleExpressMgrDao.findJdbcCount(jdbcSql, objs);
+		page.setTotalCount(count);
+		
+		//list
+		objs.add(page.getPageNumEndCount());
+		objs.add(page.getPageNumStartCount());
+		
+		BeanPropertyRowMapper<SampleExpressMgrVo> rowMapper = new BeanPropertyRowMapper<SampleExpressMgrVo>(SampleExpressMgrVo.class);
+		List<?> lists = this.sampleExpressMgrDao.findJdbcList(jdbcSql, objs, rowMapper);
+		
+		page.setResults(lists);
+	}
+	
+	//查询场次信息
+	@SuppressWarnings("rawtypes")
+	public void findEveList(Page page, Map<String, String> requestParams) {
+		StringBuilder jdbcSql = this.sampleExpressMgrDao.findEventSql();
+		if(StringUtils.isNotEmpty(requestParams.get("eventsBatchno"))) {
+			jdbcSql.append(" and eve.batchno like '%").append(requestParams.get("eventsBatchno").trim()).append("%'");
+		}
+		
+		if(StringUtils.isNotEmpty(requestParams.get("samplingDateGest"))) {
+			jdbcSql.append(" and mer.create_time >= to_date('").append(requestParams.get("samplingDateGest").trim()).append(" 00:00:00','yyyy-mm-dd hh24:mi:ss')");
+		}
+		
+		if(StringUtils.isNotEmpty(requestParams.get("samplingDateLeet"))) {
+			jdbcSql.append(" and mer.create_time <= to_date('").append(requestParams.get("samplingDateLeet").trim()).append(" 23:59:59','yyyy-mm-dd hh24:mi:ss')");
+		}
+		
+		if(StringUtils.isNotEmpty(requestParams.get("eventsBatchno"))){
+			jdbcSql.append("order by eve.batchno asc");
+		}else{
+			jdbcSql.append("order by eve.event_date desc");
+		}
+		//参数
+		List<Object> objs = new ArrayList<Object>();
+		//count
+		long count = this.sampleExpressMgrDao.findJdbcCount(jdbcSql, objs);
+		page.setTotalCount(count);
+				
+		//list
+		objs.add(page.getPageNumEndCount());
+		objs.add(page.getPageNumStartCount());
+		
+		BeanPropertyRowMapper<SampleExpEventsVo> rowMapper = new BeanPropertyRowMapper<SampleExpEventsVo>(SampleExpEventsVo.class);
+		List<?> lists = this.sampleExpressMgrDao.findJdbcList(jdbcSql, objs, rowMapper);
+		page.setResults(lists);
+	}
+	
+	//根据支公司对象
+	public CustomerRelationShip getBranchCompanyObjById(String id) throws Exception{
+		return csDao.findShipByCompanyId(id);
+	}
+	
+	/**
+	 * 更新客户状态为已送检
+	 * @param sampleExpMgrId
+	 * @throws Exception 
+	 */
+	public void updateYmStatus(String sampleExpMgrId) throws Exception {
+		SampleExpressMgr samExpMgr = this.getSamExpMgrById(sampleExpMgrId);
+		
+		//收寄类型1：收样
+		if(1==samExpMgr.getReceiveSendType()){
+			List<SampleExpCustomer> samExpCusList = sampleExpressMgrDao.getSamExpCustomerByExpId(sampleExpMgrId);
+			if(!samExpCusList.isEmpty()){
+				for(SampleExpCustomer expCus : samExpCusList){
+					ErpCustomer customer = customerService.findCusById(expCus.getCustomerId());
+					if(null!=customer){
+						int ymStatus = customer.getStatusYm()==null?0:customer.getStatusYm();
+						if(ymStatus<200){
+							customerService.updateStatusYmById(PropsUtils.getInt("status","statusYm.yhq"),customer.getId());
+						}
+					}
+				}
+			}
+		}
+		//收寄类型2：寄样
+		if(2==samExpMgr.getReceiveSendType()){
+			List<SampleExpCustomer> samExpCusList = sampleExpressMgrDao.getSamExpCustomerByExpId(sampleExpMgrId);
+			if(!samExpCusList.isEmpty()){
+				for(SampleExpCustomer expCus : samExpCusList){
+					ErpCustomer customer = customerService.findCusById(expCus.getCustomerId());
+					if(null!=customer){
+						int ymStatus = customer.getStatusYm()==null?0:customer.getStatusYm();
+						if(ymStatus<300){
+							customerService.updateStatusYmById(PropsUtils.getInt("status","statusYm.ysj"),customer.getId());
+						}
+					}
+				}
+			}
+		}
+		
+	}
+	
+	//获取此样本快递费ID下的客户信息
+	public List<SampleExpCustomer> getSamExpCusByExpId(String sampleExpMgrId) throws Exception {
+		List<SampleExpCustomer> samExpCusList = sampleExpressMgrDao.getSamExpCustomerByExpId(sampleExpMgrId);
+		return samExpCusList;
+	}
+}

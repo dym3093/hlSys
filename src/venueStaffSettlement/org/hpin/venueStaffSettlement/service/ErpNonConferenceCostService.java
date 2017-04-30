@@ -1,0 +1,180 @@
+package org.hpin.venueStaffSettlement.service;
+
+import java.math.BigDecimal;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.List;
+import java.util.UUID;
+
+import net.sf.json.JSONArray;
+import net.sf.json.JSONObject;
+
+import org.apache.log4j.Logger;
+import org.hpin.base.customerrelationship.entity.ProjectType;
+import org.hpin.base.usermanager.entity.User;
+import org.hpin.common.core.orm.BaseService;
+import org.hpin.common.util.HttpTool;
+import org.hpin.venueStaffSettlement.dao.ErpNonConferenceCostDao;
+import org.hpin.venueStaffSettlement.dao.ErpNonConferenceCostDetailDao;
+import org.hpin.venueStaffSettlement.dao.ErpNonConferenceDao;
+import org.hpin.venueStaffSettlement.entity.ErpNonConference;
+import org.hpin.venueStaffSettlement.entity.ErpNonConferenceCost;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+
+/**
+ * @author Carly
+ * @since 2017年1月22日12:07:26
+ * 非会场费用管理
+ */
+@Service(value = "org.hpin.venueStaffSettlement.service.ErpNonConferenceCostService")
+@Transactional()
+public class ErpNonConferenceCostService extends BaseService {
+	@Autowired
+	ErpNonConferenceDao dao;
+	@Autowired
+	ErpNonConferenceCostDao costDao;
+	@Autowired
+	ErpNonConferenceCostDetailDao costDetailDao;
+	Logger logger = Logger.getLogger(ErpNonConferenceCostService.class);
+	
+	public String saveConferenceCostInfo(JSONArray jsonArray,JSONArray projectInfo,String id) throws Exception{
+		User user = (User)HttpTool.getSession().getAttribute("currentUser");
+		BigDecimal zeroDecimal = new BigDecimal(0);
+		BigDecimal totalDecimal = new BigDecimal(0);
+		String nonConferenceId = UUID.randomUUID().toString().replace("-", "");
+		BigDecimal travelBigDecimal = null;
+		BigDecimal amountDecimal = null;
+		String costId = "";
+		for (int i = 0; i < jsonArray.size(); i++) {//保存费用
+			JSONObject json = jsonArray.getJSONObject(i);
+			String staff = json.getString("staff");
+			costId = json.getString("costId");	
+			travelBigDecimal = new BigDecimal(json.getString("travelCost"));
+			amountDecimal = new BigDecimal(json.getString("amount"));
+			if(costId.equals("0")){
+				ErpNonConferenceCost cost = new ErpNonConferenceCost();
+				Date date = new Date();
+				cost.setId(UUID.randomUUID().toString().replace("-", ""));
+				cost.setNonConferenceId(nonConferenceId);
+				if(!id.equals("")){
+					cost.setNonConferenceId(id);
+				}
+				cost.setName(staff);
+				cost.setTravelCost(travelBigDecimal);
+				cost.setProvinceCost(zeroDecimal);
+				cost.setCityCost(zeroDecimal);
+				cost.setHotelCost(zeroDecimal);
+				cost.setLaborCost(zeroDecimal);
+				cost.setOtherCost(zeroDecimal);
+				cost.setCreateTime(date);
+				cost.setAmount(travelBigDecimal);
+				totalDecimal=totalDecimal.add(travelBigDecimal);
+				costDao.save(cost);
+			}else{
+				totalDecimal=totalDecimal.add(amountDecimal);
+				costDao.updateNonConferenceCostInfo(costId, staff, travelBigDecimal, amountDecimal);
+			}
+		}
+		
+		if(id.equals("")){
+			for(int i = 0; i < projectInfo.size(); i++){//保存非会议
+				JSONObject json = projectInfo.getJSONObject(i);
+				String projectCode = json.getString("projectCode");
+				String projectName = json.getString("projectName");
+				String projectUser = json.getString("projectUser");
+				String projectType = json.getString("projectType");
+				Date startTime = new SimpleDateFormat("yyyy-MM-dd").parse(json.getString("startTime"));
+				Date endTime = new SimpleDateFormat("yyyy-MM-dd").parse(json.getString("endTime"));
+				String month = json.getString("month");
+				String OASerial = json.getString("OASerial");
+				String note = json.getString("note");
+				StringBuilder monthDate = new StringBuilder(month);
+				monthDate.insert(4, "-").insert(7, "-01");//默认为月份日期为第一天
+				Date monthTime = new SimpleDateFormat("yyyy-MM-dd").parse(monthDate.toString()); 
+//				ProjectType type = dao.getProjectInfo(projectType);
+				
+				ErpNonConference nonConference = new ErpNonConference();
+				nonConference.setId(nonConferenceId);
+				nonConference.setProjectCode(projectCode);
+				nonConference.setProjectName(projectName);
+				nonConference.setProjectUser(projectUser);
+				nonConference.setProjectType(projectType);	//改为保存id, @since 2017年4月19日09:47:43
+				nonConference.setStartTime(startTime);
+				nonConference.setEndTime(endTime);
+				nonConference.setMonth(month);
+				nonConference.setMonthTime(monthTime);
+				nonConference.setFees(totalDecimal);
+				nonConference.setOASerial(OASerial);
+				nonConference.setNote(note);
+				nonConference.setCreateTime(new Date());
+				nonConference.setCreateUser(user.getUserName());
+				nonConference.setIsDeleted(0);
+				dao.save(nonConference);
+			}
+			return nonConferenceId;
+		}else{
+			ErpNonConference nonConference = (ErpNonConference) dao.findById(ErpNonConference.class, id);
+			
+			for(int i = 0; i < projectInfo.size(); i++){//保存非会议
+				JSONObject json = projectInfo.getJSONObject(i);
+				String projectCode = json.getString("projectCode");
+				String projectName = json.getString("projectName");
+				String projectUser = json.getString("projectUser");
+				String projectType = json.getString("projectType");
+				Date startTime = new SimpleDateFormat("yyyy-MM-dd").parse(json.getString("startTime"));
+				Date endTime = new SimpleDateFormat("yyyy-MM-dd").parse(json.getString("endTime"));
+				String month = json.getString("month");
+				String note = json.getString("note");
+				String OASerial = json.getString("OASerial");
+				StringBuilder monthDate = new StringBuilder(month);
+				monthDate.insert(4, "-").insert(7, "-01");//默认为月份日期为第一天
+				Date monthTime = new SimpleDateFormat("yyyy-MM-dd").parse(monthDate.toString()); 
+//				ProjectType type = dao.getProjectInfo(projectType);
+				
+				nonConference.setProjectCode(projectCode);
+				nonConference.setProjectName(projectName);
+				nonConference.setProjectUser(projectUser);
+				nonConference.setProjectType(projectType);
+				nonConference.setStartTime(startTime);
+				nonConference.setEndTime(endTime);
+				nonConference.setMonth(month);
+				nonConference.setMonthTime(monthTime);
+				nonConference.setNote(note);
+				nonConference.setOASerial(OASerial);
+				nonConference.setUpdateTime(new Date());
+				nonConference.setUpdateUser(user.getUserName());
+			}
+			nonConference.setFees(totalDecimal);
+			
+			dao.update(nonConference);
+			return id;
+		}
+	}
+
+	/**
+	 * @param nonConferenceId
+	 * @return 获取费用信息
+	 */
+	public List<ErpNonConferenceCost> getNonConferenceCost(String nonConferenceId) {
+		
+		return costDao.getNonConferenceCost(nonConferenceId);
+	}
+
+	/**
+	 * @param costId
+	 * @param nonConferenceId
+	 * @return 删除费用
+	 */
+	public void removeCostRow(String costId, String nonConferenceId) throws Exception{
+		ErpNonConferenceCost nonConferenceCost = (ErpNonConferenceCost) costDao.findById(ErpNonConferenceCost.class, costId);
+		ErpNonConference nonConference = (ErpNonConference)dao.findById(ErpNonConference.class, nonConferenceId);
+		nonConference.setFees(nonConference.getFees().subtract(nonConferenceCost.getAmount()));
+		costDao.delete(ErpNonConferenceCost.class, costId);
+		costDetailDao.deleteCostDetails(costId);
+		dao.update(nonConference);
+	}
+	
+}

@@ -1,0 +1,351 @@
+package org.hpin.venueStaffSettlement.web;
+
+import java.io.UnsupportedEncodingException;
+import java.math.BigDecimal;
+import java.net.URLDecoder;
+import java.text.ParseException;
+import java.util.List;
+
+import javax.servlet.http.HttpServletRequest;
+
+import net.sf.json.JSONArray;
+import net.sf.json.JSONObject;
+
+import org.apache.commons.lang.StringUtils;
+import org.apache.log4j.Logger;
+import org.apache.struts2.ServletActionContext;
+import org.apache.struts2.convention.annotation.Action;
+import org.apache.struts2.convention.annotation.Namespace;
+import org.apache.struts2.convention.annotation.Result;
+import org.apache.struts2.convention.annotation.Results;
+import org.hpin.base.customerrelationship.entity.ProjectType;
+import org.hpin.base.customerrelationship.service.CustomerRelationShipService;
+import org.hpin.common.core.SpringTool;
+import org.hpin.common.core.web.BaseAction;
+import org.hpin.common.util.HttpTool;
+import org.hpin.common.widget.pagination.Page;
+import org.hpin.venueStaffSettlement.entity.ErpNonConference;
+import org.hpin.venueStaffSettlement.entity.ErpNonConferenceCost;
+import org.hpin.venueStaffSettlement.entity.ErpNonConferenceCostDetail;
+import org.hpin.venueStaffSettlement.service.ErpNonConferenceCostDetailService;
+import org.hpin.venueStaffSettlement.service.ErpNonConferenceCostService;
+import org.hpin.venueStaffSettlement.service.ErpNonConferenceService;
+import org.springframework.beans.factory.annotation.Value;
+
+/**
+ * @author Carly
+ * @since 2017年1月22日10:46:22
+ * 非会场费用管理
+ */
+@Namespace("/venueStaffSett")
+@Action("nonConference")
+@Results({
+    @Result(name="listNonConference",location="/WEB-INF/venueStaffSettlement/nonConferenceCostMan/listNonConference.jsp"),
+    @Result(name="addNonConference",location="/WEB-INF/venueStaffSettlement/nonConferenceCostMan/addNonConference.jsp"),
+    @Result(name="addNonConferenceCostDetail",location="/WEB-INF/venueStaffSettlement/nonConferenceCostMan/addNonConferenceCostDetail.jsp"),
+    @Result(name="showNonConferenceCost",location="/WEB-INF/venueStaffSettlement/nonConferenceCostMan/showNonConferenceCost.jsp"),
+    @Result(name="showNonConferenceCostDetail",location="/WEB-INF/venueStaffSettlement/nonConferenceCostMan/showNonConferenceCostDetail.jsp"),
+})
+
+@SuppressWarnings("unchecked")
+public class ErpNonConferenceAction extends BaseAction {
+	private Logger logger = Logger.getLogger(ErpNonConferenceAction.class);
+	
+	ErpNonConferenceService nonConferenceService = (ErpNonConferenceService)SpringTool.getBean(ErpNonConferenceService.class);
+	ErpNonConferenceCostService nonConferenceCostService = (ErpNonConferenceCostService)SpringTool.getBean(ErpNonConferenceCostService.class);
+	ErpNonConferenceCostDetailService nonConferenceCostDetailService = (ErpNonConferenceCostDetailService)SpringTool.getBean(ErpNonConferenceCostDetailService.class);
+	CustomerRelationShipService customerRelationShipService=(CustomerRelationShipService)SpringTool.getBean(CustomerRelationShipService.class);
+	
+	private ErpNonConference nonConference;
+	@Value("${conference.excel.file.local.path}")
+	private String excelPath;
+	@Value("${conference.excel.file.context}")
+	private String excelContextPath;
+	
+	/**
+	 * @return 非会场费用页面
+	 */
+	public String listNonConference(){
+		
+		try {
+			List<ProjectType> proTypes = customerRelationShipService.findProjectTypes();
+			HttpTool.setAttribute("proTypes", proTypes);//项目类型
+			HttpTool.setAttribute("listNavTabId",HttpTool.getParameter("listNavTabId"));
+			page= new Page<ErpNonConference>(HttpTool.getPageNum(),HttpTool.getPageSize());
+			nonConferenceService.getNonConferenceList(page, nonConference);
+			
+		} catch (ParseException e) {
+			logger.error("非会场费用查询出错(listNonConference)---"+e);
+		}
+		
+		return "listNonConference";
+	}
+	
+	/**
+	 * @author Carly
+	 * @since 2017-3-29 10:59:39
+	 * @return 修改非会场费用
+	 */
+	public String updateNonConference() {
+		List<ProjectType> projectTypeList = customerRelationShipService.findProjectTypes();
+		String listNavTabId = HttpTool.getParameter("listNavTabId");
+		HttpTool.setAttribute("projectTypeList", projectTypeList);//项目类型
+		HttpTool.setAttribute("listNavTabId", listNavTabId);
+		String nonConferenceId = HttpTool.getParameter("nonConferenceId");
+		
+		ErpNonConference nonConference = (ErpNonConference) nonConferenceService.findById(nonConferenceId);
+		List<ErpNonConferenceCost> nonConferenceCostList = nonConferenceCostService.getNonConferenceCost(nonConferenceId); 
+		HttpTool.setAttribute("nonConference", nonConference);
+		HttpTool.setAttribute("nonConferenceCostList", nonConferenceCostList);
+		HttpTool.setAttribute("pageStatus", 1);
+		return "addNonConference";
+	}
+	
+	/**
+	 * 删除会议(逻辑删除)
+	 * @since 2017年1月22日13:44:19
+	 * @author Carly
+	 */
+	public void deleteNonConference(){
+		String id = HttpTool.getParameter("nonConferenceId");
+		JSONObject jsonObject = new JSONObject();
+		try {
+			boolean flag = nonConferenceService.deleteNonConference(id);
+			jsonObject.put("count", 1);
+			if(!flag){
+				jsonObject.put("count", 0);
+			}
+			
+		} catch (Exception e) {
+			logger.error("(删除会议失败)deleteNonConference---"+e);
+		}
+		renderJson(jsonObject);
+	}
+	
+	/**
+	 * @return 添加费用页面
+	 * @since 2017年1月22日16:58:52
+	 * @author Carly
+	 */
+	public String addNonConference(){
+		List<ProjectType> projectTypeList = customerRelationShipService.findProjectTypes();
+		HttpTool.setAttribute("projectTypeList", projectTypeList);//项目类型
+		String nonConferenceId = HttpTool.getParameter("nonConferenceId");
+		HttpTool.setAttribute("pageStatus", 0);
+		
+		if(StringUtils.isNotEmpty(nonConferenceId)){
+			ErpNonConference nonConference = (ErpNonConference) nonConferenceService.findById(nonConferenceId);
+			List<ErpNonConferenceCost> nonConferenceCostList = nonConferenceCostService.getNonConferenceCost(nonConferenceId); 
+			HttpTool.setAttribute("nonConference", nonConference);
+			HttpTool.setAttribute("nonConferenceCostList", nonConferenceCostList);
+		}
+		return "addNonConference";
+	}
+	
+	/**
+	 *  添加人员费用
+	 *  @since 2017年1月22日16:58:52
+	 *  @author Carly
+	 */
+	public void saveConferenceCostInfo(){
+		JSONObject jsonObject = new JSONObject();
+		JSONArray jsonArray = JSONArray.fromObject(HttpTool.getParameter("dataJson"));
+		JSONArray projectInfo = JSONArray.fromObject(HttpTool.getParameter("projectInfo"));
+		String id = HttpTool.getParameter("nonConferenceId","");
+		try {
+			String nonConferenceId = nonConferenceCostService.saveConferenceCostInfo(jsonArray,projectInfo,id);
+			jsonObject.put("count", 1);
+			jsonObject.put("nonConferenceId",nonConferenceId);
+		} catch (Exception e) {
+			jsonObject.put("count", 0);
+			logger.error("ConferenceCostManageAction saveConferenceCostInfo",e);
+		}
+		renderJson(jsonObject);
+	}
+	
+	/**
+	 * @return 添加详细费用的页面
+	 */
+	public String addNonConferenceCostDetail(){
+		String costId = HttpTool.getParameter("costId");
+		String belong = HttpTool.getParameter("belong");
+		String pageStatus = HttpTool.getParameter("pageStatus");
+		List<ErpNonConferenceCostDetail> costDetailList = nonConferenceCostDetailService.getCostDetailList(costId,belong);
+		try {
+			String name = URLDecoder.decode(HttpTool.getParameter("name"),"UTF-8");
+			String travelCost = HttpTool.getParameter("travelCost");
+			String projectInfo = URLDecoder.decode(HttpTool.getParameter("projectInfo"),"UTF-8");
+			String nonConferenceId = HttpTool.getParameter("nonConferenceId");
+			String amount = HttpTool.getParameter("amount");
+			String clickCost = HttpTool.getParameter("cost");
+			HttpTool.setAttribute("costDetail", costDetailList);
+			HttpTool.setAttribute("costId", costId);
+			HttpTool.setAttribute("name", name);
+			HttpTool.setAttribute("belong", belong);
+			HttpTool.setAttribute("travelCost", travelCost);
+			HttpTool.setAttribute("projectInfo", projectInfo);
+			HttpTool.setAttribute("nonConferenceId", nonConferenceId);
+			HttpTool.setAttribute("amount", amount);
+			HttpTool.setAttribute("clickCost", clickCost);
+			HttpTool.setAttribute("pageStatus", pageStatus);
+//			HttpTool.setAttribute("costInfo", URLDecoder.decode(HttpTool.getParameter("costInfo"),"UTF-8"));
+			
+		} catch (UnsupportedEncodingException e) {
+			logger.error("addNonConferenceCostDetail---"+e);
+		}
+		return "addNonConferenceCostDetail";
+	}
+	
+	public void saveConferenceCostDetailInfo(){
+		JSONObject jsonObject = new JSONObject();
+		String dataJson = HttpTool.getParameter("dataJson");
+		String costId = HttpTool.getParameter("costId");
+		String belong = HttpTool.getParameter("belong");
+		String name = HttpTool.getParameter("name");
+		String nonConferenceId = HttpTool.getParameter("nonConferenceId");
+		String projectInfo = HttpTool.getParameter("projectInfo");
+		BigDecimal costDecimal = new BigDecimal(HttpTool.getParameter("cost"));
+		BigDecimal travelDecimal= new BigDecimal(HttpTool.getParameter("travelCost"));
+		BigDecimal amount= new BigDecimal(HttpTool.getParameter("amount"));
+//		String costInfo = HttpTool.getParameter("costInfo");
+		try {
+			String id = nonConferenceCostDetailService.saveConferenceCostDetailInfo(
+					dataJson,projectInfo,nonConferenceId,costId,name,belong,travelDecimal,amount,costDecimal);
+			jsonObject.put("count", 1);
+			jsonObject.put("nonConferenceId", id);
+			
+		} catch (Exception e) {
+			jsonObject.put("count", 0);
+			logger.error("saveConferenceCostDetailInfo---"+e);
+		}
+		renderJson(jsonObject);
+	}
+	
+	/**
+	 * @since 2017年1月24日13:12:02
+	 * @author chenqi
+	 * 删除费用信息
+	 */
+	public void removeCostRow(){
+		JSONObject jsonObject = new JSONObject();
+		String costId = HttpTool.getParameter("costId");
+		String nonConferenceId = HttpTool.getParameter("nonConferenceId");
+		try {
+			nonConferenceCostService.removeCostRow(costId,nonConferenceId);
+			jsonObject.put("count", 1);
+			
+		} catch (Exception e) {
+			jsonObject.put("count", 0);
+			logger.error("removeCostRow"+e);
+		}
+		renderJson(jsonObject);
+	}
+	
+	/**
+	 * @since 2017年1月24日13:12:26
+	 * @author chenqi
+	 * @删除详细费用信息
+	 */
+	public void removeCostDetail(){
+		JSONObject jsonObject = new JSONObject();
+		String costId = HttpTool.getParameter("costId");
+		String belong = HttpTool.getParameter("belong");
+		String nonConferenceId = HttpTool.getParameter("nonConferenceId");
+		String costDetailId = HttpTool.getParameter("costDetailId");
+		try {
+			nonConferenceCostDetailService.removeCostDetail(costDetailId,belong,costId,nonConferenceId);
+			ErpNonConferenceCost nonConferenceCost = (ErpNonConferenceCost) nonConferenceCostService.findById(costId);
+			jsonObject.put("count", 1);
+			jsonObject.put("nonConferenceId", nonConferenceId);
+			jsonObject.put("amount", nonConferenceCost.getAmount());
+			
+		} catch (Exception e) {
+			jsonObject.put("count", 0);
+			logger.error("removeCostRow"+e);
+		}
+		renderJson(jsonObject);
+	}
+	
+	/**
+	 * @return 展示费用
+	 */
+	public String showNonConferenceCost(){
+		List<ProjectType> projectTypeList = customerRelationShipService.findProjectTypes();
+		HttpTool.setAttribute("projectTypeList", projectTypeList);//项目类型
+		String nonConferenceId = HttpTool.getParameter("nonConferenceId");
+		if(StringUtils.isNotEmpty(nonConferenceId)){
+			ErpNonConference nonConference = (ErpNonConference) nonConferenceService.findById(nonConferenceId);
+			List<ErpNonConferenceCost> nonConferenceCostList = nonConferenceCostService.getNonConferenceCost(nonConferenceId); 
+			HttpTool.setAttribute("nonConference", nonConference);
+			HttpTool.setAttribute("nonConferenceCostList", nonConferenceCostList);
+		}
+		return "showNonConferenceCost";
+	}
+	
+	/**
+	 * @return 展示费用明细
+	 */
+	public String showNonConferenceCostDetail(){
+		String costId = HttpTool.getParameter("costId");
+		String belong = HttpTool.getParameter("belong");
+		List<ErpNonConferenceCostDetail> costDetailList = nonConferenceCostDetailService.getCostDetailList(costId,belong);
+		HttpTool.setAttribute("costDetail", costDetailList);
+		HttpTool.setAttribute("costId", costId);
+		HttpTool.setAttribute("name", HttpTool.getParameter("name"));
+		HttpTool.setAttribute("belong", belong);
+		HttpTool.setAttribute("travelCost", HttpTool.getParameter("travelCost"));
+		HttpTool.setAttribute("projectInfo", HttpTool.getParameter("projectInfo"));
+		HttpTool.setAttribute("nonConferenceId", HttpTool.getParameter("nonConferenceId"));
+		HttpTool.setAttribute("amount", HttpTool.getParameter("amount"));
+		
+		return "showNonConferenceCostDetail";
+	}
+	
+	/**
+	 * @author Carly
+	 * @since 2017年4月7日20:44:19
+	 * 导出非会场费用
+	 */
+	public void exportNonConferenceCost() {
+		JSONObject json = new JSONObject();
+		String jsonData = HttpTool.getParameter("jsonData");
+		HttpServletRequest request = ServletActionContext.getRequest();
+		try {
+			JSONArray array = JSONArray.fromObject(jsonData);
+			String projectCode = array.getJSONObject(0).getString("projectCode");
+			String projectUser = array.getJSONObject(0).getString("projectUser");
+			String projectType = array.getJSONObject(0).getString("projectType");
+			String month = array.getJSONObject(0).getString("month");
+			String OASerial = array.getJSONObject(0).getString("OASerial");
+			
+			ErpNonConference nonConference = new ErpNonConference();
+			nonConference.setProjectCode(projectCode);
+			nonConference.setProjectUser(projectUser);
+			nonConference.setProjectType(projectType);
+			nonConference.setMonth(month);
+			nonConference.setOASerial(OASerial);
+			
+			String excelDownloadPath = nonConferenceService.exportNonConferenceCost(excelPath, nonConference);
+			StringBuffer url = request.getRequestURL();
+			String contextUrl = url.delete(url.length()-request.getRequestURI().length(), url.length()).toString();
+			String downloadPath = contextUrl + excelDownloadPath.substring(excelDownloadPath.indexOf(excelContextPath),
+					excelDownloadPath.length());
+			json.put("excelPath", downloadPath);
+			
+		} catch (Exception e) {
+			logger.error("exportNonConferenceCost", e);
+			
+		} finally {
+			renderJson(json);
+		}
+	}
+	
+	public ErpNonConference getNonConference() {
+		return nonConference;
+	}
+
+	public void setNonConference(ErpNonConference nonConference) {
+		this.nonConference = nonConference;
+	}
+	
+}

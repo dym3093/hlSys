@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping>
+    <class name="org.hpin.warehouse.entity.ErpProComboProduct" table="ERP_PROCOMBO_PRODUCT">
+        <id name="id" type="java.lang.String">
+			<column name="ID" />
+			<generator class="uuid" />
+		</id>
+        
+        <property name="proComboId" type="java.lang.String">
+            <column name="PRODUCTCOMBO_ID"/>
+        </property>
+        <property name="productId" type="java.lang.String">
+            <column name="PRODUCT_ID"/>
+        </property>
+      
+    </class>
+</hibernate-mapping>

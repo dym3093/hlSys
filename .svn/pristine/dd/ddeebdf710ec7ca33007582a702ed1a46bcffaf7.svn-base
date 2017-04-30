@@ -1,0 +1,50 @@
+log4j.rootLogger=info, stdout , homelink
+log4j.appender.homelink=org.apache.log4j.DailyRollingFileAppender
+log4j.appender.homelink.File=${catalina.home}/logs/ymjy.log
+log4j.appender.homelink.layout=org.apache.log4j.PatternLayout
+log4j.appender.homelink.layout.ConversionPattern = %-d{yyyy-MM-dd HH:mm:ss} [ %t:%r ] - [ %p ] %m%n
+log4j.appender.stdout=org.apache.log4j.ConsoleAppender
+log4j.appender.stdout.Target=System.out
+log4j.appender.stdout.layout=org.apache.log4j.PatternLayout
+log4j.appender.stdout.layout.ConversionPattern=%d{ABSOLUTE} %5p %c{1}\:%L - %m%n
+log4j.logger.com.opensymphony.xwork2 =ERRdOR
+log4j.logger.org.springframework.jdbc.core.JdbcTemplate=debug
+#log4j.logger.org.hibernate.cache=debug
+
+log4j.logger.savePushInfoTPWC=info, stdout , savePushInfoTPWC
+log4j.appender.savePushInfoTPWC=org.apache.log4j.DailyRollingFileAppender
+log4j.appender.savePushInfoTPWC.File=${catalina.home}/logs/savePushInfoTPWC.log
+log4j.appender.savePushInfoTPWC.layout=org.apache.log4j.PatternLayout
+log4j.appender.savePushInfoTPWC.layout.ConversionPattern=%d{ABSOLUTE} %5p %c{1}\:%L - %m%n
+
+log4j.logger.pushStatusToTPWC=info, stdout , pushStatusToTPWC
+log4j.appender.pushStatusToTPWC=org.apache.log4j.DailyRollingFileAppender
+log4j.appender.pushStatusToTPWC.File=${catalina.home}/logs/pushStatusToTPWC.log
+log4j.appender.pushStatusToTPWC.layout=org.apache.log4j.PatternLayout
+log4j.appender.pushStatusToTPWC.layout.ConversionPattern=%d{ABSOLUTE} %5p %c{1}\:%L - %m%n
+
+log4j.logger.pushCustomerStatus=info, stdout , pushCustomerStatus
+log4j.appender.pushCustomerStatus=org.apache.log4j.DailyRollingFileAppender
+log4j.appender.pushCustomerStatus.File=${catalina.home}/logs/pushCustomerStatus.log
+log4j.appender.pushCustomerStatus.layout=org.apache.log4j.PatternLayout
+log4j.appender.pushCustomerStatus.layout.ConversionPattern=%d{ABSOLUTE} %5p %c{1}\:%L - %m%n
+
+log4j.logger.pdf2jpg=info, stdout , pdf2jpg
+log4j.appender.pdf2jpg=org.apache.log4j.DailyRollingFileAppender
+log4j.appender.pdf2jpg.File=${catalina.home}/logs/pdf2jpg.log
+log4j.appender.pdf2jpg.layout=org.apache.log4j.PatternLayout
+log4j.appender.pdf2jpg.layout.ConversionPattern=%d{ABSOLUTE} %5p %c{1}\:%L - %m%n
+
+log4j.logger.uploadPAReport=info, stdout , uploadPAReport
+log4j.appender.uploadPAReport=org.apache.log4j.DailyRollingFileAppender
+log4j.appender.uploadPAReport.File=${catalina.home}/logs/uploadPAReport.log
+log4j.appender.uploadPAReport.layout=org.apache.log4j.PatternLayout
+log4j.appender.uploadPAReport.layout.ConversionPattern=%d{ABSOLUTE} %5p %c{1}\:%L - %m%n
+
+log4j.logger.reportJobTask=info, stdout , reportJobTask
+log4j.appender.reportJobTask=org.apache.log4j.DailyRollingFileAppender
+log4j.appender.reportJobTask.File=${catalina.home}/logs/reportJobTask.log
+log4j.appender.reportJobTask.layout=org.apache.log4j.PatternLayout
+log4j.appender.reportJobTask.layout.ConversionPattern=%d{ABSOLUTE} %5p %c{1}\:%L - %m%n
+
+

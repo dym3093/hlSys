@@ -1,0 +1,212 @@
+package org.hpin.reportdetail.entity;
+
+import java.io.Serializable;
+import java.util.Date;
+
+import org.hpin.common.core.orm.BaseEntity;
+
+public class ErpReportFileTask extends BaseEntity implements Serializable{
+
+	private static final long serialVersionUID = 1L;
+	
+	private String id;
+	
+	private String batchno;
+	
+	private Integer pdftotal;
+	
+	private Integer companynum;
+	
+	private Integer repeatnum;
+	
+	private Integer updatenum;
+	
+	private Integer unmatchnum;
+	
+	private Integer abnormalnnum;
+	
+	private Integer cusmorenum;
+	
+	private Integer isdisrepeat;
+	
+	private Integer ismatch;
+	
+	private Date createdate;
+	
+	private Date updatedate;
+	
+	private String noYMCombo;
+	
+	private String noCustomerCombo2SY;
+	
+	private String noSYCombo;
+	
+	private Integer errorPdfName;
+	
+	private Integer jsonTotal;
+	
+	private Integer stopCombo;
+	
+	private Integer stopReport;
+
+	public String getId() {
+		return id;
+	}
+
+	public void setId(String id) {
+		this.id = id;
+	}
+
+	public String getBatchno() {
+		return batchno;
+	}
+
+	public void setBatchno(String batchno) {
+		this.batchno = batchno;
+	}
+
+	public Integer getPdftotal() {
+		return pdftotal;
+	}
+
+	public void setPdftotal(Integer pdftotal) {
+		this.pdftotal = pdftotal;
+	}
+
+	public Integer getCompanynum() {
+		return companynum;
+	}
+
+	public void setCompanynum(Integer companynum) {
+		this.companynum = companynum;
+	}
+
+	public Integer getRepeatnum() {
+		return repeatnum;
+	}
+
+	public void setRepeatnum(Integer repeatnum) {
+		this.repeatnum = repeatnum;
+	}
+
+	public Integer getUpdatenum() {
+		return updatenum;
+	}
+
+	public void setUpdatenum(Integer updatenum) {
+		this.updatenum = updatenum;
+	}
+
+	public Integer getUnmatchnum() {
+		return unmatchnum;
+	}
+
+	public void setUnmatchnum(Integer unmatchnum) {
+		this.unmatchnum = unmatchnum;
+	}
+
+	public Integer getIsdisrepeat() {
+		return isdisrepeat;
+	}
+
+	public void setIsdisrepeat(Integer isdisrepeat) {
+		this.isdisrepeat = isdisrepeat;
+	}
+
+	public Integer getIsmatch() {
+		return ismatch;
+	}
+
+	public void setIsmatch(Integer ismatch) {
+		this.ismatch = ismatch;
+	}
+
+	public Date getCreatedate() {
+		return createdate;
+	}
+
+	public void setCreatedate(Date createdate) {
+		this.createdate = createdate;
+	}
+
+	public Date getUpdatedate() {
+		return updatedate;
+	}
+
+	public void setUpdatedate(Date updatedate) {
+		this.updatedate = updatedate;
+	}
+
+	public Integer getAbnormalnnum() {
+		return abnormalnnum;
+	}
+
+	public void setAbnormalnnum(Integer abnormalnnum) {
+		this.abnormalnnum = abnormalnnum;
+	}
+
+	public Integer getCusmorenum() {
+		return cusmorenum;
+	}
+
+	public void setCusmorenum(Integer cusmorenum) {
+		this.cusmorenum = cusmorenum;
+	}
+
+	public String getNoYMCombo() {
+		return noYMCombo;
+	}
+
+	public void setNoYMCombo(String noYMCombo) {
+		this.noYMCombo = noYMCombo;
+	}
+
+	public String getNoCustomerCombo2SY() {
+		return noCustomerCombo2SY;
+	}
+
+	public void setNoCustomerCombo2SY(String noCustomerCombo2SY) {
+		this.noCustomerCombo2SY = noCustomerCombo2SY;
+	}
+
+	public String getNoSYCombo() {
+		return noSYCombo;
+	}
+
+	public void setNoSYCombo(String noSYCombo) {
+		this.noSYCombo = noSYCombo;
+	}
+
+	public Integer getErrorPdfName() {
+		return errorPdfName;
+	}
+
+	public void setErrorPdfName(Integer errorPdfName) {
+		this.errorPdfName = errorPdfName;
+	}
+
+	public Integer getJsonTotal() {
+		return jsonTotal;
+	}
+
+	public void setJsonTotal(Integer jsonTotal) {
+		this.jsonTotal = jsonTotal;
+	}
+
+	public Integer getStopCombo() {
+		return stopCombo;
+	}
+
+	public void setStopCombo(Integer stopCombo) {
+		this.stopCombo = stopCombo;
+	}
+
+	public Integer getStopReport() {
+		return stopReport;
+	}
+
+	public void setStopReport(Integer stopReport) {
+		this.stopReport = stopReport;
+	}
+	
+}

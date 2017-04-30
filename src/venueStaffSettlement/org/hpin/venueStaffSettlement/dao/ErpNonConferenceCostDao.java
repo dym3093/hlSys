@@ -1,0 +1,65 @@
+package org.hpin.venueStaffSettlement.dao;
+
+import java.math.BigDecimal;
+import java.util.List;
+
+import org.hpin.common.core.orm.BaseDao;
+import org.hpin.venueStaffSettlement.entity.ErpNonConferenceCost;
+import org.springframework.stereotype.Repository;
+
+/**
+ * @author Carly
+ * @since 2017年1月23日11:14:35
+ */
+@Repository()
+public class ErpNonConferenceCostDao extends BaseDao {
+
+	public BigDecimal getSumAmount(String id) {
+		String sql = "select sum(nvl(travelcost,0)+nvl(citycost,0)+nvl(provincecost,0)+nvl(hotelcost,0)+nvl(laborcost,0)+nvl(othercost,0)) amount from erp_nonconference_cost ecsc where ecsc.nonconferenceid=?";
+		BigDecimal totalDecimal = (BigDecimal) this.getJdbcTemplate().queryForMap(sql,id).get("amount");
+		if(null==totalDecimal){
+			return new BigDecimal(0);
+		}else {
+			return (BigDecimal) this.getJdbcTemplate().queryForMap(sql,id).get("amount");
+		}
+	}
+
+	public int udpateFees(String nonConferenceId,BigDecimal newDecimal) {
+		String sql = "update erp_nonconference set fees = ? where id=?";
+		return this.getJdbcTemplate().update(sql,newDecimal,nonConferenceId);
+		
+	}
+	
+	public int updateAmount(String uuid,BigDecimal amountDecimal) {
+		String sql = "update erp_nonconference_cost set amount=? where id=?";
+		return this.getJdbcTemplate().update(sql,amountDecimal,uuid);
+	}
+
+	@SuppressWarnings("unchecked")
+	public List<ErpNonConferenceCost> getNonConferenceCost(String nonConferenceId) {
+		String hql = "from ErpNonConferenceCost where nonConferenceId=?";
+		return this.getHibernateTemplate().find(hql,nonConferenceId);
+	}
+
+	/**
+	 * @param costId
+	 * @param staff 姓名
+	 * @param travelBigDecimal
+	 * 更新费用
+	 */
+	public void updateNonConferenceCostInfo(String costId,String staff, BigDecimal travelBigDecimal,BigDecimal amountDecimal) {
+		String sql = "update erp_nonconference_cost set name=?, travelcost=?, amount=? where id=?";
+		this.getJdbcTemplate().update(sql, staff, travelBigDecimal, amountDecimal, costId);
+	}
+
+	public BigDecimal getTravelSum(String id) {
+		String sql = "select sum(nvl(travelcost,0)) travelcost from erp_nonconference_cost ecsc where ecsc.nonconferenceid=?";
+		BigDecimal totalDecimal = (BigDecimal) this.getJdbcTemplate().queryForMap(sql,id).get("travelcost");
+		if(null==totalDecimal){
+			return new BigDecimal(0);
+		}else {
+			return (BigDecimal) this.getJdbcTemplate().queryForMap(sql,id).get("travelcost");
+		}
+	}
+
+}

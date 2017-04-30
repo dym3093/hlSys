@@ -1,0 +1,252 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+    pageEncoding="UTF-8"%>
+<%@ include file="/common/taglibs.jsp"%>
+<%
+String path = request.getContextPath();
+String userRoles = (String)request.getAttribute("userRoles");
+String userId = (String)request.getAttribute("userId");
+
+String id = (String)request.getAttribute("id");
+%>
+
+<style type="text/css">
+input{
+	background-color:expression(this.readonly==true?"#eee":"#fff");
+	background-color:expression(this.readonly==readonly?"#eee":"#fff");
+}
+</style>
+
+<script src="${path}/jquery/json2.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+
+//导出匹配成功数据
+function exportBXSettlementInfo(id) {
+	var settlemntId = id;
+	$.ajax({
+		type: "post",
+		cache :false,
+		dataType: "json",
+		url: "${path}/settlementManagement/erpSettlementTaskBX!exportBXSettlementInfo.action",
+		data: {'id':settlemntId},
+		success: function(data){
+			if(data.status=="300"){
+				alertMsg.correct(data.message);
+			}else{
+				//var obj=eval("("+data+")");
+				
+				window.open(data.path);
+			}	
+		},error :function(textStatus, errorThrown){
+			alert(textStatus);
+			alert("服务发生异常，请稍后再试！");
+		}
+	});
+}
+
+</script>
+
+<div class="pageHeader" style="background:white">
+	<form id = "addForm" onsubmit="if(this.action != '${path}/settlementManagement/erpSettlementTaskBX!viewSettlementBX.action?settleId=${taskBX.id}')
+			{this.action = '${path}/settlementManagement/erpSettlementTaskBX!viewSettlementBX.action?settleId=${taskBX.id}' ;} ;return dialogSearch(this);"
+			action="${path}/settlementManagement/erpSettlementTaskBX!viewSettlementBX.action?settleId=${taskBX.id}" method="post"
+			rel="pagerForm">
+	<div class="searchBar">
+			<input type="hidden" id="id" name="id" value="${taskBX.id}"/>
+			<input type="hidden" name="status" value="${taskBX.status}"/>
+			<input type="hidden" name="version" value="${taskBX.version}"/>
+			<input type="hidden" name="createTime" value="${taskBX.createTime}"/>
+			<input type="hidden" name="createUserId" value="${taskBX.createUserId}"/>
+			<input type="hidden" name="createUser" value="${taskBX.createUser}"/>
+			<input type="hidden" name="updateTime" value="${taskBX.updateTime}"/>
+			<input type="hidden" name="updateUserId" value="${taskBX.updateUserId}"/>
+			<input type="hidden" name="updateUser" value="${taskBX.updateUser}"/>
+			
+		<table class="pageFormContent">
+			<tr>				
+				<td><label style="width:90px">任务编号：</label> 
+					<input id="taskNo" type="text" name="taskNo" value="${taskBX.taskNo}" readonly="readonly" style="background-color:#eee;"/>
+				</td>
+				<td><label style="width:90px">任务名称：</label> 
+					<input id="taskName" type="text" name="taskName" value="${taskBX.taskName}" readonly="readonly" style="background-color:#eee;"/>
+				</td>
+			 	<td>
+					<label style="width:90px">项目编号：</label> 
+					<input id="projectNo" type="text" name="projectNo" value="${taskBX.projectNo}" readonly="readonly" style="background-color:#eee;" />
+				</td>
+				<td>
+					<label style="width:90px">结算时间：</label> 
+					<input id="settlementTime" type="text" name="settlementTime" value="${fn:substring(taskBX.settlementTime,0,10)}" 
+						readonly="readonly" style="background-color:#eee;"/> 
+				</td>
+			</tr>			
+			<tr>
+				<td>
+					<label style="width:90px">套餐数量：</label> 
+					<input type="text" name="setMealNum" value="${taskBX.setMealNum}" readonly="readonly" style="background-color:#eee;"/>
+				</td>
+				<td>
+					<label style="width:90px">总人数：</label> 
+					<input type="text" name="totalPersonNum" value="${taskBX.totalPersonNum}" readonly="readonly" style="background-color:#eee;"/>
+				</td>
+				<td>
+					<label style="width:90px">应结算金额：</label> 
+					<input type="text" name="totalAmount" value="${taskBX.totalAmount}" readonly="readonly" style="background-color:#eee;"/>
+					<span style="line-height:30px;">(元)</span>
+				</td>
+				<td>
+					<label style="width:90px">实际结算金额：</label> 
+					<input id="actualTotalAmount" type="text" name="actualTotalAmount" value="${taskBX.actualTotalAmount}" readonly="readonly" style="background-color:#eee;"/>
+					<span style="line-height:30px;">(元)</span>
+				</td>
+				
+			</tr>
+			<tr>
+				<td>
+					<label style="width:90px">支公司数量：</label> 
+					<input type="text" name="companyNum" value="${taskBX.companyNum}" readonly="readonly" style="background-color:#eee;"/>
+				</td>
+				<td>
+					<label for="paymentType" style="width:90px">付款方式：</label> 
+					<select id="paymentType" name="paymentType" disabled="disabled" class="equired" style="height:20px;margin:5px;width:140px;" >
+						<option value="transferAccounts" <c:if test="${taskBX.paymentType == 'transferAccounts'}">selected=selected</c:if>>公对公银行转账</option>
+						<option value="personalEBank" <c:if test="${taskBX.paymentType == 'personalEBank'}">selected=selected</c:if>>个人网银</option>
+						<option value="Alipay" <c:if test="${taskBX.paymentType == 'Alipay'}">selected=selected</c:if>>支付宝</option>
+						<option value="POS" <c:if test="${taskBX.paymentType == 'POS'}">selected=selected</c:if>>POS机刷卡</option>
+		 			</select>
+				</td>
+				<td>
+					<label style="width:90px">是否开发票：</label> 
+					<span style="margin-left:20px; margin-right:40px;">
+						<input type="radio" name="invoice" value="1" disabled="disabled" <c:if test="${taskBX.invoice=='1'}">checked="checked"</c:if> />是
+					</span>
+					<span>
+						<input type="radio" name="invoice" value="0" disabled="disabled" <c:if test="${taskBX.invoice=='0'}">checked="checked"</c:if> />否
+					</span>
+				</td>
+				<td>
+					<label style="width:90px">远盟对接人：</label> 
+					<input type="text" name="salesManYM" value="${taskBX.salesManYM}" readonly="readonly" style="background-color:#eee;"/>
+				</td>
+			</tr>
+			<tr>
+	  			<td colspan="2">
+		  			<p class="nowrap"><label style="height:60px;width:90px" for="remark">套餐说明：</label>
+						<textarea style="width:520px;" id="remark" name="remark" readonly="readonly" >${taskBX.remark}</textarea>
+					</p>
+				</td>
+			</tr>
+		</table>
+		
+	</div>
+	</form>
+</div>
+
+<div>
+	<div class="panelBar">
+		<c:if test="${currentUser.accountName!='parkson'}">
+		<ul class="toolBar">
+			<%-- <li><a class="edit" href="javascript:;" onclick="exportBXSettlementInfo('${taskBX.id}')"><span>导出</span></a></li> --%>
+			<li><a class="edit" href="${path}/settlementManagement/erpSettlementTaskBX!exportBXSettlementInfo.action?id=${taskBX.id}" ><span>导出</span></a></li>
+		</ul>
+		 <jsp:include page="/common/paginationDialog.jsp" />
+		</c:if>
+	</div>	
+<table class="list" width="100%" layoutH="170" id="exportExcelTable"> 
+	<thead>
+		<tr>
+			<th width="80">序号</th>
+			<th  export = "true" columnEnName = "eventsNo" columnChName = "场次号" > 场次号 </th> 
+			<th  export = "true" columnEnName = "code" columnChName = "条码" > 条码 </th> 
+			<th  export = "true" columnEnName = "name" columnChName = "姓名" > 姓名 </th> 
+			<th  export = "true" columnEnName = "phone" columnChName = "电话" > 电话 </th> 
+			<th  export = "true" columnEnName = "idno" columnChName = "身份证号" > 身份证号 </th> 
+			<th  export = "true" columnEnName = "combo" columnChName = "套餐" > 套餐 </th> 
+			<th  export = "true" columnEnName = "comboPrice" columnChName = "套餐价格" > 套餐价格 </th> 
+			<th  export = "true" columnEnName = "" columnChName = "实际价格">实际价格</th>
+			<th  export = "true" columnEnName = "" columnChName = "变更说明">变更说明</th>
+			<th  export = "true" columnEnName = "sex" columnChName = "性别" > 性别 </th> 
+			<th  export = "true" columnEnName = "age" columnChName = "年龄" > 年龄 </th> 
+			<th  export = "true" columnEnName = "company" columnChName = "支公司" > 支公司 </th> 
+			<th  export = "true" columnEnName = "ownedCompany" columnChName = "所属公司" > 所属公司 </th> 
+			<th  export = "true" columnEnName = "salesMan" columnChName = "销售人员" > 销售人员 </th> 
+			<th  export = "true" columnEnName = "samplingDate" columnChName = "采样日期" > 采样日期 </th> 
+			<th  export = "true" columnEnName = "provice" columnChName = "省" > 省 </th> 
+			<th  export = "true" columnEnName = "city" columnChName = "市" > 市 </th> 
+			<th  export = "true" columnEnName = "isMatchreport" columnChName = "是否匹配基因报告" > 是否匹配基因报告 </th> 
+<!-- 			<th  export = "true" columnEnName = "pdfFilepath" columnChName = "PDF文件路径" > PDF文件路径 </th> 
+			<th  export = "true" columnEnName = "createTime" columnChName = "创建日期" > 创建日期 </th> 
+			<th  export = "true" columnEnName = "createUser" columnChName = "创建人" > 创建人 </th> 
+			<th  export = "true" columnEnName = "updateTime" columnChName = "修改日期" > 修改日期 </th> 
+			<th  export = "true" columnEnName = "updateUser" columnChName = "修改人" > 修改人 </th>  -->
+			<th  export = "true" columnEnName = "status" columnChName = "状态" > 状态 </th>
+			<th  export = "true" columnEnName = "remark" columnChName = "备注" > 备注 </th> 
+		</tr>
+		
+	</thead>
+	<tbody >
+		<c:forEach items="${page.results}" var="entity" varStatus="status">
+			 <tr target="sid_user" rel="${entity.id }">
+<%-- 				<td align="center">
+					<c:if test="${currentUser.accountName!='parkson'}">
+						<input type="checkbox" name="ids" value="${entity.id}">
+					</c:if>
+					${ status.count }
+				</td>  --%>
+				<td align="center">${ status.count }</td>
+			<%-- 	<td>
+					<a title="场次号" target="navTab" width="1000"  href="${path}/events/erpCustomer!toConferenceNoListCustomer.action?showId=${entity.id}">${entity.eventsNo}</a>
+				</td> --%>
+				<td align="center"> ${entity.eventsNo} </td>
+				<td align="center"> ${entity.code} </td>
+				<td align="center"> ${entity.name} </td>
+				<td align="center"> ${entity.phone} </td>
+				<td align="center"> ${entity.idno} </td>
+				<td align="center"> ${entity.combo} </td>
+				<td align="center"> ${entity.comboPrice} </td>
+				<td align="center"> ${entity.comboPriceActual} </td>
+				<td align="center">
+				<c:if test="${fn:length(entity.remark) > 6 }">
+					${fn:substring(entity.remark, 0, 6)}
+				</c:if>
+				<c:if test="${fn:length(entity.remark) <= 6 }">
+					${entity.remark} 
+				</c:if>
+				</td>
+				<td align="center"> ${entity.sex} </td>
+				<td align="center"> ${entity.age} </td>
+				<td align="center">	<hpin:id2nameDB id="${entity.companyId}" beanId="org.hpin.base.customerrelationship.dao.CustomerRelationshipDao"/></td>
+				<td align="center">	<hpin:id2nameDB id="${entity.ownedCompanyId}" beanId="org.hpin.base.usermanager.dao.UserDao" /></td>
+				<td align="center"> ${entity.salesMan} </td>
+				<td align="center"> ${fn:substring(entity.samplingDate,0,10)} </td>
+				<td align="center"><hpin:id2nameDB  beanId="org.hpin.base.region.dao.RegionDao" id="${entity.provice}"/> </td>
+				<td align="center"><hpin:id2nameDB  beanId="org.hpin.base.region.dao.RegionDao" id="${entity.city}"/> </td>
+				<td align="center"> ${entity.isMatchreport} </td>
+<%--				<td align="center"> ${entity.pdfFilepath} </td>
+ 				<td align="center"> ${entity.createTime} </td>
+				<td align="center"> ${entity.createUser} </td>
+				<td align="center"> ${entity.updateTime} </td>
+				<td align="center"> ${entity.updateUser} </td> --%>
+				<td align="center">
+					<c:choose>
+						<c:when test="${entity.status=='0'}">
+							未收款
+						</c:when>
+						<c:when test="${entity.status=='1'}">
+							待收款
+						</c:when>
+						<c:when test="${entity.status=='2'}">
+							已收款
+						</c:when>
+						<c:otherwise>  
+						        <span style="color:#ff0000">状态异常</span>
+						</c:otherwise>  
+					</c:choose>
+				</td>
+				<td align="center"> ${entity.remark} </td>
+				
+			</tr>
+		</c:forEach>
+	</tbody>
+</table>
+</div>

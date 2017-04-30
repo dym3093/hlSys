@@ -1,0 +1,22 @@
+
+# ********************** 2017-02-14 add by Damian start **********************
+
+#已下载的超时未处理人员名单excel文件的保存路径
+# ot = overtime
+# 客户状态请查看 status.properties 文件
+#正式环境保存地址
+path_yxz=/usr/ymdata/mailAttach/yxz
+#测试环境保存地址
+#path_yxz=/home/ymdata/mailAttach/yxz
+
+# ********************** 2017-02-14 add by Damian end **********************
+
+# ********************** 无创客户批量导出 2017-02-22 add by Damian start **********************
+# Excel文件名 2017-02-22 add by Damian
+excel_name_wc=客户信息
+# Excel保存路径
+excel_save_wc=/usr/ymdata/excel/wc
+# 测试路径
+#excel_save_wc=/home/daimian/ymdata/excel/wc
+# ********************** 无创客户批量导出 2017-02-22 add by Damian end **********************
+

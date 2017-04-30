@@ -1,0 +1,38 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+	pageEncoding="UTF-8"%>
+<%@ include file="/common/taglibs.jsp"%>
+<div class="pageFormContent" style="overflow: hidden;" layoutH="67">
+<div class="tip"><span>套餐基本信息</span></div>
+<p>
+	<label>套餐名称：</label> 
+	<input type="text" value="${ combo.comboName }" id="comboName" readonly="readonly"/></p>
+<p>
+	<label>产品名称：</label> 
+	<input type="text" value="${ combo.productName }" id="productName" readonly="readonly"/>
+</p>
+<p>
+	<label>项目类别：</label> 
+	<select id="projectTypes" name="combo.projectTypes" class="required" rel="iselect" disabled="disabled">
+		<option value="PCT_001" ${combo.projectTypes == "PCT_001" ? "selected" : '' }>健康管理-基因</option>
+		<option value="PCT_002" ${combo.projectTypes == "PCT_002" ? "selected" : '' }>健康管理-癌筛</option>
+		<option value="PCT_003" ${combo.projectTypes == "PCT_003" ? "selected" : '' }>分子检测</option>
+		<option value="PCT_004" ${combo.projectTypes == "PCT_004" ? "selected" : '' }>健康管理-无创-生物电</option>
+		<option value="PCT_005" ${combo.projectTypes == "PCT_005" ? "selected" : '' }>健康管理-无创-微磁</option>
+		<option value="PCT_006" ${combo.projectTypes == "PCT_006" ? "selected" : '' }>其他</option>
+	</select>
+</p>
+<p>
+	<label>创建人：</label> 
+	<input type="text" value="<hpin:id2fieldDB beanId="org.hpin.base.usermanager.dao.UserDao" field="ID" id="${combo.createUser }"/> " id="createUser" readonly="readonly"/>
+</p>
+<p>
+	<label>创建日期：</label>
+	<input type="text" value="${ fn:substring(combo.createTime,0,10) }" id="createTime" readonly="readonly"/>
+</p>
+
+<p class="nowrap"><label style="height: 60px;">内容：</label>
+<textarea cols="35" ows="2" style="width:570px;" name="combo.comboContent" readonly="readonly">${combo.comboContent}</textarea>
+</p>
+</div>
+
+

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project-module
+  type="WEB"
+  name="webQueryPlatform"
+  id="myeclipse.1386994610214"
+  context-root="/webQueryPlatform"
+  j2ee-spec="5.0"
+  archive="webQueryPlatform.war">
+  <attributes>
+    <attribute name="webrootdir" value="/WebRoot" />
+  </attributes>
+</project-module>
+

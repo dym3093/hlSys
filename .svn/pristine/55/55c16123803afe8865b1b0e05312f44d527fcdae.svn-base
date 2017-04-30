@@ -1,0 +1,429 @@
+package org.hpin.reportdetail.job;
+
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Callable;
+
+import org.apache.log4j.Logger;
+import org.hpin.base.customerrelationship.entity.CustomerRelationShipPro;
+import org.hpin.common.core.SpringContextHolder;
+import org.hpin.events.entity.ErpCustomer;
+import org.hpin.events.entity.ErpEvents;
+import org.hpin.reportdetail.entity.ErpComboRelation;
+import org.hpin.reportdetail.entity.ErpCustomerTempWuChuang;
+import org.hpin.reportdetail.entity.ErpPrintTaskContent;
+import org.hpin.reportdetail.entity.ErpReportMatchBean;
+import org.hpin.reportdetail.entity.ErpReportPATask;
+import org.hpin.reportdetail.entity.ErpReportUnMatch;
+import org.hpin.reportdetail.entity.ErpReportdetailImgtask;
+import org.hpin.reportdetail.entity.ErpReportdetailPDFContent;
+import org.hpin.reportdetail.service.ErpReportThreadService;
+import org.hpin.reportdetail.util.FileList;
+
+
+/**
+ * @author Carly
+ * @since 2016年11月11日16:54:13
+ * 新的匹配规则，现在从pdf文件名读取客户信息，然后和客户信息想匹配
+ */
+public class ErpPdfMatchThread implements Callable<Map<String, String>> {
+
+	private Logger log = Logger.getLogger(ErpPdfMatchThread.class);
+	private String batchNo;
+	private ErpReportThreadService service = (ErpReportThreadService) SpringContextHolder.getBean("reportThread");
+	
+	public ErpPdfMatchThread(String batchNo) {
+		this.batchNo = batchNo;
+	}
+	
+	@Override
+	public Map<String, String> call() {
+		long start = System.currentTimeMillis();
+		log.info("ErpPdfMatchThread run start batchNo = " + batchNo);
+		List<ErpReportMatchBean> contentBeanList = new ArrayList<ErpReportMatchBean>();
+		int companyNum = 0;	//支公司数量
+		HashSet<String> branchCompany = new HashSet<String>();// 存放支公司名字
+		Map<String, String> result = new HashMap<String, String>();
+		ErpPrintTaskContent printTaskContent = null;
+		ErpCustomer noMatchCustomer = null;
+		Date date = new Date();
+		try {
+			// 查询未执行的PDF内容
+			List<ErpReportdetailPDFContent> lists = service.getListPdfContentDO(batchNo);
+			int size = lists.size();	
+			int count = 1;	
+			if (0 == size) {
+				log.info("ErpReportMatchThread run end batchNo = " + batchNo + "; from ErpReportdetailPDFContent size = 0 ");
+				int [] matchArray = countMatchState(companyNum);
+				service.updateFileTaskMatchNumber(matchArray,batchNo);	//更新匹配的数据
+				result.put("needmatchnum", "0");
+				return result;
+			}
+			
+			for (ErpReportdetailPDFContent content : lists) {	
+				ErpReportMatchBean bean = getMatchBeanDO(content);
+				contentBeanList.add(bean);	//组装需要的数据
+			}
+			
+			// 循环匹配(与会员信息匹配) start
+			for (ErpReportMatchBean bean : contentBeanList) {
+				Date now = new Date();
+				boolean flag = true;
+				log.info("共有" + size + "份报告,正在处理第" + count + "份报告,还有" + (size-count) + "份报告---");
+				count++;
+				log.info("报告转换类型:"+bean.getConvertionFileType());
+				if ("0".equals(bean.getFileSize())) { //如果文件是空的
+					log.info("文件大小不对--:"+bean.getPdfName()+"文件大小:"+bean.getFileSize());
+					service.updatePdfMatchState(4, now, bean.getId());
+					continue;
+				}
+				
+				if (Integer.valueOf(0).equals(bean.getConvertionFileType())) {
+					bean = getMatchBeanDO(bean);	//申友的套餐做匹配
+				}
+				if (bean.getMatchState()) {//如果是不匹配的
+					continue;
+				}
+				
+				List<ErpCustomer> cusLists = service.getListCustomerDO(bean); 
+				
+				if (0 == cusLists.size()) {// 会员信息没有此数据(未匹配成功)
+					service.updatePdfMatchState(3, now, bean.getId());
+					ErpReportUnMatch pdfcusBean = getPdfCusBean(bean);
+					service.saveUnMatchPdfDO(pdfcusBean);
+					
+				} else {
+					for (ErpCustomer customer:cusLists) {
+						noMatchCustomer = customer;
+						try {
+							String ymPrint = "9";// 不需要远盟打印
+							String [] comboArray = customer.getSetmealName().split("[+]");
+							for (int i=0;i<comboArray.length;i++) {
+								
+								if (comboArray[i].equals(bean.getCombo())) {
+									boolean existedtPrintCombo = service.getExistedPrintCombo(bean);
+									
+									if (existedtPrintCombo) {
+										ymPrint = "88";// 是打印套餐
+										boolean existedUnPrintCustomer = service.getExistedUnPrintCustomer(bean);
+										boolean existedProjectPrint = service.getExistedProjectPrint(bean, customer);
+										
+										if (existedUnPrintCustomer) {
+											ymPrint = "99";// 人工确认不需要打印
+											
+										} else if (existedProjectPrint) {
+											ymPrint = "0";	//如果项目编码对应的有这个套餐则打印
+										}
+									} 
+									printTaskContent = getPrintTaskContent(bean, customer, date);
+									boolean isPA = customer.getEventsNo().toUpperCase().startsWith("PA");	//是否是平安的场次
+									log.info("是否打印:"+ ymPrint + "---是否是平安报告---" + isPA);
+									if (ymPrint.equals("0") && !isPA) {
+										service.savePrintTaskContent(printTaskContent);	//保存到需要分批的表中
+
+									} else if (isPA) {
+										ErpReportPATask paTask = getPAReportTask(bean,now);
+										service.savePAReportTask(paTask); //保存需要上传给平安的报告
+									}
+									boolean existedCustomerPdf = service.getExistedCustomerPdf(customer);
+									log.info("是否存在已匹配报告---" + existedCustomerPdf);
+									if (existedCustomerPdf) {//如果匹配但是该客户已经存在匹配报告则置为状态12
+										service.updatePdfContentInfo(bean, customer, printTaskContent, ymPrint, 12, now);
+										
+									} else {
+										service.updatePdfContentInfo(bean, customer, printTaskContent, ymPrint, 2, now);
+									}
+									// 更新至会员信息的路径为FTP可访问路径
+                                    //获取报告已出具状态
+//									Integer ycj = PropsUtils.getInt("status","statusYm.ycj"); // add by Damian 2017-03-08
+									service.updateCustomerInfo(bean, 300, customer.getId());
+									branchCompany.add(customer.getBranchCompany());//add by YoumingDeng 2016-12-14 end
+									
+									boolean existedReportType = FileList.fileType().contains(bean.getReportType());
+									log.info("是否需要转换图片:" + existedReportType);
+									if (existedReportType) {
+										ErpReportdetailImgtask imgTask = getReportdetailImgTask(bean, customer);
+										service.saveReport2ImgTask(imgTask);	//保存需要转换的pdf
+									}
+									
+									flag = false;
+									break;
+								}
+							}
+								
+						} catch (Exception e) {
+							log.error("ErpReportMatchThread run error , customer = "+ customer.getCode(), e);
+							result.put("exception", e.toString());
+							continue;
+						}
+					}
+					if(flag){//如果通过条码找到多个客户并且没有匹配的套餐时
+						service.updatePdfMatchState(8, now, bean.getId());	//pdf中含有的套餐和客户的套餐不一致
+						ErpReportUnMatch pdfcusBean = getPdfCusBean(bean,noMatchCustomer);
+						service.saveUnMatchPdfDO(pdfcusBean);
+					}
+				}
+			}
+			// 循环匹配(与会员信息匹配),获取子公司数量
+			companyNum = branchCompany.size();
+			int [] matchArray = countMatchState(companyNum);
+			service.updateFileTaskMatchNumber(matchArray,batchNo);	//更新匹配的数据
+			
+			result.put("companynum", String.valueOf(companyNum));
+			result.put("updatenum", String.valueOf(matchArray[1]));
+			result.put("unmatchnum", String.valueOf(matchArray[2]));
+			result.put("abnormalnnum", String.valueOf(matchArray[3]));
+			result.put("cusmorenum", String.valueOf(matchArray[4]));
+			result.put("noYMCombo", String.valueOf(matchArray[5]));
+			result.put("noCustomerCombo2SY", String.valueOf(matchArray[6]));
+			result.put("noSYCombo", String.valueOf(matchArray[7]));
+			result.put("errorPdfName", String.valueOf(matchArray[8]));
+			
+			result.put("needmatchnum", String.valueOf(lists.size()));
+			log.info("ErpReportMatchThread run end batchno = " + batchNo + " ; use time : " + (System.currentTimeMillis() - start));
+		} catch (Exception e) {
+			log.error("ErpPdfMatchThread run error , batchno = " + batchNo,e);
+			result.put("exception", e.toString());
+		}
+		return result;
+	}
+
+	/**
+	 * @since 2017年3月6日18:27:49
+	 * @author Carly
+	 * @param content 查找到的PDFcontent数据
+	 * @return 组装好的需要的pdf信息
+	 */
+	private ErpReportMatchBean getMatchBeanDO(ErpReportdetailPDFContent content) {
+		ErpReportMatchBean bean = new ErpReportMatchBean();
+		bean.setId(content.getId());
+		bean.setCode(content.getCode());
+		bean.setCombo(content.getSetmeal_name());
+		bean.setName(content.getUsername());
+		bean.setSex(content.getSex());
+		bean.setAge(String.valueOf(content.getAge()));
+		bean.setFilePath(content.getFilepath());
+		bean.setFileSize(content.getFilesize());
+		bean.setPdfBthNo(content.getBatchno());
+		bean.setPrintState(content.getPs());
+		bean.setReportType(content.getReportType());
+		bean.setPdfName(content.getPdfname());
+		bean.setConvertionFileType(content.getConvertionFileType());
+		bean.setMatchState(false);
+		return bean;
+	}
+
+	private ErpReportUnMatch getPdfCusBean(ErpReportMatchBean bean,ErpCustomer customer) {
+		ErpReportUnMatch pdfcusBean = new ErpReportUnMatch();
+		pdfcusBean.setPdfid(bean.getId());
+		pdfcusBean.setPdfusername(bean.getName());
+		pdfcusBean.setPdfusersex(bean.getSex());
+		pdfcusBean.setPdfcode(bean.getCode());
+		pdfcusBean.setPdfCombo(bean.getCombo());
+		pdfcusBean.setPdffilepath(bean.getFilePath());
+		pdfcusBean.setPdfBthNo(bean.getPdfBthNo());
+		
+		pdfcusBean.setCusid(customer.getId());
+		pdfcusBean.setCususername(customer.getName());
+		pdfcusBean.setCususersex(customer.getSex());
+		pdfcusBean.setCuscode(customer.getCode());
+		pdfcusBean.setCusCombo(customer.getSetmealName());
+		pdfcusBean.setCusfilepath(customer.getPdffilepath());
+		pdfcusBean.setCreatedate(new Date());
+		pdfcusBean.setModifystate("1");
+		pdfcusBean.setCusCreateDate(customer.getCreateTime());
+		return pdfcusBean;
+	}
+	
+	private ErpReportUnMatch getPdfCusBean(ErpReportMatchBean bean) {
+		ErpReportUnMatch pdfcusBean = new ErpReportUnMatch();
+		pdfcusBean.setPdfid(bean.getId());
+		pdfcusBean.setPdfusername(bean.getName());
+		pdfcusBean.setPdfusersex(bean.getSex());
+		pdfcusBean.setPdfcode(bean.getCode());
+		pdfcusBean.setPdfCombo(bean.getCombo());
+		pdfcusBean.setPdffilepath(bean.getFilePath());
+		pdfcusBean.setPdfBthNo(bean.getPdfBthNo());
+		
+		pdfcusBean.setCreatedate(new Date());
+		pdfcusBean.setModifystate("1");
+		return pdfcusBean;
+	}
+	
+	private ErpPrintTaskContent getPrintTaskContent(ErpReportMatchBean content,ErpCustomer customer,Date date) throws Exception {
+		ErpEvents events = service.getListEventDO(customer).get(0);	
+		//根据查询到的场次获取项目编码
+		CustomerRelationShipPro project = service.getCompanyProjectDO(events.getCustomerRelationShipProId());
+		String type = FileList.reportType().get(content.getReportType());
+		ErpPrintTaskContent taskContent = new ErpPrintTaskContent();
+		taskContent.setPdfContentId(content.getId());
+		taskContent.setFilePath(content.getFilePath());
+		taskContent.setCode(content.getCode());
+		taskContent.setUserName(content.getName());
+		taskContent.setGender(content.getSex());
+		taskContent.setCombo(content.getCombo());
+		taskContent.setBatchNo(content.getPdfBthNo());
+		
+		taskContent.setAge(customer.getAge());
+		taskContent.setProvince(customer.getProvice());
+		taskContent.setCity(customer.getCity());
+		taskContent.setSaleman(customer.getYmSalesman());//远盟营销员
+		taskContent.setCustomerId(customer.getId());
+		taskContent.setDept(customer.getDepartment());
+		
+		taskContent.setBranchCompanyId(events.getBranchCompanyId());
+		taskContent.setOwnedCompanyId(events.getOwnedCompanyId());
+		taskContent.setProjectCode(project.getProjectCode() == null ? "" : project.getProjectCode());
+		taskContent.setCreateTime(date);
+		taskContent.setIsManuallyAdd("0");
+		taskContent.setPs("0");
+		taskContent.setType(type);
+		taskContent.setReportType(content.getReportType());//0基因报告,3无创，4微磁
+		return taskContent;
+	}
+	
+	private ErpReportdetailImgtask getReportdetailImgTask(ErpReportMatchBean bean,ErpCustomer customer) throws Exception {
+		
+		List<ErpCustomerTempWuChuang> listWCCustomer = service.getListWCCustomer(bean);
+		ErpReportdetailImgtask imgtask = new ErpReportdetailImgtask();
+		imgtask.setCustomerId(customer.getId());
+		imgtask.setCode(bean.getCode());
+		imgtask.setUserName(bean.getName());
+		imgtask.setIdNo(customer.getIdno() == null ? "" : customer.getIdno());
+		imgtask.setPhoneNo(customer.getPhone() == null ? "" : customer.getPhone());
+		imgtask.setState(0);
+		imgtask.setPdfName(bean.getPdfName());
+		imgtask.setFilePath(bean.getFilePath());
+	    imgtask.setBatchNo(bean.getPdfBthNo());
+	    imgtask.setCreateTime(new Date());
+	    imgtask.setIsDeleted(0);
+	    
+	    switch (listWCCustomer.size()) {
+		case 0:
+			break;
+			
+		default:
+			String birthday = listWCCustomer.get(0).getBirthday();
+	    	imgtask.setBirthday(birthday.length() >=10 ? birthday.substring(0,10) : birthday);
+			break;
+		}
+	    return imgtask;
+	}
+	
+	/**
+	 * @param bean
+	 * @param date
+	 * @return 需要传给平安的报告
+	 */
+	private ErpReportPATask getPAReportTask(ErpReportMatchBean bean, Date date) {
+		ErpReportPATask paTask = new ErpReportPATask();
+		paTask.setCode(bean.getCode());
+		paTask.setName(bean.getName());
+		paTask.setUploadState(0);
+		paTask.setBatchNo(bean.getPdfBthNo());
+		paTask.setFilePath(bean.getFilePath());
+		paTask.setCreateTime(date);
+		paTask.setIsDeleted(0);
+		
+		return paTask;
+	}
+	
+	/**
+	 * @since 2017年3月1日15:55:34
+	 * @author Carly
+	 * @return 需要进行套餐匹配的
+	 */
+	private ErpReportMatchBean getMatchBeanDO(ErpReportMatchBean bean) throws Exception{
+		List<ErpComboRelation> ymComboList = service.getListComboRelation(bean);
+		Date now = new Date();
+		bean.setMatchState(true);	//默认是不匹配的
+		switch (ymComboList.size()) {
+		case 0:
+			service.updatePdfMatchState(9, now, bean.getId());
+			break;
+			
+		case 1:
+			if (null != ymComboList.get(0).getYmCombo()) {
+				bean.setMatchState(false);
+				bean.setCombo(ymComboList.get(0).getYmCombo());
+				
+			} else {
+				service.updatePdfMatchState(7, now, bean.getId());
+			}
+			break;
+		
+		default:
+			boolean flag = false;
+			ErpCustomer noMatchCustomer = null;
+			int count = 0;
+			for (ErpComboRelation relation:ymComboList) {
+				List<ErpCustomer> customerList = service.getListCustomerDO(bean);
+				
+				for (ErpCustomer customer:customerList) {//匹配客户中有套餐A+套餐B的情况
+					count ++;
+					noMatchCustomer = customer;
+					String setmealName = customer.getSetmealName();
+					String [] comboArray = setmealName.split("[+]");
+					
+					for (int i=0;i<comboArray.length;i++) {
+						
+						if (comboArray[i].equals(relation.getYmCombo())) {
+							bean.setMatchState(false);
+							bean.setCombo(relation.getYmCombo());
+							flag = true;//如果匹配成功则不进行其他的循环
+							break;
+						}
+					}
+				}
+				
+				if (flag) {
+					break;
+				}
+			}
+			if (!flag && count != 0) {//客户的套餐和申友所获取的对应远盟套餐不一致
+				service.updatePdfMatchState(8, now, bean.getId());
+				ErpReportUnMatch pdfcusBean = getPdfCusBean(bean,noMatchCustomer);
+				service.saveUnMatchPdfDO(pdfcusBean);
+			}
+			
+			switch (count) { //没有匹配到客户的时候
+			case 0:
+				service.updatePdfMatchState(3, now, bean.getId());
+				ErpReportUnMatch pdfcusBean = getPdfCusBean(bean);
+				service.saveUnMatchPdfDO(pdfcusBean);
+				break;
+
+			default:
+				break;
+			}
+			
+			break;
+		}
+		return bean;
+	}
+	
+	/**
+	 * @author Carly
+	 * @since 2017年3月8日11:41:45
+	 * @param companyNum 公司数量
+	 * 更新匹配和不匹配报告的数量
+	 */
+	private int[] countMatchState(int companyNum) throws Exception{
+		int updatenum = service.countFileTaskNum(batchNo, 2); 
+		int unmatchnum = service.countFileTaskNum(batchNo, 3); 
+		int abnormalnnum = service.countFileTaskNum(batchNo, 4); 
+		int cusmorenum = service.countFileTaskNum(batchNo, 5); 
+		int noYMCombo = service.countFileTaskNum(batchNo, 7); 	//没有和远盟对应的套餐
+		//当对应多个远盟套餐时，客户的套餐和申友所获取的对应远盟套餐不一致（用客户条码，姓名和套餐去去确定唯一套餐）
+		int noCustomerCombo2SY = service.countFileTaskNum(batchNo, 8); 	
+		int noSYCombo = service.countFileTaskNum(batchNo, 9); 	//没有找到对应的申友套餐
+		int errorPdfName = service.countFileTaskNum(batchNo, 10); 	//文件名称不对
+		int [] matchArray = {companyNum,updatenum,unmatchnum,abnormalnnum,cusmorenum,noYMCombo,noCustomerCombo2SY,noSYCombo,errorPdfName,1};
+		return matchArray;
+	}
+}
+	

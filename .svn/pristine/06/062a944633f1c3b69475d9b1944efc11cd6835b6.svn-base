@@ -1,0 +1,70 @@
+package org.hpin.statistics.briefness.entity;
+
+public class ProvinceEventsVO {
+	private String eventsNo; //场次号
+	private String batchNo; //批次号
+	private String eventDate; //场次日期
+	private String provinceName; //省份
+	private String cityName; //城市
+	private String branchCompany; //支公司
+	private String deptName; //部门名称
+	private String customerCount; //总人数
+	private String reportOut; //已出报告总数;
+	
+	public String getEventsNo() {
+		return eventsNo;
+	}
+	public void setEventsNo(String eventsNo) {
+		this.eventsNo = eventsNo;
+	}
+	public String getBatchNo() {
+		return batchNo;
+	}
+	public void setBatchNo(String batchNo) {
+		this.batchNo = batchNo;
+	}
+	public String getEventDate() {
+		return eventDate;
+	}
+	public void setEventDate(String eventDate) {
+		this.eventDate = eventDate;
+	}
+	public String getProvinceName() {
+		return provinceName;
+	}
+	public void setProvinceName(String provinceName) {
+		this.provinceName = provinceName;
+	}
+	public String getCityName() {
+		return cityName;
+	}
+	public void setCityName(String cityName) {
+		this.cityName = cityName;
+	}
+	public String getBranchCompany() {
+		return branchCompany;
+	}
+	public void setBranchCompany(String branchCompany) {
+		this.branchCompany = branchCompany;
+	}
+	public String getDeptName() {
+		return deptName;
+	}
+	public void setDeptName(String deptName) {
+		this.deptName = deptName;
+	}
+	public String getCustomerCount() {
+		return customerCount;
+	}
+	public void setCustomerCount(String customerCount) {
+		this.customerCount = customerCount;
+	}
+	public String getReportOut() {
+		return reportOut;
+	}
+	public void setReportOut(String reportOut) {
+		this.reportOut = reportOut;
+	}
+	
+	
+}

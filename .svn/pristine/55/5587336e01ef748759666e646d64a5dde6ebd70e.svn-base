@@ -1,0 +1,197 @@
+package org.hpin.statistics.briefness.web;
+
+import java.text.ParseException;
+import java.util.Date;
+import java.util.Map;
+
+import net.sf.json.JSONObject;
+
+import org.apache.commons.httpclient.util.DateUtil;
+import org.apache.commons.lang.StringUtils;
+import org.apache.log4j.Logger;
+import org.apache.struts2.convention.annotation.Action;
+import org.apache.struts2.convention.annotation.Namespace;
+import org.apache.struts2.convention.annotation.Result;
+import org.apache.struts2.convention.annotation.Results;
+import org.hpin.base.usermanager.entity.User;
+import org.hpin.base.usermanager.service.UserService;
+import org.hpin.common.core.SpringTool;
+import org.hpin.common.core.web.BaseAction;
+import org.hpin.common.util.HttpTool;
+import org.hpin.common.widget.pagination.Page;
+import org.hpin.statistics.briefness.service.CommonQueryService;
+import org.hpin.statistics.briefness.service.CustomerTempService;
+import org.hpin.statistics.briefness.service.ValidityDayService;
+import org.springframework.beans.factory.annotation.Autowired;
+
+/**
+ * 后面报表数据查询;
+ * @author Henry
+ *
+ */
+@Namespace("/report")
+@Action("reportQuery")
+@Results({
+	@Result(name = "reportValidQuery", location = "/WEB-INF/report/reportValidQuery.jsp"),
+	@Result(name = "queryProvinceEvents", location = "/WEB-INF/pages/briefness/queryProvinceEvents.jsp"),
+	@Result(name = "reportVenue", location = "/WEB-INF/report/reportVenue.jsp")
+})
+public class ReportQueryAction  extends BaseAction{
+	private Logger log = Logger.getLogger(ReportQueryAction.class);
+
+	private static final long serialVersionUID = 2011116935730806833L;
+	private static final String VALIDQUERY = "reportValidQuery"; //报告时效性日期查询;
+	private static final String VENUE = "reportVenue"; //会场查询;
+	
+	private ValidityDayService validityDayService = (ValidityDayService)SpringTool.getBean(ValidityDayService.class); //报告时效性日期查询
+	
+	@Autowired
+	private CustomerTempService customerTempService; //无创临时信息修改;
+	
+	@Autowired
+	private CommonQueryService commonQueryService; //通用报表查询; create by henry.xu 20170401
+	
+	@Autowired
+	private UserService userService; //
+
+	/**
+	 *  点击后： 进入场次列表信息页面：场次号、批次号、场次日期、省份、城市、支公司名称、总公司名称、总人数、已出报告人数
+                   点击某个场次号，进入此场次的客户明细界面（可以直接链接到：统计报表-销售部报表-场次查询功能里面的客户明细界面）
+    查询条件：城市、支公司、场次开始日期、场次结束日期 
+	 * <p>Description: </p>
+	 * @author herny.xu
+	 * @date 2017年4月1日
+	 */
+	@SuppressWarnings("rawtypes")
+	public String queryProvinceEvents() {
+		
+		//分页查询;
+		try {
+			page = new Page(HttpTool.getPageNum(), HttpTool.getPageSize());
+		} catch (ParseException e) {
+			log.error("分页获取错吴ReportQueryAction.queryProvinceEvents", e);
+		}
+		
+		User userInfo = this.getUserInfo();
+		String userId = userInfo.getId();
+		userInfo = (User) userService.findById(userId);
+		
+		commonQueryService.queryProvinceEvents(page, params, userInfo) ;
+		
+		return "queryProvinceEvents";
+	}
+	
+	/**
+	 * 导出时候invoke调用;
+	 * @param page
+	 * @param paramsMap
+	 * @return
+	 */
+	public Page queryProvinceEventsExcel(Page page , Map paramsMap) {
+		User userInfo = this.getUserInfo();
+		String userId = userInfo.getId();
+		userService = (UserService)SpringTool.getBean(UserService.class);
+		commonQueryService = (CommonQueryService)SpringTool.getBean(CommonQueryService.class);
+		userInfo = (User) userService.findById(userId);
+		commonQueryService.queryProvinceEventsExcel(page, userInfo);
+		return page;
+	}
+	
+	/**
+	 * 修改表erp_customer_temp_wuchuang, 和erp_customer_receive;
+	 * 将当前这条数据的证件号和手机号的值调整为证件号-close和手机号-close
+	 * <p>Description: </p>
+	 * @author herny.xu
+	 * @date 2017年3月24日
+	 */
+	public void ajaxCloseUserInfo() {
+		JSONObject json = new JSONObject();
+		String code = HttpTool.getParameter("code", "");
+		String result = "false";
+		if(StringUtils.isNotEmpty(code)) {
+			//调用service处理
+			try {
+				customerTempService.updateCustomerInfo(code);
+				result = "true";
+			} catch (Exception e) {
+				log.error("关闭错误!", e);
+				result = "false";
+			}
+		}
+		json.put("result", result);
+		renderJson(json);
+	}
+	
+	/**
+	 * 时效性进入页面;时效性分页查询;
+	 * @return
+	 */
+	@SuppressWarnings("rawtypes")
+	public String reportValidQuery() {
+		//参数; 日期;
+		String endDate = HttpTool.getParameter("endDate", DateUtil.formatDate(new Date(), "yyyy-MM-dd"));
+		
+		//分页查询;
+		try {
+			page = new Page(HttpTool.getPageNum(), HttpTool.getPageSize());
+		} catch (ParseException e) {
+			log.error("分页获取错吴ReportQueryAction.reportValidQuery", e);
+		}
+		validityDayService.findValidQueryByPage(page) ;
+		
+		HttpTool.setAttribute("company", HttpTool.getParameter("company", ""));
+		HttpTool.setAttribute("code", HttpTool.getParameter("code", ""));
+		HttpTool.setAttribute("batchNum", HttpTool.getParameter("batchNum", ""));
+		HttpTool.setAttribute("combo", HttpTool.getParameter("combo", ""));
+		HttpTool.setAttribute("endDate", endDate);
+		return VALIDQUERY;
+	}
+	
+	/**
+	 * 导出时候invoke调用;
+	 * @param page
+	 * @param paramsMap
+	 * @return
+	 */
+	@SuppressWarnings("rawtypes")
+	public Page findValidQueryByPage(Page page , Map paramsMap) {
+		validityDayService.findValidQueryByPage(page) ;
+		return page;
+	}
+	
+	/**
+	 * 会场查询
+	 * @return
+	 */
+	@SuppressWarnings("rawtypes")
+	public String reportVenue() {
+		//分页查询;
+		try {
+			page = new Page(HttpTool.getPageNum(), HttpTool.getPageSize());
+		} catch (ParseException e) {
+			log.error("分页获取错吴ReportQueryAction.reportValidQuery", e);
+		}
+		validityDayService.findVenueByPage(page) ;
+		
+		HttpTool.setAttribute("startDate", HttpTool.getParameter("startDate", ""));
+		HttpTool.setAttribute("endDate", HttpTool.getParameter("endDate", ""));
+		HttpTool.setAttribute("branchCompanyName", HttpTool.getParameter("branchCompanyName", ""));
+		HttpTool.setAttribute("province", HttpTool.getParameter("province", ""));
+		HttpTool.setAttribute("city", HttpTool.getParameter("city", ""));
+
+		return VENUE;
+	}
+
+	/**
+	 * 导出时候invoke调用;
+	 * @param page
+	 * @param paramsMap
+	 * @return
+	 */
+	@SuppressWarnings("rawtypes")
+	public Page findVenueByPage(Page page , Map paramsMap) {
+		validityDayService.findVenueByPage(page) ;
+		return page;
+	}
+	
+}

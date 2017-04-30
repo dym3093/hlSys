@@ -1,0 +1,321 @@
+ package org.hpin.reportdetail.util;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.math.BigInteger;
+import java.nio.MappedByteBuffer;
+import java.nio.channels.FileChannel;
+import java.security.MessageDigest;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import org.apache.log4j.Logger;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.util.PDFTextStripper;
+import org.hpin.reportdetail.entity.ErpReportdetailPDFContent;
+
+
+
+public class Test {
+	
+	private static Logger log = Logger.getLogger(Test.class);
+	
+	public static Map<String,String> readPdfContent(File pdfFile){
+		Map<String,String> resultMap = new HashMap<String,String>();
+		String result = null;
+		FileInputStream is = null;
+		PDDocument document = null;
+		String content = null;
+		try {
+			is = new FileInputStream(pdfFile);
+			log.info("readPDF path : "+ pdfFile.getAbsolutePath());
+			document = PDDocument.load(is);
+			int nums = document.getNumberOfPages();
+			//从每一页读取内容
+			for(int i = 1;i<nums+1;i++){
+				PDFTextStripper stripper = new PDFTextStripper();
+				stripper.setStartPage(i);
+				stripper.setEndPage(i);
+				result = stripper.getText(document);
+				Pattern p = Pattern.compile("\\s*|\t|\r|\n|\r\n");
+				Matcher m = p.matcher(result);
+				content = m.replaceAll("");
+				content = content.replaceAll(" ", "");
+				if(isMatch(content,resultMap)){
+					resultMap.put("content",content);
+					break;
+				}
+			}
+		} catch (FileNotFoundException e) {
+			log.error("DealWithPdfUtil readPdfContent ERROR ", e);
+		} catch (IOException e) {
+			log.error("DealWithPdfUtil readPdfContent ERROR ", e);
+		} finally {
+			if (is != null) {
+				try {
+					is.close();
+				} catch (IOException e) {
+					log.error("DealWithPdfUtil readPdfContent ERROR ", e);
+				}
+			}
+			if (document != null) {
+				try {
+					document.close();
+				} catch (IOException e) {
+					log.error("DealWithPdfUtil readPdfContent ERROR ", e);
+				}
+			}
+		}
+		return resultMap;
+	}
+	
+	public static ErpReportdetailPDFContent buildPDFContent(String type,String pdfStr){
+		ErpReportdetailPDFContent pdfContent = new ErpReportdetailPDFContent();
+		try{
+			if(type.equals("nfjyzx")){
+				pdfContent.setUsername(pdfStr.substring(pdfStr.indexOf("姓名")+2, pdfStr.indexOf("性别")));
+				pdfContent.setAge(pdfStr.substring(pdfStr.indexOf("年龄")+2,pdfStr.indexOf("标本")));
+				if(pdfStr.indexOf("送检日期")!=-1){
+					pdfContent.setCode(pdfStr.substring(pdfStr.indexOf("条码")+2,pdfStr.indexOf("送检日期")));
+				}else{
+					pdfContent.setCode(pdfStr.substring(pdfStr.indexOf("条码")+2,pdfStr.indexOf("报告日期")));
+				}
+				pdfContent.setSex(pdfStr.substring(pdfStr.indexOf("性别")+2,pdfStr.indexOf("年龄")));
+			}
+			if(type.equals("sysw")){
+				if(pdfStr.indexOf("年龄")!=-1){
+					pdfContent.setUsername(pdfStr.substring(pdfStr.indexOf("姓名：")+3, pdfStr.indexOf("性别")));
+					pdfContent.setAge(pdfStr.substring(pdfStr.indexOf("年龄：")+3,pdfStr.indexOf("标本")));
+					pdfContent.setCode(pdfStr.substring(pdfStr.indexOf("条码：")+3,pdfStr.length()));
+					pdfContent.setSex(pdfStr.substring(pdfStr.indexOf("性别：")+3,pdfStr.indexOf("年龄")));
+				}else if(pdfStr.indexOf("性别")!=-1){
+					pdfContent.setUsername(pdfStr.substring(pdfStr.indexOf("姓名：")+3, pdfStr.indexOf("性别")));
+					pdfContent.setCode(pdfStr.substring(pdfStr.indexOf("条码：")+3,pdfStr.length()));
+					pdfContent.setSex(pdfStr.substring(pdfStr.indexOf("性别：")+3,pdfStr.indexOf("标本")));
+				}else{
+					pdfContent.setCode(pdfStr.substring(pdfStr.indexOf("条码：")+3,pdfStr.length()));
+					pdfContent.setUsername(pdfStr.substring(pdfStr.indexOf("姓名：")+3, pdfStr.indexOf("标本")));
+				}
+				
+			}
+			if(type.equals("syswdd")){
+				pdfContent.setUsername(pdfStr.substring(pdfStr.indexOf("姓名：")+3, pdfStr.indexOf("检测技术")));
+				pdfContent.setAge(pdfStr.substring(pdfStr.indexOf("年龄：")+3,pdfStr.indexOf("样本类型")));
+				pdfContent.setCode(pdfStr.substring(pdfStr.indexOf("条形码：")+4,pdfStr.indexOf("项目")));
+				pdfContent.setSex(pdfStr.substring(pdfStr.indexOf("性别：")+3,pdfStr.indexOf("年龄")));
+			}
+			if(type.equals("bfns")){
+				if(pdfStr.indexOf("编号")==0){
+					pdfContent.setUsername(pdfStr.substring(pdfStr.indexOf("姓名")+2, pdfStr.indexOf("性别")));
+					pdfContent.setAge(pdfStr.substring(pdfStr.indexOf("年龄")+2,pdfStr.indexOf("姓名")));
+					pdfContent.setCode(pdfStr.substring(pdfStr.indexOf("编号")+2,pdfStr.indexOf("报告日期")));
+					pdfContent.setSex(pdfStr.substring(pdfStr.indexOf("性别")+2,pdfStr.indexOf("个人信息")));
+				}else if(pdfStr.indexOf("姓名")==0){
+					pdfContent.setUsername(pdfStr.substring(pdfStr.indexOf("姓名")+2, pdfStr.indexOf("性别")));
+					pdfContent.setAge(pdfStr.substring(pdfStr.indexOf("年龄")+2,pdfStr.length()));
+					pdfContent.setCode(pdfStr.substring(pdfStr.indexOf("编号")+2,pdfStr.indexOf("报告日期")));
+					pdfContent.setSex(pdfStr.substring(pdfStr.indexOf("性别")+2,pdfStr.indexOf("个人信息")));
+				}else if(pdfStr.indexOf("个人信息")==0){
+					String name = pdfStr.substring(pdfStr.indexOf("姓名")+2, pdfStr.indexOf("性别"));
+					if(name.indexOf("年龄")!=-1){
+						pdfContent.setUsername(pdfStr.substring(pdfStr.indexOf("姓名")+2,pdfStr.indexOf("年龄")));
+						pdfContent.setAge(pdfStr.substring(pdfStr.indexOf("年龄")+2,pdfStr.indexOf("编号")));
+						pdfContent.setCode(pdfStr.substring(pdfStr.indexOf("编号")+2,pdfStr.indexOf("性别")));
+						pdfContent.setSex(pdfStr.substring(pdfStr.indexOf("性别")+2,pdfStr.indexOf("报告日期")));
+					}else{
+						pdfContent.setUsername(name);
+						String sex = pdfStr.substring(pdfStr.indexOf("性别")+2,pdfStr.indexOf("编号"));
+						if(sex.indexOf("年龄")!=-1){
+							pdfContent.setSex(pdfStr.substring(pdfStr.indexOf("性别")+2,pdfStr.indexOf("年龄")));
+							pdfContent.setAge(pdfStr.substring(pdfStr.indexOf("年龄")+2,pdfStr.indexOf("编号")));
+							pdfContent.setCode(pdfStr.substring(pdfStr.indexOf("编号")+2,pdfStr.indexOf("报告日期")));
+						}else{
+							pdfContent.setSex(pdfStr.substring(pdfStr.indexOf("性别")+2,pdfStr.indexOf("编号")));
+							pdfContent.setAge(pdfStr.substring(pdfStr.indexOf("年龄")+2,pdfStr.length()));
+							pdfContent.setCode(pdfStr.substring(pdfStr.indexOf("编号")+2,pdfStr.indexOf("报告日期")));
+						}
+					}
+				}else if(pdfStr.indexOf("1个人信息")==0){
+					pdfContent.setUsername(pdfStr.substring(pdfStr.indexOf("姓名")+2, pdfStr.indexOf("性别")));
+					pdfContent.setAge(pdfStr.substring(pdfStr.indexOf("年龄")+2,pdfStr.indexOf("编号")));
+					pdfContent.setCode(pdfStr.substring(pdfStr.indexOf("编号")+2,pdfStr.indexOf("报告日期")));
+					pdfContent.setSex(pdfStr.substring(pdfStr.indexOf("性别")+2,pdfStr.indexOf("年龄")));
+				}else{
+					pdfContent.setUsername(pdfStr.substring(pdfStr.indexOf("姓名")+2, pdfStr.indexOf("年龄")));
+					pdfContent.setAge(pdfStr.substring(pdfStr.indexOf("年龄")+2,pdfStr.indexOf("编号")));
+					pdfContent.setCode(pdfStr.substring(pdfStr.indexOf("编号")+2,pdfStr.indexOf("性别")));
+					pdfContent.setSex(pdfStr.substring(pdfStr.indexOf("性别")+2,pdfStr.indexOf("报告日期")));
+				}
+				
+			}
+			if(type.equals("children")){
+				pdfContent.setUsername(pdfStr.substring(pdfStr.indexOf("姓名：")+3, pdfStr.indexOf("性别")));
+				pdfContent.setAge(pdfStr.substring(pdfStr.indexOf("年龄：")+3,pdfStr.indexOf("标本类型")));
+				pdfContent.setCode(pdfStr.substring(pdfStr.indexOf("条码：")+3,pdfStr.indexOf("送检单位")));
+				pdfContent.setSex(pdfStr.substring(pdfStr.indexOf("性别：")+3,pdfStr.indexOf("年龄")));
+			}
+			if(type.equals("fatgene")){
+				pdfContent.setUsername(pdfStr.substring(pdfStr.indexOf("姓名：")+3, pdfStr.indexOf("性别")));
+				pdfContent.setAge(pdfStr.substring(pdfStr.indexOf("年龄：")+3,pdfStr.indexOf("送检日期")));
+				pdfContent.setCode(pdfStr.substring(pdfStr.indexOf("条行码：")+4,pdfStr.indexOf("送检标本")));
+				pdfContent.setSex(pdfStr.substring(pdfStr.indexOf("性别：")+3,pdfStr.indexOf("年龄")));
+			}
+			if(type.equals("growthhormone")){
+				pdfContent.setUsername(pdfStr.substring(pdfStr.indexOf("姓名：")+3, pdfStr.indexOf("性别")));
+				pdfContent.setAge(pdfStr.substring(pdfStr.indexOf("年龄：")+3,pdfStr.indexOf("送检日期")));
+				pdfContent.setCode(pdfStr.substring(pdfStr.indexOf("条行码：")+4,pdfStr.indexOf("送检标本")));
+				pdfContent.setSex(pdfStr.substring(pdfStr.indexOf("性别：")+3,pdfStr.indexOf("年龄")));
+			}
+			if(type.equals("childrenVitamin")){
+				pdfContent.setUsername(pdfStr.substring(pdfStr.indexOf("姓名：")+3, pdfStr.indexOf("性别")));
+				pdfContent.setAge(pdfStr.substring(pdfStr.indexOf("年龄：")+3,pdfStr.indexOf("送检日期")));
+				pdfContent.setCode(pdfStr.substring(pdfStr.indexOf("条行码：")+4,pdfStr.indexOf("送检标本")));
+				pdfContent.setSex(pdfStr.substring(pdfStr.indexOf("性别：")+3,pdfStr.indexOf("年龄")));
+			}
+			if(type.equals("P53")){
+				pdfContent.setUsername(pdfStr.substring(pdfStr.indexOf("姓名")+2, pdfStr.indexOf("性别")));
+				pdfContent.setAge(pdfStr.substring(pdfStr.indexOf("年龄")+2,pdfStr.indexOf("条码")));
+				pdfContent.setCode(pdfStr.substring(pdfStr.indexOf("条码")+2,pdfStr.indexOf("送检单位")));
+				pdfContent.setSex(pdfStr.substring(pdfStr.indexOf("性别")+2,pdfStr.indexOf("年龄")));
+			}
+			if(type.equals("basicInfo")){
+				pdfContent.setUsername(pdfStr.substring(pdfStr.indexOf("姓名")+2, pdfStr.indexOf("性别")));
+				pdfContent.setSex(pdfStr.substring(pdfStr.indexOf("性别")+2, pdfStr.indexOf("年龄")));
+				pdfContent.setAge(pdfStr.substring(pdfStr.indexOf("年龄")+2, pdfStr.indexOf("条码")));
+				pdfContent.setCode(pdfStr.substring(pdfStr.indexOf("条码")+2, pdfStr.indexOf("送检单位")));
+			}
+		}catch(Exception e){
+			log.error("DealWithFileUtil buildPDFContent error, pdf content : \n"+pdfStr, e);
+			pdfContent = new ErpReportdetailPDFContent();
+		}
+		return pdfContent;
+	}
+	
+	public static ErpReportdetailPDFContent buildPDFContentBean(File currFile){
+		ErpReportdetailPDFContent pdf = new ErpReportdetailPDFContent();
+		String pdfContent = null;
+		String type = null;
+		Map<String,String> maps = readPdfContent(currFile);
+		if(maps.containsKey("content")&&maps.get("content")!=null){
+			pdfContent = maps.get("content");
+			System.out.println(pdfContent);
+			type = maps.get("type");
+			//处理PDF内容并存入表中,若处理过程出现异常，则会返回一个空内容的对象
+			pdf = buildPDFContent(type,pdfContent);
+			//判断PDF对象内容是否为空
+			if(pdf.getUsername()!=null){
+				if(type.equals("sysw")){
+					String fileName = currFile.getName().substring(0, currFile.getName().lastIndexOf("."));
+					if(pdf.getCode().indexOf(fileName)!=-1){
+						pdf.setCode(pdf.getCode().substring(pdf.getCode().indexOf(fileName), fileName.length()));
+					}
+				}
+				pdf.setIsrecord(1);
+			}else{
+				pdf.setIsrecord(0);
+			}
+		}else{
+			pdf.setIsrecord(0);
+		}
+		pdf.setPdfname(currFile.getName());
+		pdf.setMd5(getPdfMd5ByFile(currFile));
+		pdf.setFilesize(String.valueOf(currFile.length()));
+		pdf.setFilepath(currFile.getAbsolutePath());
+		return pdf;
+	}
+	
+	public static String getPdfMd5ByFile(File file){
+		FileInputStream in = null;
+		String result = null;
+		try{
+			in = new FileInputStream(file);
+			MappedByteBuffer byteBuffer = in.getChannel().map(FileChannel.MapMode.READ_ONLY, 0, file.length());
+			MessageDigest md5 = MessageDigest.getInstance("MD5");
+			md5.update(byteBuffer);
+			BigInteger bi = new BigInteger(1, md5.digest());
+			result = bi.toString(16);
+		}catch(Exception e){
+			log.error("DealWithFileUtil getPdfMd5ByFile", e);
+		}finally{
+			if(in!=null){
+				try {
+					in.close();
+				} catch (IOException e) {
+					log.error("DealWithFileUtil getPdfMd5ByFile catch", e);
+				}
+			}
+		}
+		return result;
+	}
+	
+	public static boolean isMatch(String pdf,Map<String,String> map){
+		//南方基因申友生物
+		if(pdf.indexOf("受检人信息")!=-1){
+			map.put("type","sysw");
+			return true;
+		}
+		//含报告导读
+		if(pdf.indexOf("基因体检基本信息受检者信息")!=-1){
+			map.put("type","syswdd");
+			return true;
+		}
+		//国家人类基因南方研究中心 
+		if(pdf.indexOf("检者基本信息")!=-1){
+			map.put("type","nfjyzx");
+			return true;
+		}
+		//北方诺赛
+		if(pdf.indexOf("个人信息")!=-1){
+			map.put("type","bfns");
+			return true;
+		}
+		//儿童用药安全检测报告
+		if(pdf.indexOf("儿童用药安全检测报告")!=-1){
+			map.put("type","children");
+			return true;
+		}
+		//儿童/青春期肥胖基因
+		if(pdf.indexOf("肥胖基因")!=-1){
+			map.put("type","fatgene");
+			return true;
+		}
+		//生长激素
+		if(pdf.indexOf("生长激素")!=-1){
+			map.put("type","growthhormone");
+			return true;
+		}
+		//儿童成长基因检测
+		if(pdf.indexOf("儿童成长基因检测")!=-1){
+			map.put("type","basicInfo");
+			return true;
+		}
+		//儿童维生素
+		if(pdf.indexOf("儿童维生素")!=-1){
+			map.put("type","childrenVitamin");
+			return true;
+		}
+		//P53抑癌能力
+		if(pdf.indexOf("P53抑癌能力")!=-1){
+			map.put("type","P53");
+			return true;
+		}
+		
+		return false;
+	}
+	
+	
+	
+	public static void main(String[] args) {
+		java.io.File file = new java.io.File("C:\\Users\\Carly\\Desktop\\2149119.pdf");
+		ErpReportdetailPDFContent entity = buildPDFContentBean(file);
+		System.out.println(entity.getAge());
+		System.out.println(entity.getUsername());
+		System.out.println(entity.getSex());
+		System.out.println(entity.getCode());
+		System.out.println(1);
+	}
+}	

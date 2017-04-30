@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping>
+    <class name="org.hpin.warehouse.entity.ErpBxCompanyPreSet" table="ERP_BXCOMPANY_PRESET">
+        <id name="id" type="java.lang.String">
+			<column name="ID" />
+			<generator class="uuid" />
+		</id>
+        
+        <property name="applicationNo" type="java.lang.String">
+            <column name="APPLICATION_NO"/>
+        </property>
+        <property name="eventsNo" type="java.lang.String">
+            <column name="EVENTS_NO"/>
+        </property>
+        <property name="customerRelationshipId" type="java.lang.String">
+            <column name="CUSTOMER_RELATIONSHIP_ID"/>
+        </property>
+        <property name="customerSkuNum" type="java.lang.String">
+            <column name="CUSTOMER_SKU_NUM"/>
+        </property>
+        <property name="customerName" type="java.lang.String">
+            <column name="CUSTOMER_NAME"/>
+        </property>
+        <property name="comboName" type="java.lang.String">
+            <column name="COMBO_NAME"/>
+        </property>
+        <property name="createTime" type="java.util.Date">
+            <column name="CREATE_TIME"/>
+        </property>
+        <property name="createUserId" type="java.lang.String">
+            <column name="CREATE_USER_ID"/>
+        </property>
+        <property name="updateTime" type="java.util.Date">
+            <column name="UPDATE_TIME"/>
+        </property>
+        <property name="updateUserId" type="java.lang.String">
+            <column name="UPDATE_USER_ID"/>
+        </property>
+        <property name="isUseable" type="java.lang.String">
+            <column name="IS_USEABLE"/>
+        </property>
+        <property name="comboShowName" type="java.lang.String">
+            <column name="COMBO_SHOW_NAME"/>
+        </property>
+    </class>
+</hibernate-mapping>

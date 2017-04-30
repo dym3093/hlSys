@@ -1,0 +1,294 @@
+package org.hpin.base.customerrelationship.web;
+
+import java.io.File;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.servlet.http.HttpServletRequest;
+
+import net.sf.json.JSONObject;
+
+import org.apache.commons.lang.StringUtils;
+import org.apache.log4j.Logger;
+import org.apache.struts2.ServletActionContext;
+import org.apache.struts2.convention.annotation.Action;
+import org.apache.struts2.convention.annotation.Namespace;
+import org.apache.struts2.convention.annotation.Result;
+import org.apache.struts2.convention.annotation.Results;
+import org.hpin.base.customerrelationship.entity.PreSalesManMgr;
+import org.hpin.base.customerrelationship.service.PreSalesManMgrService;
+import org.hpin.base.usermanager.entity.User;
+import org.hpin.common.core.SpringTool;
+import org.hpin.common.core.web.BaseAction;
+import org.hpin.common.util.HttpTool;
+import org.hpin.common.widget.pagination.Page;
+
+/**
+ * 营销员预留信息管理
+ * @author ybc
+ * @since 2017/02/08
+ */
+@Namespace("/resource")
+@Action("preSalesmanMgr")
+@Results({
+	@Result(name="listSalesManInfo",location="/WEB-INF/branchcommany/listPreSalesmanInfo.jsp"),
+	@Result(name="listSalesManInfoBX",location="/WEB-INF/branchcommany/listPreSalesmanInfoBX.jsp"),
+	@Result(name="importSalesmanInfo",location="/WEB-INF/branchcommany/importSalesmanInfo.jsp"),
+	@Result(name="importSalesmanInfoBX",location="/WEB-INF/branchcommany/importSalesmanInfoBX.jsp"),
+	@Result(name="amlSalesmanInfo",location="/WEB-INF/branchcommany/amlPreSalesmanInfo.jsp"),
+	@Result(name="addSalesmanInfoByOne",location="/WEB-INF/branchcommany/addSalesmanInfoByOne.jsp"),
+})
+@SuppressWarnings({ "rawtypes", "unchecked" })
+public class PreSalesManMgrAction extends BaseAction{
+	
+	private static final long serialVersionUID = 1L;
+	
+	private File salesManExc;
+	
+	PreSalesManMgrService salesManService = (PreSalesManMgrService)SpringTool.getBean(PreSalesManMgrService.class);
+	
+	private Logger log = Logger.getLogger(PreSalesManMgrAction.class);
+
+	public String listSalesManInfo(){
+		try {
+		    // add by Damian 2017-04-12 begin
+			Map<String,Object> searchMap = buildSearch();
+			page = new Page(HttpTool.getPageNum(), HttpTool.getPageSize());
+			salesManService.listPages(page, searchMap);
+
+			String aaaa = HttpTool.getParameter("aaaa", "");
+			String bbbb = HttpTool.getParameter("bbbb", "");
+			HttpTool.setAttribute("aaaa", aaaa);
+			HttpTool.setAttribute("bbbb", bbbb);
+			dealReposeParams(ServletActionContext.getRequest());
+			// add by Damian 2017-04-12 end
+
+//			Map<String,Object> searchMap = buildSearch();
+//			searchMap.put("filter_and_isDeleted_EQ_I", 0);
+//			searchMap.put("order_createTime", "desc");
+//			page = new Page(HttpTool.getPageNum(), HttpTool.getPageSize());
+//			if(searchMap.containsKey("filter_and_ymCompanyId_IN_S")){
+//				String company = salesManService.getCompanyList(0,searchMap.get("filter_and_ymCompanyId_IN_S").toString());
+//				searchMap.put("filter_and_ymCompanyId_IN_S", company);
+//
+//			}
+//			if(searchMap.containsKey("filter_and_ymOwncompanyId_IN_S")){
+//				String company = salesManService.getCompanyList(1,searchMap.get("filter_and_ymOwncompanyId_IN_S").toString());
+//				searchMap.put("filter_and_ymOwncompanyId_IN_S", company);
+//
+//			}
+//			salesManService.findByPage(page, searchMap);
+//			salesManService.listPages(page, searchMap);
+//			salesManService.dealSalesManInfo(page);
+//			dealReposeParams(ServletActionContext.getRequest());
+		} catch (Exception e) {
+			log.error("PreSalesManMgrAction listSalesManInfo", e);
+		}
+		return "listSalesManInfo";
+	}
+
+	public String listSalesManInfoBX(){
+		User currentUser = (User)HttpTool.getSession().getAttribute("currentUser");
+		try {
+			Map<String,Object> searchMap = buildSearch();
+			searchMap.put("filter_and_isDeleted_EQ_I", 0);
+			searchMap.put("order_createTime", "desc");
+			searchMap.put("filter_and_ymCompanyId_EQ_S", currentUser.getJobNumber());
+			page = new Page(HttpTool.getPageNum(), HttpTool.getPageSize());
+			salesManService.findByPage(page, searchMap);
+			salesManService.dealSalesManInfo(page);
+			dealReposeParams(ServletActionContext.getRequest());
+		} catch (Exception e) {
+			log.error("PreSalesManMgrAction listSalesManInfo", e);
+		}
+		return "listSalesManInfoBX";
+	}
+	
+	public String showAmlPreSalesMan(){
+		try {
+			Map<String,Object> searchMap = buildSearch();
+			searchMap.put("filter_and_isDeleted_EQ_I", 2);
+			searchMap.put("order_createTime", "desc");
+			page = new Page(HttpTool.getPageNum(), HttpTool.getPageSize());
+			salesManService.findByPage(page, searchMap);
+			salesManService.dealSalesManInfo(page);
+			dealReposeParams(ServletActionContext.getRequest());
+		} catch (Exception e) {
+			log.error("PreSalesManMgrAction listSalesManInfo", e);
+		}
+		return "amlSalesmanInfo";
+	}
+	
+	
+	public Page findByPage(Page page , Map searchMap){
+		try{
+			searchMap.put("filter_and_isDeleted_EQ_I", 2);
+			searchMap.put("order_createTime", "desc");
+			salesManService.findByPage(page, searchMap);
+			salesManService.dealSalesManInfo(page);
+			dealReposeParams(ServletActionContext.getRequest());
+		}catch(Exception e){
+			log.error("PreSalesManMgrAction findByPage",e);
+		}
+		return page ;
+	}
+	
+	public String importSalesmanInfo(){
+		return "importSalesmanInfo";
+	}
+	
+	public String importSalesmanInfoBX(){
+		return "importSalesmanInfoBX";
+	}
+	
+	public String addSalesmanInfo(){
+		JSONObject json = new JSONObject();
+		Integer import_person_num = 0;
+		Map<String,Integer> resMap = new HashMap<String,Integer>();
+		User currentUser = (User)HttpTool.getSession().getAttribute("currentUser");
+		try{
+			if(null!=salesManExc){
+				List<Map<String, String>> dataList = salesManService.getExcelData(salesManExc);
+				import_person_num = dataList.size();
+				List<PreSalesManMgr> importSalesManList = salesManService.addSalesmanInfo(dataList,currentUser);
+				resMap = salesManService.saveSalesmanInfo(importSalesManList);
+			}
+			if(import_person_num>0){
+				if(resMap.get("repeatData")>0){
+					json.put("message", "表格数据"+import_person_num+"条,导入成功"+resMap.get("validData")+"条,异常数据"+resMap.get("amlData")+"条,重复数据"+resMap.get("repeatData")+"条");
+				}else{
+					json.put("message", "表格数据"+import_person_num+"条,导入成功"+resMap.get("validData")+"条,异常数据"+resMap.get("amlData")+"条");
+				}
+				json.put("statusCode", 200);
+				json.put("navTabId", super.navTabId);
+			}else{
+				json.put("statusCode", 300);
+				json.put("message", "表格数据为空,导入失败");
+				log.info("addSalesmanInfo import file is null");
+			}
+		}catch(Exception e){
+			json.put("statusCode", 300);
+			json.put("message", "服务发生异常,请稍后再试");
+			log.error("PreSalesManMgrAction addSalesmanInfo", e);
+		}
+		renderJson(json);
+		return null;
+	}
+	
+	public String addSalesmanInfoBX(){
+		JSONObject json = new JSONObject();
+		Integer total_person_num = 0;
+		Integer import_person_num = 0;
+		User currentUser = (User)HttpTool.getSession().getAttribute("currentUser");
+		try{
+			if(null!=salesManExc){
+				List<Map<String, String>> dataList = salesManService.getExcelData(salesManExc);
+				import_person_num = dataList.size();
+				List<PreSalesManMgr> importSalesManList = salesManService.addSalesmanInfoBX(dataList,currentUser);
+				total_person_num = salesManService.saveSalesmanInfoBX(importSalesManList);
+			}
+			if(import_person_num>0){
+				if(import_person_num-total_person_num>0){
+					json.put("message", "表格数据"+import_person_num+"条,导入成功"+total_person_num+"条,重复数据"+(import_person_num-total_person_num)+"条");
+				}else{
+					json.put("message", "表格数据"+import_person_num+"条,导入成功"+total_person_num+"条");
+				}
+				json.put("statusCode", 200);
+				json.put("navTabId", super.navTabId);
+			}else{
+				json.put("statusCode", 300);
+				json.put("message", "表格数据为空,导入失败");
+				log.info("addSalesmanInfo import file is null");
+			}
+		}catch(Exception e){
+			json.put("statusCode", 300);
+			log.error("PreSalesManMgrAction addSalesmanInfo", e);
+		}
+		renderJson(json);
+		return null;
+	}
+	
+	//显示单个增加营销员信息页面
+	public String showAddSalesmanInfoByOne(){
+		HttpTool.setAttribute("rootNavTabId",HttpTool.getParameter("rootNavTabId"));
+		return "addSalesmanInfoByOne";
+	}
+	
+	//单个增加营销员信息
+	public String addSalesmanInfoByOne(){
+		User currentUser = (User)HttpTool.getSession().getAttribute("currentUser");
+		JSONObject json = new JSONObject();
+		try{
+			String employeeNo = HttpTool.getParameter("employeeNo");
+			String salesman = HttpTool.getParameter("salesman");
+			String employeePhone = HttpTool.getParameter("employeePhone");
+			String mark = HttpTool.getParameter("mark");
+			PreSalesManMgr salesMan = new PreSalesManMgr();
+			salesMan.setCreateTime(new Date());
+			salesMan.setEmployeeNo(employeeNo);
+			salesMan.setSalesman(salesman);
+			salesMan.setEmployeePhone(employeePhone);
+			salesMan.setMark(mark);
+			salesMan.setYmCompanyId(currentUser.getJobNumber());
+			salesMan.setYmOwncompanyId(currentUser.getDeptId());
+			salesMan.setCreateUserId(currentUser.getId());
+			boolean isSuceess = salesManService.addSalesManByOne(salesMan);
+			HttpServletRequest request = ServletActionContext.getRequest();
+			StringBuffer url = request.getRequestURL();
+			StringBuffer contextUrl = new StringBuffer(url.delete(url.length()-request.getRequestURI().length(), url.length()).append(request.getContextPath()).append("/").toString());
+			StringBuffer subUrl = new StringBuffer("resource/preSalesmanMgr!listSalesManInfoBX.action");
+			String forwardUrl = contextUrl.append(subUrl).toString();
+			if(isSuceess){
+				json.put("statusCode", 200);
+				json.put("message", "数据添加成功!");
+				json.put("navTabId", HttpTool.getParameter("rootNavTabId"));
+				json.put("callbackType", "closeCurrent");
+				json.put("forwardUrl",forwardUrl);
+			}else{
+				json.put("statusCode", 300);
+				json.put("message", "数据重复，添加失败");
+			}
+		}catch(Exception e){
+			log.error("PreSalesManMgrAction addSalesmanInfoByOne",e);
+			json.put("statusCode", 300);
+			json.put("message", "服务异常，数据添加失败");
+		}
+		renderJson(json);
+		return null;
+	}
+
+	private void dealReposeParams(HttpServletRequest request) {
+		if(StringUtils.isNotEmpty(request.getParameter("filter_and_employeeNo_EQ_S"))){
+			HttpTool.setAttribute("filter_and_employeeNo_EQ_S",request.getParameter("filter_and_employeeNo_EQ_S"));
+		}
+		if(StringUtils.isNotEmpty(request.getParameter("filter_and_salesman_EQ_S"))){
+			HttpTool.setAttribute("filter_and_salesman_EQ_S",request.getParameter("filter_and_salesman_EQ_S"));
+		}
+		if(StringUtils.isNotEmpty(request.getParameter("filter_and_mark_EQ_S"))){
+			HttpTool.setAttribute("filter_and_mark_EQ_S",request.getParameter("filter_and_mark_EQ_S"));
+		}
+		if(StringUtils.isNotEmpty(request.getParameter("filter_and_ymCompanyId_IN_S"))){
+			HttpTool.setAttribute("filter_and_ymCompanyId_IN_S",request.getParameter("filter_and_ymCompanyId_IN_S"));
+		}
+		if(StringUtils.isNotEmpty(request.getParameter("filter_and_ymOwncompanyId_IN_S"))){
+			HttpTool.setAttribute("filter_and_ymOwncompanyId_IN_S",request.getParameter("filter_and_ymOwncompanyId_IN_S"));
+		}
+		if(StringUtils.isNotEmpty(request.getParameter("filter_and_createTime_GEST_T"))){
+			HttpTool.setAttribute("filter_and_createTime_GEST_T",request.getParameter("filter_and_createTime_GEST_T"));
+		}
+		if(StringUtils.isNotEmpty(request.getParameter("filter_and_createTime_LEET_T"))){
+			HttpTool.setAttribute("filter_and_createTime_LEET_T",request.getParameter("filter_and_createTime_LEET_T"));
+		}
+	}
+	
+	public File getSalesManExc() {
+		return salesManExc;
+	}
+
+	public void setSalesManExc(File salesManExc) {
+		this.salesManExc = salesManExc;
+	}
+	
+}

@@ -1,0 +1,172 @@
+package org.hpin.statistics.briefness.service;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+
+import org.apache.commons.lang.StringUtils;
+import org.hpin.base.usermanager.entity.User;
+import org.hpin.common.core.orm.BaseService;
+import org.hpin.common.util.HttpTool;
+import org.hpin.common.widget.pagination.Page;
+import org.hpin.statistics.briefness.entity.ProvinceEventsVO;
+import org.springframework.jdbc.core.BeanPropertyRowMapper;
+import org.springframework.stereotype.Service;
+
+/**
+ * 通用查询处理service
+ * <p>Description: </p>
+ * @author henry.xu
+ * @date 2017年4月1日
+ */
+@Service(value="org.hpin.statistics.briefness.service.CommonQueryService")
+public class CommonQueryService extends BaseService {
+	/**
+	 * 直接处理sql不经过dao;
+	 * <p>Description: </p>
+	 * @author herny.xu
+	 * @date 2017年4月1日
+	 */
+	@SuppressWarnings("rawtypes")
+	public void queryProvinceEvents(Page page, HashMap<String, String> params, User userInfo) {
+		List<Object> objParams = new ArrayList<Object>();
+		
+		//1.语句封装;
+		StringBuilder jdbcSql = queryProvinceEventsSql();
+		
+		//2. 参数处理;城市、支公司、场次开始日期、场次结束日期
+		String projectCode = userInfo.getProjectCode();
+		if(StringUtils.isNotEmpty(projectCode)) {
+			 //项目编码通过当前登录用户的project_code获取 数据库中此字段存的值类似于'SN0001','SN0002'这种
+			jdbcSql.append(" and pr.project_code in ("+projectCode+") ");
+		}
+		
+		//默认省份;
+		if(userInfo!=null){
+			String provice = userInfo.getProvice();
+			jdbcSql.append(" and e.province = ? ");
+			objParams.add(provice);
+		}
+		
+		if(params != null && !params.isEmpty()) {
+			String city = params.get("city");
+			String branchCompany = params.get("branchCompany");
+			String startDate = params.get("startDate");
+			String endDate = params.get("endDate");
+			
+			if(StringUtils.isNotEmpty(city)) {
+				jdbcSql.append(" and e.city = ? ");
+				objParams.add(city);
+			}
+			if(StringUtils.isNotEmpty(branchCompany)) {
+				jdbcSql.append(" and p.BRANCH_COMMANY = ?");
+				objParams.add(branchCompany);
+			}
+			if(StringUtils.isNotEmpty(startDate)) {
+				jdbcSql.append(" and e.event_date >= to_date(?, 'yyyy-MM-dd')");
+				objParams.add(startDate);
+			}
+			if(StringUtils.isNotEmpty(endDate)) {
+				jdbcSql.append(" and e.event_date < to_date(?, 'yyyy-MM-dd')");
+				objParams.add(endDate);
+			}
+		}
+		
+		jdbcSql.append(" order by e.event_date desc, e.id desc");
+		
+		//3.查询;
+		Long count = this.getDao().findJdbcCount(jdbcSql, objParams);
+		
+		objParams.add(page.getPageNumEndCount());
+		objParams.add(page.getPageNumStartCount());
+		
+		BeanPropertyRowMapper<ProvinceEventsVO> rowMapper = new BeanPropertyRowMapper<ProvinceEventsVO>(ProvinceEventsVO.class);
+		List<?> lists = getDao().findJdbcList(jdbcSql, objParams, rowMapper);
+		
+		page.setTotalCount(count);
+		page.setResults(lists);
+		
+	}
+	
+	/**
+	 * 直接处理sql不经过dao;
+	 * <p>Description: </p>
+	 * @author herny.xu
+	 * @date 2017年4月1日
+	 */
+	@SuppressWarnings("rawtypes")
+	public void queryProvinceEventsExcel(Page page, User userInfo) {
+		
+		//1.语句封装;
+		StringBuilder jdbcSql = queryProvinceEventsSql();
+		
+		//2. 参数处理;城市、支公司、场次开始日期、场次结束日期
+		String projectCode = userInfo.getProjectCode();
+		if(StringUtils.isNotEmpty(projectCode)) {
+			 //项目编码通过当前登录用户的project_code获取 数据库中此字段存的值类似于'SN0001','SN0002'这种
+			jdbcSql.append(" and pr.project_code in ("+projectCode+") ");
+		}
+		
+		//默认省份;
+		if(userInfo!=null){
+			String provice = userInfo.getProvice();
+			jdbcSql.append(" and e.province = '"+provice+"' ");
+		}
+		
+		String city = HttpTool.getParameter("params.city", "");
+		String branchCompany = HttpTool.getParameter("params.branchCompany", "");
+		String startDate = HttpTool.getParameter("params.startDate", "");
+		String endDate = HttpTool.getParameter("params.endDate", "");
+		
+		if(StringUtils.isNotEmpty(city)) {
+			jdbcSql.append(" and e.city = '"+city+"' ");
+		}
+		if(StringUtils.isNotEmpty(branchCompany)) {
+			jdbcSql.append(" and p.BRANCH_COMMANY = '"+branchCompany+"'");
+		}
+		if(StringUtils.isNotEmpty(startDate)) {
+			jdbcSql.append(" and e.event_date >= to_date('"+startDate+"', 'yyyy-MM-dd')");
+		}
+		if(StringUtils.isNotEmpty(endDate)) {
+			jdbcSql.append(" and e.event_date < to_date('"+endDate+"', 'yyyy-MM-dd')");
+		}
+		
+		jdbcSql.append(" order by e.event_date desc, e.id desc");
+		
+		//3.查询;
+		
+		BeanPropertyRowMapper<ProvinceEventsVO> rowMapper = new BeanPropertyRowMapper<ProvinceEventsVO>(ProvinceEventsVO.class);
+		
+		page.setResults(getDao().getJdbcTemplate().query(jdbcSql.toString(), rowMapper));
+		
+	}
+	
+	private StringBuilder queryProvinceEventsSql() {
+		StringBuilder sql = new StringBuilder("select e.events_no eventsNo, " +
+				"e.batchno batchNo, " +
+				"to_char(e.event_date, 'yyyy-MM-dd') eventDate, " +
+				"(select r.region_name from hl_region r where r.id = e.province) provinceName, " +
+				"(select r.region_name from hl_region r where r.id = e.city) cityName, " +
+				"p.branch_commany branchCompany, " +
+				"(select d.dept_name from um_dept d where d.id = e.owned_company_id) deptName, " +
+				"(select count(*) " +
+				"from erp_customer c " +
+				"where c.events_no = e.events_no " +
+				" and c.is_deleted = 0) customerCount, " +
+				"(select count(*) " +
+				" from erp_customer c " +
+				"where c.events_no = e.events_no " +
+				"and c.is_deleted = 0 " +
+				"and c.pdffilepath is not null) reportOut " +
+				"from erp_events e, " +
+				"hl_customer_relationship_pro pr, " +
+				"hl_customer_relationship     p " +
+				"where e.customerrelationshippro_id = pr.id " +
+				"and pr.customer_relationship_id = p.id " +
+				"and e.is_deleted = 0"
+				);
+		
+		return sql;
+	}
+
+}

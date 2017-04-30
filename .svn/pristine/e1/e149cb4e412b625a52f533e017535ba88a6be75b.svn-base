@@ -1,0 +1,147 @@
+package org.hpin.reportdetail.entity;
+
+import java.util.Date;
+
+import org.hpin.common.core.orm.BaseEntity;
+
+/**
+ * 读取PDF文本内容匹配类
+ * @author tangxing
+ * @date 2017-3-8下午3:38:10
+ */
+public class ErpReadPDFMatchInfo extends BaseEntity {
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+
+	private String id;
+	
+	/** 客户条码 */
+	private String code;
+	
+	/** 客户姓名 */
+	private String name;
+	
+	/** 客户性别 */
+	private String sex;
+	
+	/** 客户年龄 */
+	private String age;
+	
+	/** 该客户pdf文件路径 */
+	private String pdfFilePath;
+	
+	/** pdf的页数 */
+	private int pdfPages;
+	
+	/** 是否读取 */
+	private String isReadPdf;
+	
+	/** 出现问号的页码 */
+	private String errorPages;
+	
+	/**pdf错误状态  （默认为空；0--没有问题；  1--男：男性报告出现女性疾病；女：女性报告出现男性疾病；  2--第一页封面有问题；） */
+	private String pdfWrongStatus;
+	
+	private Date createTime;
+
+	public String getId() {
+		return id;
+	}
+
+	public void setId(String id) {
+		this.id = id;
+	}
+
+	public String getCode() {
+		return code;
+	}
+
+	public void setCode(String code) {
+		this.code = code;
+	}
+
+	public String getName() {
+		return name;
+	}
+
+	public void setName(String name) {
+		this.name = name;
+	}
+	
+	public String getSex() {
+		return sex;
+	}
+
+	public void setSex(String sex) {
+		this.sex = sex;
+	}
+
+	public String getAge() {
+		return age;
+	}
+
+	public void setAge(String age) {
+		this.age = age;
+	}
+
+	public String getPdfFilePath() {
+		return pdfFilePath;
+	}
+
+	public void setPdfFilePath(String pdfFilePath) {
+		this.pdfFilePath = pdfFilePath;
+	}
+
+	public int getPdfPages() {
+		return pdfPages;
+	}
+
+	public void setPdfPages(int pdfPages) {
+		this.pdfPages = pdfPages;
+	}
+
+	public String getIsReadPdf() {
+		return isReadPdf;
+	}
+
+	public void setIsReadPdf(String isReadPdf) {
+		this.isReadPdf = isReadPdf;
+	}
+
+	public String getErrorPages() {
+		return errorPages;
+	}
+
+	public void setErrorPages(String errorPages) {
+		this.errorPages = errorPages;
+	}
+
+	public String getPdfWrongStatus() {
+		return pdfWrongStatus;
+	}
+
+	public void setPdfWrongStatus(String pdfWrongStatus) {
+		this.pdfWrongStatus = pdfWrongStatus;
+	}
+
+	public Date getCreateTime() {
+		return createTime;
+	}
+
+	public void setCreateTime(Date createTime) {
+		this.createTime = createTime;
+	}
+
+	@Override
+	public String toString() {
+		return "ErpReadPDFMatchInfo [id=" + id + ", code=" + code + ", name="
+				+ name + ", sex=" + sex + ", age=" + age + ", pdfFilePath="
+				+ pdfFilePath + ", pdfPages=" + pdfPages + ", isReadPdf="
+				+ isReadPdf + ", errorPages=" + errorPages
+				+ ", pdfWrongStatus=" + pdfWrongStatus + ", createTime="
+				+ createTime + "]";
+	}
+}

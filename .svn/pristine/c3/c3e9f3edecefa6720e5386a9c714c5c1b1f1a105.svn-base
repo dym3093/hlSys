@@ -1,0 +1,99 @@
+package org.hpin.reportdetail.service;
+
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.log4j.Logger;
+import org.apache.pdfbox.pdfparser.PDFParser;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.util.PDFTextStripper;
+import org.hpin.common.core.orm.BaseService;
+import org.hpin.reportdetail.dao.ErpReadPDFMatchInfoDao;
+import org.hpin.reportdetail.entity.ErpReadPDFMatchInfo;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service(value = "org.hpin.reportdetail.service.ErpReadPDFMatchInfoService")
+@Transactional()
+public class ErpReadPDFMatchInfoService extends BaseService {
+
+	private static Logger log = Logger.getLogger(ErpReadPDFMatchInfoService.class);
+	
+	private ErpReadPDFMatchInfoDao dao;
+	
+	private static ErpReportItemsCheck checker = null;
+	
+	public void readPdfPageText(ErpReadPDFMatchInfo pdfMatchInfo){
+		FileInputStream is = null;  
+		PDDocument document = null;  
+		try {
+			is = new FileInputStream(pdfMatchInfo.getPdfFilePath());  
+			PDFParser parser = new PDFParser(is);  
+			parser.parse();  
+			document = parser.getPDDocument();  
+			int pageNum = document.getNumberOfPages();
+			
+			PDFTextStripper stripper = new PDFTextStripper();
+			for(int i=1;i<pageNum;i++){
+				stripper.setStartPage(i);
+				stripper.setEndPage(i+1);
+				String pdfStr = stripper.getText(document);
+				ErpReportStandardCheckConcrete checkConcrete = new ErpReportStandardCheckConcrete();
+				checker = new ErpReportSexItemCheck(pdfMatchInfo,pdfStr);
+				checker.setChecker(checkConcrete);
+				checker.check();
+			}
+			
+		} catch (FileNotFoundException e) {  
+			log.error("未找到文件--"+e);  
+		} catch (IOException e) {  
+			log.error("读取错误--"+e);  
+		} finally {  
+			if (is != null) {  
+				try {  
+					is.close();  
+				} catch (IOException e) {  
+					e.printStackTrace();  
+				}  
+			}  
+			if (document != null) {  
+				try {  
+					document.close();  
+				} catch (IOException e) {  
+					e.printStackTrace();  
+				}  
+			}  
+		}  
+	
+	}
+	
+	/**
+	 * 保存ErpReadPDFMatchInfo，并返回ErpReadPDFMatchInfo集合
+	 * @return
+	 * @throws Exception
+	 * @author tangxing
+	 * @date 2017-3-8下午5:18:25
+	 */
+	public List<ErpReadPDFMatchInfo> saveErpReadPDFMatchInfo() throws Exception{
+		ErpReadPDFMatchInfo pdfMatchInfo = null;
+		List<Map<String, Object>> results = dao.getCustomerAndFilePath();
+		if(results!=null){
+			for (Map<String, Object> customerMap : results) {
+				pdfMatchInfo = new ErpReadPDFMatchInfo();
+				pdfMatchInfo.setCode((String)customerMap.get("code"));
+				pdfMatchInfo.setName((String)customerMap.get("name"));
+				pdfMatchInfo.setAge((String)customerMap.get("age"));
+				pdfMatchInfo.setSex((String)customerMap.get("sex"));
+				pdfMatchInfo.setPdfFilePath((String)customerMap.get("filePath"));
+				pdfMatchInfo.setCreateTime(new Date());
+				dao.save(pdfMatchInfo);
+			}
+		}
+		return dao.listErpReadPDFMatchInfo();
+	}
+}

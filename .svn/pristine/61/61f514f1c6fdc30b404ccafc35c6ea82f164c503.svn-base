@@ -1,0 +1,993 @@
+package org.hpin.base.customerrelationship.service;
+
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.commons.lang.StringUtils;
+import org.apache.log4j.Logger;
+import org.hpin.base.customerrelationship.dao.CustomerRelationshipComboDao;
+import org.hpin.base.customerrelationship.dao.CustomerRelationshipDao;
+import org.hpin.base.customerrelationship.dao.CustomerRelationshipLinkDao;
+import org.hpin.base.customerrelationship.dao.CustomerRelationshipProDao;
+import org.hpin.base.customerrelationship.dao.ProjectTypeDao;
+import org.hpin.base.customerrelationship.entity.CustomerRelationShip;
+import org.hpin.base.customerrelationship.entity.CustomerRelationShipPro;
+import org.hpin.base.customerrelationship.entity.CustomerRelationshipCombo;
+import org.hpin.base.customerrelationship.entity.CustomerRelationshipLink;
+import org.hpin.base.customerrelationship.entity.ErpRelationShipCombo;
+import org.hpin.base.customerrelationship.entity.ProjectType;
+import org.hpin.base.customerrelationship.entity.vo.CompanyQRCodeVO;
+import org.hpin.base.customerrelationship.entity.vo.CustomerRelationShipQuery;
+import org.hpin.base.customerrelationship.entity.vo.CustomerRelationShipVO;
+import org.hpin.base.usermanager.dao.DeptDao;
+import org.hpin.base.usermanager.entity.User;
+import org.hpin.common.core.orm.BaseService;
+import org.hpin.common.util.HttpTool;
+import org.hpin.common.util.ReflectionUtils;
+import org.hpin.common.util.StrUtils;
+import org.hpin.common.widget.pagination.Page;
+import org.hpin.settlementManagement.dao.ErpCompanyComboPriceDao;
+import org.hpin.settlementManagement.entity.ComboPriceList;
+import org.hpin.settlementManagement.entity.ErpCompanyComboPrice;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.BeanPropertyRowMapper;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.ymjy.combo.dao.ComboDao;
+import org.ymjy.combo.entity.Combo;
+@Service(value = "org.hpin.base.customerrelationship.service.CustomerRelationShipService")
+@Transactional()
+public class CustomerRelationShipService  extends BaseService{
+	@Autowired
+	private CustomerRelationshipDao customerRelationshipDao = null;
+	@Autowired
+	private ComboDao comboDao = null;
+	@Autowired
+	private CustomerRelationshipLinkDao customerLinkDao = null;
+	@Autowired
+	private CustomerRelationshipComboDao customerComboDao = null;
+	@Autowired
+	private DeptDao deptDao = null;
+	
+	@Autowired
+	private ProjectTypeDao projectTypeDao ;
+	
+	@Autowired
+	private CustomerRelationshipProDao customerRelationshipProDao;
+	
+	@Autowired
+	private ErpCompanyComboPriceDao erpCompanyComboPriceDao;
+	
+	private Logger log = Logger.getLogger(CustomerRelationShipService.class);
+	
+	/**
+	 * 根据总公司id或者支公司名称查询;针对用户信息界面使用;
+	 * <p>Description: </p>
+	 * @author herny.xu
+	 * @date 2017年3月10日
+	 */
+	public List<CustomerRelationShipVO> findCompanyByOwnerCompanyId(HashMap<String, String> params) {
+		String sql = "SELECT " +
+				"ship.ID, " +
+				"ship.COMPANY_CODE          companyCode, " +
+				"ship.BRANCH_COMMANY        branchCommany, " +
+				"ship.OWNED_COMPANY         ownedCompany, " +
+				"dept.DEPT_NAME  customerNameSimple, " +
+				"ship.PROVINCE              province, " +
+				"regPr.REGION_NAME 			provinceName, " +
+				"ship.CITEY 				city, " +
+				"regCt.REGION_NAME			cityName, " +
+				"ship.COMBO 				combo, " +
+				"ship.address 				address, " +
+				"ship.CREATE_TIME 			createTime " +
+				"FROM HL_CUSTOMER_RELATIONSHIP ship " +
+				"INNER JOIN HL_REGION regPr ON regPr.ID = ship.PROVINCE " +
+				"INNER JOIN HL_REGION regCt ON regCt.ID = ship.CITEY " + 
+				"LEFT JOIN UM_DEPT dept on dept.ID = ship.OWNED_COMPANY " + 
+				"WHERE ship.IS_DELETED = 0 ";
+		StringBuilder jdbcSql = new StringBuilder(sql);
+		
+		if(params != null && !params.isEmpty()) {
+			String wonedCompanyId = params.get("wonedCompanyId");
+			String companyName = params.get("companyName");
+			
+			if(StringUtils.isNotEmpty(wonedCompanyId)) {
+				jdbcSql.append(" AND ship.OWNED_COMPANY = '").append(wonedCompanyId).append("' ");
+			}
+			
+			if(StringUtils.isNotEmpty(companyName)) {
+				jdbcSql.append(" AND ship.BRANCH_COMMANY like '%").append(companyName.trim()).append("%' ");
+			}
+		}
+		
+		jdbcSql.append("ORDER BY ship.CREATE_TIME DESC");
+		BeanPropertyRowMapper<CustomerRelationShipVO> rowMapper = new BeanPropertyRowMapper<CustomerRelationShipVO>(CustomerRelationShipVO.class);
+		List<CustomerRelationShipVO> list = this.customerRelationshipDao.getJdbcTemplate().query(jdbcSql.toString(), rowMapper);
+		return list;
+	}
+	
+	/**
+	 * 根据查询条件获取数据;(jdbc)
+	 * create by henry.xu; 20160928
+	 * @param page
+	 * @param custRelaQuery
+	 */
+	@SuppressWarnings("rawtypes")
+	public void findCustomerRelationShipsByCondition(Page page, CustomerRelationShipQuery custRelaQuery) {
+		List<Object> params = new ArrayList<Object>(); //参数;
+		String sql = "SELECT " +
+				"ship.ID, " +
+				"ship.COMPANY_CODE          companyCode, " +
+				"ship.BRANCH_COMMANY        branchCommany, " +
+				"ship.OWNED_COMPANY         ownedCompany, " +
+				"dept.DEPT_NAME  customerNameSimple, " +
+				"ship.PROVINCE              province, " +
+				"regPr.REGION_NAME 			provinceName, " +
+				"ship.CITEY 				city, " +
+				"regCt.REGION_NAME			cityName, " +
+				"ship.COMBO 				combo, " +
+				"ship.address 				address, " +
+				"ship.CREATE_TIME 			createTime " +
+				"FROM HL_CUSTOMER_RELATIONSHIP ship " +
+				"INNER JOIN HL_REGION regPr ON regPr.ID = ship.PROVINCE " +
+				"INNER JOIN HL_REGION regCt ON regCt.ID = ship.CITEY " + 
+				"LEFT JOIN UM_DEPT dept on dept.ID = ship.OWNED_COMPANY " + 
+				"WHERE ship.IS_DELETED = 0 ";
+		StringBuilder jdbcSql = new StringBuilder(sql);
+		
+		//条件处理;
+		if(custRelaQuery != null) {
+			if(StringUtils.isNotEmpty(custRelaQuery.getBranchCommany())) {
+				jdbcSql.append(" AND ship.BRANCH_COMMANY like '%").append(custRelaQuery.getBranchCommany().trim()).append("%' ");
+			}
+			
+			if(StringUtils.isNotEmpty(custRelaQuery.getCity())) {
+				jdbcSql.append(" AND ship.CITEY = '").append(custRelaQuery.getCity()).append("' ");
+				
+			}
+			if(StringUtils.isNotEmpty(custRelaQuery.getProvince())) {
+				jdbcSql.append(" AND ship.PROVINCE = '").append(custRelaQuery.getProvince()).append("' ");
+				
+			}
+			if(StringUtils.isNotEmpty(custRelaQuery.getCombo())) { 
+				jdbcSql.append(" AND ship.COMBO like '%").append(custRelaQuery.getCombo().trim()).append("%' ");
+				
+			}
+			/*
+			 * 由于项目负责人和项目对接人来源与HL_CUSTOMER_RELATIONSHIP_PRO表,所以使用存在来判断;
+			 */
+			if(StringUtils.isNotEmpty(custRelaQuery.getLinkName()) || StringUtils.isNotEmpty(custRelaQuery.getProjectOwner())) {
+				jdbcSql.append(" AND EXISTS (SELECT pro.ID FROM HL_CUSTOMER_RELATIONSHIP_PRO pro WHERE pro.CUSTOMER_RELATIONSHIP_ID = ship.ID AND (pro.PROJECT_OWNER ='")
+				.append(custRelaQuery.getProjectOwner().trim())
+				.append("' OR pro.LINK_NAME = '").append(custRelaQuery.getLinkName().trim()).append("')) ");
+				
+			}
+		}
+		jdbcSql.append("ORDER BY ship.CREATE_TIME DESC");
+		
+		//查询count;
+		page.setTotalCount(customerRelationshipDao.findJdbcCount(jdbcSql, params));
+		
+		//查询list;
+		params.add(page.getPageNumEndCount());
+		params.add(page.getPageNumStartCount());
+		BeanPropertyRowMapper<CustomerRelationShipVO> rowMapper = new BeanPropertyRowMapper<CustomerRelationShipVO>(CustomerRelationShipVO.class);
+		page.setResults(customerRelationshipDao.findJdbcList(jdbcSql, params, rowMapper));
+		
+	}
+	
+	
+	@SuppressWarnings("rawtypes")
+	public void findCustomerRelationShipsForQRCode(Page page, String branchCommany,String customerNameSimple,String projectType) {
+		List<Object> params = new ArrayList<Object>(); //参数;
+		String sql = "SELECT " +
+				"ship.ID, " +
+				"ship.COMPANY_CODE companyCode, " +
+				"ship.BRANCH_COMMANY branchCommany, " +
+				"shipCode.QRCODE_URL qrCodeUrl, " +
+				"dept.DEPT_NAME  customerNameSimple, " +
+				"type.project_type_name projectTypeName, "+
+				"type.project_type projectTypeCode, "+
+				"p.project_code         projectCode, "+
+			    "p.project_name         projectName, "+
+			    "p.project_owner        projectOwner "+
+				"FROM HL_CUSTOMER_RELATIONSHIP ship " +
+				"LEFT JOIN UM_DEPT dept on dept.ID = ship.OWNED_COMPANY " + 
+				"left join hl_customer_relationship_pro p on ship.id=p.customer_relationship_id and p.is_seal='0' "+ 
+				"and p.is_deleted='0' "+
+				"left join t_project_type type on p.project_type=type.id "+
+				"left join hl_customer_ship_code shipCode on ship.id = shipCode.Company_Id and type.project_type = shipCode.Project_Type "+
+				"WHERE ship.IS_DELETED = 0 and type.project_type_name is not null ";
+		StringBuilder jdbcSql = new StringBuilder(sql);
+		//条件处理;
+		if(StringUtils.isNotEmpty(branchCommany)) {
+			jdbcSql.append(" AND ship.BRANCH_COMMANY like '%").append(branchCommany.trim()).append("%' ");
+		}
+		if(StringUtils.isNotEmpty(customerNameSimple)) {
+			jdbcSql.append(" AND dept.DEPT_NAME like '%").append(customerNameSimple.trim()).append("%' ");
+		}
+		if(StringUtils.isNotEmpty(projectType)) {
+			jdbcSql.append(" AND type.project_type_name = '").append(projectType.trim()).append("' ");
+		}
+		jdbcSql.append("ORDER BY ship.CREATE_TIME DESC");
+		//查询count;
+		page.setTotalCount(customerRelationshipDao.findJdbcCount(jdbcSql, params));
+		//查询list;
+		params.add(page.getPageNumEndCount());
+		params.add(page.getPageNumStartCount());
+		BeanPropertyRowMapper<CompanyQRCodeVO> rowMapper = new BeanPropertyRowMapper<CompanyQRCodeVO>(CompanyQRCodeVO.class);
+		page.setResults(customerRelationshipDao.findJdbcList(jdbcSql, params, rowMapper));
+		
+	}
+	
+	/**
+	 * 根据主键取得实体对象
+	 * create by henry.xu 20160920
+	 * @return
+	 */
+	public CustomerRelationShipPro findCustRelShipProById(String shipProId) {
+		return customerRelationshipProDao.findCustRelShipProById(CustomerRelationShipPro.class, shipProId);
+	}
+	
+	/**
+	 * 通过支公司Id查询对应的有效项目信息集合;
+	 * create by henry.xu 20160919
+	 * @param id
+	 * @param isSeal 0否, 1是
+	 * @return
+	 */
+	@SuppressWarnings("unchecked")
+	public List<CustomerRelationShipPro> findCustRelShipProsByCustRelShipId(String id, String isSeal) {
+		StringBuffer hql = new StringBuffer("from CustomerRelationShipPro pro where pro.isDeleted=0 and customerRelationShipId=? ");
+		//查询没有封存的数据
+		if(StringUtils.isNotEmpty(isSeal)) {
+			hql.append(" and pro.isSeal='"+isSeal+"'"); // 0否, 1是
+		}
+		
+		List<CustomerRelationShipPro> lists = customerRelationshipProDao.findByHql(hql, id);
+		if(lists != null && lists.size() > 0) {
+			for(int i=0; i<lists.size(); i++) {
+				String proId = lists.get(i).getId();
+				lists.get(i).setCombos(this.customerRelationshipProDao.findCombosByProId(proId));
+			}
+		}
+		
+		return lists;
+	}
+	
+	/**
+	 * 查询有效项目类型;
+	 * @return
+	 */
+	@SuppressWarnings("unchecked")
+	public List<ProjectType> findProjectTypes() {
+		StringBuffer hql = new StringBuffer("from ProjectType where isDeleted = 0 order by id ");
+		List<ProjectType> proTypes = projectTypeDao.findByHql(hql);
+		return proTypes;
+	}
+	
+	/**
+	 * 根据项目类型Id或者类型编码进行查询
+	 * @param id 主键ID
+	 * @param type 项目类型编码;
+	 * @return
+	 */
+	@SuppressWarnings("unchecked")
+	public ProjectType findProjectTypeByIdOrType(String id, String type) {
+		StringBuffer hql = new StringBuffer("from ProjectType where ");
+		if(StringUtils.isNotEmpty(id)) {
+			hql.append(" id = '").append(id).append("' ");
+		}
+		
+		if(StringUtils.isNotEmpty(type)) {
+			hql.append(" projectType = '").append(type).append("' ");
+		}
+		List<ProjectType> proTypes = projectTypeDao.findByHql(hql);
+		return (proTypes!=null && proTypes.size() > 0) ? proTypes.get(0) : null;
+	}
+	
+	/**
+	 * 通过id查询分支公司数据,如果没有返回数据则通过那么去查询;
+	 * create by henry.xu 20160811
+	 * @return 分公司对象
+	 */
+	public CustomerRelationShip findByIdOrName(String cusShipId, String cusName) {
+		StringBuffer hql = new StringBuffer("from CustomerRelationShip where id=? or customerNameSimple=?");
+		List<?> list = customerRelationshipDao.findByHql(hql, new Object[]{cusShipId, cusName});
+		if(list != null && list.size() > 0) {
+			return (CustomerRelationShip) list.get(0);
+		}
+		return null;
+	}
+	
+	/**
+	 * 批量删除支公司
+	 * @param id
+	 * @param accountName
+	 * @param deleteTime
+	 */
+	public void deleteCustomerRelationship(String[] id, String accountName, Date deleteTime) {
+		for(int  i = 0 ; i<id.length ; i++){
+			CustomerRelationShip customerRelationShip = (CustomerRelationShip) customerRelationshipDao.findById(CustomerRelationShip.class, id[i]);
+			customerRelationShip.setIsDeleted(1);
+			customerRelationShip.setDeleteUserId(accountName);
+			customerRelationShip.setDeleteTime(deleteTime);
+			customerRelationshipDao.update(customerRelationShip);
+			StringBuffer hql = new StringBuffer();
+			hql.append("from CustomerRelationshipLink where customerRelationShipId=?");
+			List<CustomerRelationshipLink> links = customerLinkDao.findByCustomerRelationShipId(hql.toString(), id[i]);
+			for(int j=0;j<links.size();j++){
+				CustomerRelationshipLink l = links.get(j);
+				customerLinkDao.delete(l);
+			}
+			//customerComboDao.delDanRelation2(customerRelationShip.getId());
+		}
+	}
+	/**
+	 * 是否启用支公司
+	 * @param customer
+	 * @param bankList
+	 * @param account
+	 * @param createTime
+	 */
+	/*public void startusingCustomer(String[] id, String accountName, Date deleteTime) {
+		for(int  i = 0 ; i<id.length ; i++){
+			CustomerRelationShip customer = (CustomerRelationShip) customerRelationshipDao.findById(CustomerRelationShip.class, id[i]);
+			customer.setIsDeleted(0);
+			customer.setDeleteUserId(accountName);
+			customer.setDeleteTime(deleteTime);
+			customerRelationshipDao.update(customer);
+		}
+	}*/
+   /**
+    * 保存支公司以及联系人信息
+    * @param customer
+    * @param bankList
+    * @param shipPros 项目项目信息列表数据
+    * @param account
+    * @param createTime
+    * @throws Exception 
+    * @modified by henry.xu 20160918
+    * 依据需求添加项目项目信息列表数据;
+    *  
+    */
+	
+	public void saveCustomerMessage(CustomerRelationShip customerRelationShip, 
+			List<CustomerRelationshipLink> bankList,
+			List<CustomerRelationShipPro> shipPros,
+			List<Combo> comboList,
+			String account,
+			Date createTime) throws Exception {
+		User currentUser = (User)HttpTool.getSession().getAttribute("currentUser");
+		String customerSimple = deptDao.id2Name(customerRelationShip.getOwnedCompany());
+		customerRelationShip.setCustomerNameSimple(customerSimple);
+		customerRelationshipDao.save(customerRelationShip);
+		if(bankList.size()>0){
+			StringBuffer hql = new StringBuffer();
+			hql.append("from CustomerRelationshipLink where customerRelationShipId=?");
+			String shipId=customerRelationShip.getId();
+			customerLinkDao.findByCustomerRelationShipId(hql.toString(),shipId);
+			CustomerRelationShip cus = (CustomerRelationShip)customerRelationshipDao.findById(CustomerRelationShip.class, customerRelationShip.getId());
+			ReflectionUtils.copyPropertiesForHasValue(cus, customerRelationShip);
+			for(CustomerRelationshipLink bank:bankList){
+				bank.setCreateTime(createTime);
+				bank.setCustomerRelationShipId(customerRelationShip.getId());
+				bank.setCreateUserId(account);
+				bank.setIsDeleted(0);
+				bank.setCustomerRelationShip(customerRelationShip);
+				bank.setCustomerRelationShipId(customerRelationShip.getId());
+				//System.out.println(bank.getCustomerRelationShipId());
+				bank.setCustomerRelationShipName(customerRelationShip.getBranchCommany());
+				customerLinkDao.saveOrUpdate(bank);
+			}	
+		}
+			
+		/*
+		 * 保存项目信息列表内容;
+		 */
+		if(shipPros != null && shipPros.size() > 0) {
+			for(int i=0; i<shipPros.size(); i++) {
+				CustomerRelationShipPro shipPro = shipPros.get(i);
+				if(shipPro != null && StringUtils.isNotEmpty(shipPro.getProjectCode())) { //可能出现空,该情况在添加后删除,index 会往后加,然而生成list的时候可能中间会有空
+					shipPro.setCustomerRelationShipId(customerRelationShip.getId());
+					shipPro.setCreateTime(new Date());
+					shipPro.setCreateUserId(currentUser.getId());
+					shipPro.setIsDeleted("0");
+					shipPro.setIsSeal("0");//0未封存(默认), 1封存
+					customerRelationshipProDao.savePro(shipPro);
+				}
+			}
+		}
+		
+		if(comboList != null && comboList.size() > 0){
+			customerComboDao.delDanRelation(customerRelationShip.getId(), "");
+		    CustomerRelationshipCombo relationshipCombo = new CustomerRelationshipCombo();
+		    Combo combo= new Combo();
+		    CustomerRelationShip cus = new CustomerRelationShip();
+			ReflectionUtils.copyPropertiesForHasValue(cus, customerRelationShip);
+		    for(int i=0;i<comboList.size();i++){
+		    	combo = comboList.get(i);
+		    	relationshipCombo.setComboId(combo.getId());
+		    	relationshipCombo.setCustomerRelationShipId(customerRelationShip.getId());
+		    	customerComboDao.save(relationshipCombo);
+		    }
+		}
+			
+	}
+	/**
+	 * 更新支公司与联系人
+	 * @param customer
+	 * @param bankList
+	 * @param accountName
+	 * @param time
+	 */
+	public void updateCustomerMessage(CustomerRelationShip customer,
+			List<CustomerRelationshipLink> linkList,
+			List<CustomerRelationShipPro> shipPros,
+			String accountName, Date time) throws Exception {
+		CustomerRelationShip cus = (CustomerRelationShip)customerRelationshipDao.findById(CustomerRelationShip.class, customer.getId());
+		
+		for(CustomerRelationshipLink bank:cus.getCustomerRelationshipLinkSet()){
+			customerLinkDao.delete(bank);
+		}
+		ReflectionUtils.copyPropertiesForHasValue(cus, customer);
+		if(linkList.size()>0){
+			for(CustomerRelationshipLink bank:linkList){
+				/*bank.setCreateUserId(accountName);
+				bank.setCreateTime(time);*/
+				bank.setCustomerRelationShip(cus);
+				customerLinkDao.saveOrUpdate(bank);
+			}
+		}
+		customerRelationshipDao.update(cus);
+		
+		User currentUser = (User)HttpTool.getSession().getAttribute("currentUser");
+		if(shipPros != null && shipPros.size() > 0) {
+			/* 
+			 * 处理项目信息列表数据修改;
+			 * 1. 查询已有旧数据;
+			 * 2. 比较->新增->修改->删除;
+			 * create by henry.xu 20160919
+			 */
+			//该集合为缓存传入参数操作;
+			List<CustomerRelationShipPro> shipProsTemp = new ArrayList<CustomerRelationShipPro>(shipPros.size());
+			shipProsTemp.addAll(shipPros);
+			
+			//1. 查询数据库已有旧数据;
+			List<CustomerRelationShipPro> shipProsOldDB =  findCustRelShipProsByCustRelShipId(customer.getId(), null);
+			
+			//2.添加/修改;
+			CustomerRelationShipPro temp = null;
+			CustomerRelationShipPro tempOld = null;
+			
+			for(int i=0; i<shipPros.size(); i++) {
+				temp = shipPros.get(i);
+				
+				if(StringUtils.isEmpty(temp.getId())) { //当传入id为空时执行保存操作;
+					temp.setCreateTime(new Date());
+					temp.setCreateUserId(currentUser.getId());
+					temp.setCustomerRelationShipId(customer.getId());
+					customerRelationshipProDao.savePro(temp);
+					
+					shipPros.remove(i--); //移除后自减减;
+					continue; //跳过继续;
+				}
+				
+				if(shipProsOldDB != null && shipProsOldDB.size() > 0) {
+					for(int j=0; j<shipProsOldDB.size(); j++) {
+						tempOld = shipProsOldDB.get(j);
+						
+						if(temp.getId().equals(tempOld.getId())) { //已id为比较条件,当数据id相同时执行修改;
+							tempOld.setUpdateTime(new Date());
+							tempOld.setUpdateUserId(currentUser.getId());
+							tempOld.setLinkName(temp.getLinkName());
+							tempOld.setLinkTel(temp.getLinkTel());
+							tempOld.setMailAddress(temp.getMailAddress());
+							tempOld.setProjectCode(temp.getProjectCode());
+							tempOld.setProjectName(temp.getProjectName());
+							tempOld.setProjectOwner(temp.getProjectOwner());
+							tempOld.setProjectType(temp.getProjectType());
+							tempOld.setReception(temp.getReception());
+							tempOld.setReceptionTel(temp.getReceptionTel());
+							tempOld.setIsSeal(temp.getIsSeal()); //0未封存, 1封存
+							tempOld.setBatchPre(temp.getBatchPre());
+							
+							customerRelationshipProDao.updatePro(tempOld);
+							shipPros.remove(i--);
+							shipProsOldDB.remove(j--);
+						}
+					}
+					
+				}
+			}
+			
+			//在shipProsOldDB中剩下的执行删除操作;
+			if(shipProsOldDB != null && shipProsOldDB.size() > 0) {
+				temp = null; //清空对象;
+				for(int i=0; i < shipProsOldDB.size(); i++) {
+					temp = shipProsOldDB.get(i);
+					temp.setDeleteTime(new Date());
+					temp.setDeleteUserId(currentUser.getId());
+					temp.setIsDeleted("1");
+					customerRelationshipProDao.deletePro(temp);
+				}
+			}
+			
+		}
+		
+	}
+	/**
+	 * 查询支公司以及联系人信息
+	 * @param id
+	 * @return
+	 */
+	public Object[] findCustomerById(String id) {
+		CustomerRelationShip customer = (CustomerRelationShip)customerRelationshipDao.findById(CustomerRelationShip.class, id);
+		StringBuffer hql = new StringBuffer();
+		hql.append("from CustomerRelationshipLink where customerRelationShipId=?");
+		List<CustomerRelationshipLink> customerLinkList = customerLinkDao.findByHql(hql, new Object[]{customer.getId()});
+		return new Object[]{customer,customerLinkList};
+	}
+	
+	public List findByCustomer() {
+		StringBuffer hql = new StringBuffer();
+		hql.append("from CustomerRelationShip c where c.isDeleted=0 order by c.branchCommany ");
+		List<CustomerRelationShip> customerList = customerRelationshipDao.findByHql(hql);
+		return customerList;
+	}
+	public List findByCustomer(String branchCompanyId) {
+		StringBuffer hql = new StringBuffer();
+		hql.append("from CustomerRelationShip c where c.isDeleted=0 and id='"+branchCompanyId+"' order by c.branchCommany ");
+		List<CustomerRelationShip> customerList = customerRelationshipDao.findByHql(hql);
+		return customerList;
+	}
+	public List findByOwnedCompany(String ownedCompany) {
+		StringBuffer hql = new StringBuffer();
+		hql.append("from CustomerRelationShip c where c.isDeleted=0 and OWNED_COMPANY='"+ownedCompany+"' order by nlssort(c.branchCommany,'NLS_SORT=SCHINESE_PINYIN_M') ");
+		List<CustomerRelationShip> customerList = customerRelationshipDao.findByHql(hql);
+		return customerList;
+	}
+	
+	/**
+	 * 查出所有有效客户
+	 * @return
+	 */
+	public List findAllCustomerByIsDeleted() {
+		StringBuffer hql = new StringBuffer();
+		hql.append("from CustomerRelationShip c where c.isDeleted = 0 order by nlssort(c.customerName,'NLS_SORT=SCHINESE_PINYIN_M')");
+		List<CustomerRelationShip> list = customerRelationshipDao.findByHql(hql);
+		return list;
+	}
+	public List<CustomerRelationShip> findCustomerByIds(String ids) {
+		StringBuffer hql = new StringBuffer();
+		hql.append("from CustomerRelationShip c ");
+		if(StrUtils.isNotNullOrBlank(ids)){
+			hql.append(" where c.id in('"+ids.replaceAll(",", "\',\'")+"')");
+		}
+		hql.append(" order by nlssort(c.branchCommany,'NLS_SORT=SCHINESE_PINYIN_M')");
+		List<CustomerRelationShip> list = customerRelationshipDao.findByHql(hql);
+		return list;
+	}
+	/**
+	 * 按支公司名称查询
+	 * @param customerName
+	 * @return
+	 */
+	public List<CustomerRelationShip> findByCustomerName(String customerName) {
+		StringBuffer hql = new StringBuffer();
+		hql.append("from Customer c ");
+		if(StrUtils.isNotNullOrBlank(customerName)){
+			hql.append(" where c.customerName like '%"+customerName+"%' ");
+		}
+		hql.append("order by nlssort(c.customerName,'NLS_SORT=SCHINESE_PINYIN_M')");
+		List<CustomerRelationShip> list = customerRelationshipDao.findByHql(hql);
+		return list;
+	}
+	
+	@SuppressWarnings("rawtypes")
+	public List getCompanyPackagePrice(String companyName,String companyId) throws Exception{
+		List<Map<String, Object>> comboList=customerRelationshipDao.getCompanyPackagePrice1(companyId);			//{COMBO=常规九,常规八,常规七,常规六,常规五,常规四,常规三,常规二,常规一,基础三,基础一}
+		List<Map<String, Object>> name_PriceList=customerRelationshipDao.getCompanyPackagePrice2(companyId);	//{COMBO=常规九, COMBO_PRICE=100}
+		List<ErpCompanyComboPrice> list=new ArrayList<ErpCompanyComboPrice>();
+		BigDecimal bd=null;
+		Map map=new HashMap();
+		if(comboList.size()>=1){
+			Map<String, Object> map1=new HashMap<String,Object>();
+			Map<String, Object> map2=new HashMap<String,Object>();
+			map1=(Map)comboList.get(0);
+			String combo=map1.get("COMBO").toString();
+			String comboName="";
+			for(String str:combo.split(",")){
+				ErpCompanyComboPrice eccp=new ErpCompanyComboPrice();
+				for (int i=0;i<name_PriceList.size();i++) {
+					map2=(Map)name_PriceList.get(i);
+					if(str.equals(map2.get("COMBO").toString())){
+						bd=(BigDecimal)map2.get("COMBO_PRICE");
+						comboName=map2.get("COMBO").toString();
+					}
+				}
+				if (!str.equals("") && comboName.equals(str)) {
+					eccp.setComboPrice(bd);
+					eccp.setCombo(str);
+					list.add(eccp);
+				}else {
+					eccp.setCombo(str);
+					list.add(eccp);
+				}
+			}
+		}
+		return list;
+	}
+	public List<ErpCompanyComboPrice> getComboInfo(String company, String id) throws Exception {
+
+		return getCompanyPackagePrice(company,id);
+	}
+	
+	/**
+	 * @param map
+	 * @param company
+	 * @return 设置价格
+	 */
+	public boolean setComboPrice(Map<String, Object> map, String branchCompanyId,String company) {
+		int count1=0;
+		int count2=0;
+		boolean isOk = false;
+		boolean tempBooleanOne = false;
+		boolean tempBooleanTwo = false;
+		
+		String[] str = null;
+		User user= (User) HttpTool.getSession().getAttribute("currentUser");
+		String userName=user.getAccountName();
+		String userId=user.getCreateUserId();
+		ErpCompanyComboPrice comboPrice = null;
+		BigDecimal bd = null;
+		for(String key : map.keySet()) {
+			if(map.get(key)!=null){
+				if(key.indexOf(",")!=-1){		//包含逗号
+					str = new String[]{};
+					str = key.split(",");		//key为 套餐名，项目ID(str[0]:套餐名；str[1]:项目ID)
+					String strComboName = str[0];
+					String proId = str[1];
+					comboPrice = new ErpCompanyComboPrice();
+					//List priceList = customerComboDao.getComboPrice(strComboName,branchCompanyId,proId);			//获取套餐价格
+					List<ErpCompanyComboPrice> comboPrices = customerComboDao.getComboPriceObject(strComboName,branchCompanyId,proId);
+					CustomerRelationShipPro customerRelationShipPro = erpCompanyComboPriceDao.getProjectById(proId);//获取项目
+					
+					String price ="";
+					try {
+						if(comboPrices==null||comboPrices.size()==0){						//erpCompanyComboPrice套餐表中没有数据就save
+							List<Combo> comboList = comboDao.getComboByName(strComboName);	//获取该套餐对应的套餐信息
+							if(comboList.size()>0){
+								String strPrice = map.get(key).toString();					//该套餐对应的价格
+								/**
+								 * 如果count1返回0则表示没有该条数据，则插入新的数据到价格表中
+								 */
+								comboPrice.setComboId(comboList.get(0).getId());
+								comboPrice.setCombo(comboList.get(0).getComboName());
+								
+								if(strPrice!=null&&StringUtils.isNotEmpty(strPrice)){
+									bd = new BigDecimal(strPrice);
+									comboPrice.setComboPrice(bd);
+								}else{
+									comboPrice.setComboPrice(BigDecimal.ZERO);
+								}
+								
+								comboPrice.setCompany(company);
+								comboPrice.setCompanyId(branchCompanyId);
+								comboPrice.setCreateUser(userName);
+								comboPrice.setCreateUserId(userId);
+								comboPrice.setCreateTime(new Date());
+								comboPrice.setStatus("0");
+								
+								if(customerRelationShipPro!=null){
+									comboPrice.setProjectId(customerRelationShipPro.getId());
+									comboPrice.setProjectCode(customerRelationShipPro.getProjectCode());
+									comboPrice.setProjectName(customerRelationShipPro.getProjectName());
+									comboPrice.setProjectOwner(customerRelationShipPro.getProjectOwner());
+								}
+								
+								customerComboDao.save(comboPrice);
+								/*
+								  改造以前的代码
+								Map<String, String> map2 =new HashMap<String, String>();
+		//						String companyId=customerComboDao.getCompanyId(branchCompanyId).get(0).toString();
+								if(list.size()>=1){
+									map2.put("comboId", list.get(0).getId());
+								}
+								map2.put("combo", key);
+								map2.put("price", map.get(key).toString());
+								map2.put("company", company);
+								map2.put("companyId", branchCompanyId);
+								map2.put("userName", userName);
+								map2.put("userId", userId);
+								count1=customerComboDao.insertPrice(map2);*/
+		//						if (count1==0) {
+		//							count1=customerComboDao.updatePrice(key,map.get(key),company);
+		//						}
+							}
+						}else{
+							ComboPriceList comboPriceList = new ComboPriceList();
+							ErpCompanyComboPrice erpCompanyComboPrice =  comboPrices.get(0);
+							boolean flag = false;
+							/**
+							 * 从前台获取的价格和数据做对比，如果该套餐没有价格变化则不插入到历史记录表
+							 */
+							/*price = priceList.get(0).toString();
+							price = price.substring(13, price.length()-1);*/
+							String tempPrice = (String) map.get(key);	//输出的修改价格
+							if(tempPrice!=null){
+								BigDecimal bigDecimalOne = new BigDecimal(tempPrice);
+								if(!bigDecimalOne.equals(erpCompanyComboPrice.getComboPrice())){		//若跟数据库里面的价格一样，不做处理
+									//若跟数据库里面的价格一样，不做处理
+									String comboId = customerComboDao.getComboId(strComboName,branchCompanyId).get(0).toString();
+		//							String companyId=customerComboDao.getCompanyId(company).get(0).toString();
+									/*
+									//修改以前的代码
+									Map<String, String> map2 =new HashMap<String, String>();
+									map2.put("userName", userName);
+									map2.put("company", company);
+									map2.put("combo", key);
+									map2.put("price", price);
+									map2.put("comboId", comboId.substring(10, comboId.length()-1));
+									map2.put("companyId", branchCompanyId);
+									int count = customerComboDao.insertHistoryPriceTable(map2);
+									if (count==1) {
+										count2=customerComboDao.updatePriceList(branchCompanyId,key,map.get(key),userName);
+									}*/
+									
+									/* ***插入历史记录表数据*** */
+									comboPriceList.setCreateUsername(userName);
+									comboPriceList.setBranchCompany(company);
+									comboPriceList.setComboName(strComboName);
+									if(StringUtils.isNotEmpty(tempPrice)){
+										bd = new BigDecimal(tempPrice);
+										comboPriceList.setHistoryPrice(bd);
+									}else{
+										comboPriceList.setHistoryPrice(null);
+									}
+									comboPriceList.setComboId(comboId.substring(10, comboId.length()-1));
+									comboPriceList.setBranchCompanyId(branchCompanyId);
+									comboPriceList.setCreateTime(new Date());
+									comboPriceList.setIsDelete("0");
+									if(customerRelationShipPro!=null){
+										comboPriceList.setProjectId(customerRelationShipPro.getId());
+										comboPriceList.setProjectCode(customerRelationShipPro.getProjectCode());
+										comboPriceList.setProjectName(customerRelationShipPro.getProjectName());
+										comboPriceList.setProjectOwner(customerRelationShipPro.getProjectOwner());
+									}
+									log.info("save到历史价格表--"+comboPriceList.getComboName()+","+comboPriceList.getHistoryPrice());
+									//comboPriceList.setProjectId();
+									customerComboDao.save(comboPriceList);//入库历史记录表
+									
+									/* ***update套餐*** */
+									BigDecimal bigDecimalTwo = new BigDecimal((String)map.get(key));
+									erpCompanyComboPrice.setComboPrice(bigDecimalTwo);
+									erpCompanyComboPrice.setUpdateTime(new Date());
+									erpCompanyComboPrice.setUpdateUser(userName);
+									erpCompanyComboPrice.setUpdateUserId(userId);
+									erpCompanyComboPrice.setProjectId(customerRelationShipPro.getId());
+									erpCompanyComboPrice.setProjectCode(customerRelationShipPro.getProjectCode());
+									erpCompanyComboPrice.setProjectName(customerRelationShipPro.getProjectName());
+									erpCompanyComboPrice.setProjectOwner(customerRelationShipPro.getProjectOwner());
+									log.info("update ErpCompanyComboPrice --"+erpCompanyComboPrice.getCombo()+","+erpCompanyComboPrice.getComboPrice());
+									//update套餐
+									//customerComboDao.updatePriceList(branchCompanyId,strComboName,map.get(key),userName,customerRelationShipPro,proId);
+									customerComboDao.update(erpCompanyComboPrice);
+								
+								}
+							}
+						}
+					} catch (Exception e) {
+						log.error("save or update combo price error -- ",e);
+						return false;
+					}
+				}
+			}
+		}
+		return true;
+		//return count1+count2;
+	}
+	
+	/**
+	 * 根据时间段查询CustomerRelationShip
+	 * @param startTime
+	 * @param endDate
+	 * @return
+	 * @author tangxing
+	 * @date 2016-8-31下午2:31:37
+	 */
+	public List<CustomerRelationShip> getCustomerRelationShipByDate(Date startTime,Date endDate){
+		return customerRelationshipDao.getCustomerRelationShipByDate(startTime, endDate);
+	}
+
+	/**
+	 * @param companyId
+	 * @param projectCode
+	 * @return 如果没有部门则根据支公司id，项目编码获取寄送信息
+	 */
+	public List<CustomerRelationShipPro> getBranchCompanyExpressInfo(String companyId, String projectCode) {
+		String sql = "from CustomerRelationShipPro where customer_relationship_id=? and project_code=?";
+		return customerRelationshipDao.getHibernateTemplate().find(sql,companyId,projectCode);
+	}
+
+	public CustomerRelationShipPro getBranchCompanyExpressInfo(String customerRelationShipProId) {
+		
+		return customerRelationshipDao.getHibernateTemplate().get(CustomerRelationShipPro.class, customerRelationShipProId);
+	}
+
+	/**
+	 * 保存项目编码对应套餐中间表;
+	 * create by herny.xu 20161117
+	 * @param id 子公司项目Id
+	 * @param ids 对应多个套餐字符串以逗号隔开;
+	 * @return
+	 */
+public boolean saveProCombo(String id, String ids) throws Exception {
+		
+		ErpRelationShipCombo reCom = null;
+		
+		if(StringUtils.isNotEmpty(ids)) {
+			String[] arr = ids.split(",");
+			if(arr != null && arr.length > 0) {
+				//做个验证;如果该支公司下项目已经包含该套餐了提示不能重复添加;
+				StringBuilder sql = new StringBuilder("select count(1) from HL_CUSTOMER_RELATIONSHIP_PRO pro "
+					+"inner join ERP_RELATIONSHIPPRO_COMBO combo on combo.CUSTOMER_RELATIONSHIP_PRO_ID = pro.ID "
+					+"where pro.id = '"+id+"' "
+					+"and combo.COMBO_ID in (");
+				for(int j=0; j<arr.length; j++) {
+					if(StringUtils.isNotEmpty(arr[j])) {
+						sql.append("'").append(arr[j]).append("', ");
+					}
+				}
+				
+				String str = sql.substring(0, sql.length()-2) + ")"; //去掉逗号;
+				
+				int count = this.customerRelationshipDao.getJdbcTemplate().queryForInt(str);
+				if(count > 0) { //标示存在了,所以不能添加;
+					return false;
+				}
+				
+				for(int i=0; i< arr.length; i++) {
+					if(StringUtils.isNotEmpty(arr[i])) {
+						reCom = new ErpRelationShipCombo();
+						reCom.setComboId(arr[i]);
+						reCom.setCustomerRelationShipProId(id);
+						reCom.setIsCreatePdf("0");	//add by tx 1+X数据套餐是否生成报告状态（默认为'0'）
+						reCom.setPrintType(1);	//@since 2017年2月16日17:37:55 @author chenqi 是否需要打印,0不需要,1需要
+					}
+					
+					//保存
+					this.customerRelationshipDao.getHibernateTemplate().save(reCom);
+				}
+			}
+		}
+		
+		return true;
+	}
+	
+	/**
+	 * 删除按钮操作;
+	 * 需要校验：如果当前erp_customer表中已经存在当前这个项目下的这个套餐，
+	 * 则不允许进行删除，并给出提示“客户已经关联了此套餐，不允许删除
+	 */
+	public boolean deleteProCombo(String id) throws Exception  {
+		
+		/*
+		 * 首先验证是否可以删除;
+		 * 根据支公司以及套餐名称来作为判断依据;
+		 */
+		String sqlFlag = "select "
+			+"count(1) "
+			+"from "
+			+"ERP_RelationShipPro_Combo proCombo "
+			+"inner join HL_JY_COMBO combo on combo.id = proCombo.COMBO_ID "
+			+"inner join HL_CUSTOMER_RELATIONSHIP_PRO pro on pro.id = proCombo.CUSTOMER_RELATIONSHIP_PRO_ID "
+			+"inner join ERP_CUSTOMER customer on combo.combo_name = customer.SETMEAL_NAME and pro.CUSTOMER_RELATIONSHIP_ID = customer.BRANCH_COMPANY_ID "
+			+"where customer.is_deleted='0' and proCombo.id = '"+id+"'";
+		int count = this.customerRelationshipDao.getJdbcTemplate().queryForInt(sqlFlag);
+		
+		//其次判断后执行删除;该处由于是中间表,所以采用物理删除;
+		if(count ==0 ) { //表示客户表中没有对应使用该套餐,所以可以删除;
+			String sql = "delete from ERP_RelationShipPro_Combo where id='"+id+"'";
+			this.customerRelationshipDao.getJdbcTemplate().update(sql);
+			return true;
+		}
+		
+		return false;
+	}
+	
+	/**
+	 * 修改1+X数据套餐是否需要生成报告状态
+	 * @param id
+	 * @return
+	 * @author tangxing
+	 * @date 2016-12-5下午3:31:50
+	 */
+	public boolean changeIsCreatePdf(String id) throws Exception{
+		ErpRelationShipCombo combo = customerRelationshipDao.getHibernateTemplate().get(ErpRelationShipCombo.class, id);
+		if(combo!=null){
+			String isCratePdf = combo.getIsCreatePdf();		//是否生成报告状态
+			if(isCratePdf==null||StringUtils.isEmpty(isCratePdf)){
+				combo.setIsCreatePdf("0");
+			}else if(isCratePdf.equals("1")){
+				combo.setIsCreatePdf("0");
+			}else if(isCratePdf.equals("0")){
+				combo.setIsCreatePdf("1");
+			}
+			try {
+				this.customerRelationshipDao.getHibernateTemplate().update(combo);
+				return true;
+			} catch (Exception e) {
+				log.error("service changeIsCreatePdf "+e);
+				return false;
+			}
+			
+		}else{
+			return false;
+		}
+	}
+
+
+	public Combo findErpRelationComboById(String id) {
+		return this.customerRelationshipProDao.findErpRelationComboById(id);
+	}
+	
+	public CustomerRelationShip getCustomerRelationShipById(String id){
+		return customerRelationshipDao.getCustomerRelationShipById(id);
+	}
+	
+	public CustomerRelationShipPro getCustomerRelationShipProById(String id){
+		return customerRelationshipProDao.getHibernateTemplate().get(CustomerRelationShipPro.class, id);
+	}
+
+
+	/**
+	 * @return
+	 * @author machuan
+	 * @date  2017年1月9日
+	 */
+	public List<Map<String, Object>> getProjectTypeList() {
+		String sql = "SELECT t.project_type_name projectType FROM t_project_type t where t.project_type_name is not null  and t.is_deleted='0'";
+		return this.customerRelationshipDao.getJdbcTemplate().queryForList(sql);
+	}
+
+
+	/**
+	 * @since 2017年2月3日11:24:13
+	 * @author Carly
+	 */
+	public void findCustomerShipPro(Page<CustomerRelationShipPro> page,Map<String, String> searchMap) {
+		customerRelationshipProDao.findByPage(page, searchMap);
+	}
+
+
+	/**
+	 * 根据支公司ID 和项目ID 拿到所有套餐显示名
+	 * @param crid
+	 * @param projectCode
+	 * @return
+	 * @author machuan
+	 * @date  2017年2月21日
+	 */
+	public List<Map<String, Object>> checkShowCombo(String crid, String projectCode) {
+		return customerRelationshipDao.checkShowCombo(crid,projectCode);
+	}
+
+
+	/**
+	 * 根据 支公司id，项目类别编码验证数据库是否有重复数据
+	 * @param crid
+	 * @param projectTypeCode
+	 * @return
+	 * @author machuan
+	 * @date  2017年2月27日
+	 */
+	public boolean checkRepeatByParam(String crid, String projectTypeCode) {
+		String sql = "select count(*) from hl_customer_ship_code c where c.company_id=? and c.project_type=?";
+		return customerRelationshipDao.getJdbcTemplate().queryForInt(sql, crid,projectTypeCode)>0;
+	}
+}

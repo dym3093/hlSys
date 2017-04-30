@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping>
+	<class name="org.hpin.base.resource.entity.Resource" table="sys_resource">
+		<!-- 
+		<id name="id" type="java.lang.Long">
+			 <generator class="increment" />
+		</id> -->
+		<id name="id" type="java.lang.String" column="id">
+	    <generator class="uuid"/>
+	    </id>
+		<property name="name" type="java.lang.String">
+			<column name="name" />
+		</property>
+
+		<property name="parentId" type="java.lang.String">
+			<column name="parent_id" />
+		</property>
+
+		<property name="type" type="java.lang.Integer">
+			<column name="type" />
+		</property>
+
+		<property name="isLeaf" type="java.lang.Integer">
+			<column name="is_leaf" />
+		</property>
+
+		<property name="url" type="java.lang.String">
+			<column name="url" />
+		</property>
+		<property name="orderCode" type="java.lang.Integer">
+			<column name="order_code" />
+		</property>
+		
+		<property name="isButton" type="java.lang.Integer">
+			<column name="is_button" />
+		</property>
+		
+		<property name="isEnable" type="java.lang.Integer">
+			<column name="is_enable" />
+		</property>
+
+		<property name="iconCls" type="java.lang.String">
+			<column name="icon_cls" />
+		</property>
+		
+		<property name="isLine" type="java.lang.Integer">
+			<column name="is_line" />
+		</property>
+		
+		<property name="isFrame" type="java.lang.Integer">
+			<column name="is_frame" />
+		</property>
+		
+		<set name="childrenSet" where="is_enable = 1 or is_enable is null" order-by="order_code asc" inverse="true" lazy = "false">
+			<key column="parent_id"></key>
+			<one-to-many class="org.hpin.base.resource.entity.Resource"/>
+		</set>
+	</class>
+</hibernate-mapping>

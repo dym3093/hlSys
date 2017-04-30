@@ -1,0 +1,147 @@
+package org.hpin.base.customerrelationship.dao;
+
+import java.sql.Types;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
+import org.hpin.base.customerrelationship.entity.CustomerRelationShipPro;
+import org.hpin.base.customerrelationship.entity.CustomerRelationshipCombo;
+import org.hpin.common.core.orm.BaseDao;
+import org.hpin.settlementManagement.entity.ErpCompanyComboPrice;
+import org.springframework.stereotype.Repository;
+@Repository()
+public class CustomerRelationshipComboDao extends BaseDao {
+
+	public List<CustomerRelationshipCombo> findByGroupId(String groupId) {
+		String query = " from CustomerRelationshipCombo where customerRelationShipId = ? order by id" ;
+		return super.getHibernateTemplate().find(query, groupId);
+	}
+
+	public Integer delRelation(String groupId, String ids) {
+		String sql = " delete from HL_CUSTOMER_RELATIONSHIP_COMBO where CUTOMER_ID = '" + groupId + "' and COMBO_ID in (" + ids + ")";
+		return super.getJdbcTemplate().update(sql);
+	}
+
+	public List<CustomerRelationshipCombo> findByGroupIdAndElementId(String groupId, String elementsId) {
+		String query = " from CustomerRelationshipCombo where customerRelationShipId = ? and comboId= ? order by id" ;
+		return super.getHibernateTemplate().find(query, groupId ,elementsId);
+	}
+
+	public Integer delDanRelation(String groupId, String id) {
+		String sql = " delete from HL_CUSTOMER_RELATIONSHIP_COMBO where CUTOMER_RELATIONSHIP_ID = '" + groupId + "' and COMBO_ID = '" + id + "'";
+		return super.getJdbcTemplate().update(sql);
+	}
+	public Integer delDanRelation2(String groupId) {
+		String sql = " delete from HL_CUSTOMER_RELATIONSHIP_COMBO where CUTOMER_RELATIONSHIP_ID = '" + groupId + "'";
+		return super.getJdbcTemplate().update(sql);
+	}
+
+	public List getComboPrice(String key, String branchCompanyId,String proId) {
+		String sql="select eccp.combo_price as combo_price FROM erp_company_combo_price eccp WHERE eccp.combo='"+key+"' AND eccp.company_id='"+branchCompanyId+"' and eccp.project_Id='"+proId+"'";
+		return super.getJdbcTemplate().queryForList(sql);
+	}
+	
+	/**
+	 * 
+	 * @param comboName
+	 * @param branchCompanyId
+	 * @param proId
+	 * @return
+	 * @author tangxing
+	 * @date 2016-11-23上午11:05:17
+	 */
+	public List<ErpCompanyComboPrice> getComboPriceObject(String comboName,String comboId, String branchCompanyId,String proId) {
+		String hql = "from ErpCompanyComboPrice where combo=? and comboId=? and companyId=? and projectId=?";
+		return this.getHibernateTemplate().find(hql, new Object[]{comboName,comboId,branchCompanyId,proId});
+	}
+
+	public int updatePrice(String key, Object object, String company) {
+		String sql="update erp_company_combo_price ecp set ecp.combo_price ='"+object+"' WHERE ecp.company='"+company+"' AND ecp.combo ='"+key+"'";
+		return super.getJdbcTemplate().update(sql);
+	}
+	
+	/**
+	 * @param key	套餐名
+	 * @param object	价格
+	 * @param company	公司	
+	 * @param companyId	公司id
+	 * @param userName	用户名
+	 * @param userId	用户id
+	 * @return	插入成功返回1
+	 */		//String key, String  object, String company,String companyId,String userName, String userId
+	public int insertPrice(Map<String, String> map) {
+		String sql="insert into erp_company_combo_price(id,combo,combo_price,company,company_id,create_time,create_user_id,create_user,combo_id,status)"
+				+ "values(?,?,?,?,?,?,?,?,?,?)";	
+		 Object[] params = new Object[] { getUUID(), map.get("combo"), map.get("price"), map.get("company"),map.get("companyId"),
+				 new Date(),map.get("userId"),map.get("userName"),map.get("comboId"),"0" };
+		 int[] types = new int[] { Types.VARCHAR, Types.VARCHAR, Types.DECIMAL, Types.VARCHAR,Types.VARCHAR,Types.TIMESTAMP,Types.VARCHAR,Types.VARCHAR,Types.VARCHAR,Types.VARCHAR };
+		return super.getJdbcTemplate().update(sql, params, types);
+	}
+
+	/**
+	 * 插入历史表
+	 * @param map
+	 * @return
+	 */
+	public int insertHistoryPriceTable(Map<String, String> map) {
+		int count =0;
+		String sql="insert into combo_price_list(id,comboid,comboname,historyprice,branchcompanyid,branchcompany,createuser,createtime,isdelete)"
+				+ "values(?,?,?,?,?,?,?,?,?)";
+		Object[] params = new Object[] { getUUID(), map.get("comboId"), map.get("combo"), map.get("price"),map.get("companyId"),map.get("company"),map.get("userName"),new Date(),"0" };
+		int[] types = new int[] { Types.VARCHAR, Types.VARCHAR, Types.VARCHAR, Types.DECIMAL,Types.VARCHAR,Types.VARCHAR,Types.VARCHAR,Types.TIMESTAMP,Types.VARCHAR };
+		try {
+			count = super.getJdbcTemplate().update(sql, params, types);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return count;
+	}
+
+	/**
+	 * @param company 公司名
+	 * @param key	套餐名
+	 * @param object	套餐价格
+	 * @return
+	 */
+	public int updatePriceList(String branchCompanyId, String key, Object object,String userName,CustomerRelationShipPro customerRelationShipPro,String proId) {
+		String date= new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date());
+		String sql="update erp_company_combo_price ecp set ecp.combo_price ='"+object+"',ecp.update_time=to_date('"+date+"','yyyy-mm-dd hh24:mi:ss')," +
+				" ecp.update_user='"+userName+"',ecp.project_id='"+customerRelationShipPro.getId()+"', " +
+				" ecp.project_code='"+customerRelationShipPro.getProjectCode()+"',ecp.project_name='"+customerRelationShipPro.getProjectName()+"', " +
+				" ecp.project_owner='"+customerRelationShipPro.getProjectOwner()+"' WHERE ecp.company_id='"+branchCompanyId+"' AND ecp.combo ='"+key+"' and ecp.project_id='"+proId+"'" ;
+		return super.getJdbcTemplate().update(sql);
+	}
+
+	public String getUUID(){
+		UUID uuid=UUID.randomUUID();
+		return uuid.toString().replace("-", "");
+	}
+
+	public List getCompanyId(String company) {
+		String sql = "select id from hl_customer_relationship where branch_commany='"+company+"'";
+		return super.getJdbcTemplate().queryForList(sql);
+	}
+
+	public List getComboId(String key, String branchCompanyId) {
+		String sql = "select combo_id from erp_company_combo_price where combo='"+key+"' and company_id='"+ branchCompanyId+"'";
+		return super.getJdbcTemplate().queryForList(sql);
+	}
+	
+	/**
+	 *  根据支公司ID和套餐ID到中间表（erp_relationshippro_combo）获取isCreatePdf status
+	 * @param branchCompanyId
+	 * @param comboId
+	 * @return
+	 * @author tangxing
+	 * @date 2016-12-6下午2:42:19
+	 */
+	public List<Map<String, Object>> getIsCreatePdfStatus(String branchCompanyId,String comboId){
+		String sql = "select erc.is_create_pdf as isCreatePdf from erp_relationshippro_combo erc where erc.customer_relationship_pro_id in "
+				+"(select crp.id from hl_customer_relationship_pro crp where crp.customer_relationship_id=? ) and erc.combo_Id=?";
+		return this.getJdbcTemplate().queryForList(sql,new Object[]{branchCompanyId,comboId});
+	}
+
+}

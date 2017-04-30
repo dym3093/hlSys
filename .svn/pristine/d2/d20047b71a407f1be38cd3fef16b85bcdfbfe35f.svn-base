@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?><project-modules id="moduleCoreId" project-version="1.5.0">
+    <wb-module deploy-name="chinapan_bg">
+        <wb-resource deploy-path="/" source-path="/WebRoot" tag="defaultRootSource"/>
+        <wb-resource deploy-path="/WEB-INF/classes" source-path="/src/configfiles"/>
+        <wb-resource deploy-path="/WEB-INF/classes" source-path="/src/systemConfig"/>
+        <wb-resource deploy-path="/WEB-INF/classes" source-path="/src/system"/>
+        <wb-resource deploy-path="/WEB-INF/classes" source-path="/src/orgnizationManager"/>
+        <wb-resource deploy-path="/WEB-INF/classes" source-path="/src/common"/>
+        <wb-resource deploy-path="/WEB-INF/classes" source-path="/src/security"/>
+        <wb-resource deploy-path="/WEB-INF/classes" source-path="/src/comboManage"/>
+        <wb-resource deploy-path="/WEB-INF/classes" source-path="/src/business"/>
+        <wb-resource deploy-path="/WEB-INF/classes" source-path="/src/events"/>
+        <wb-resource deploy-path="/WEB-INF/classes" source-path="/src/reportDetail"/>
+        <wb-resource deploy-path="/WEB-INF/classes" source-path="/src/reportdetail"/>
+        <wb-resource deploy-path="/WEB-INF/classes" source-path="/src/warehouse"/>
+        <wb-resource deploy-path="/WEB-INF/classes" source-path="/src"/>
+        <wb-resource deploy-path="/WEB-INF/classes" source-path="/src/genepack"/>
+        <dependent-module archiveName="chinapan_base.jar" deploy-path="/WEB-INF/lib" handle="module:/resource/chinapan_base/chinapan_base">
+            <dependency-type>uses</dependency-type>
+        </dependent-module>
+        <dependent-module archiveName="chinapan_common.jar" deploy-path="/WEB-INF/lib" handle="module:/resource/chinapan_common/chinapan_common">
+            <dependency-type>uses</dependency-type>
+        </dependent-module>
+        <property name="java-output-path" value="/chinapan_bg/WebRoot/WEB-INF/classes"/>
+        <property name="context-root" value="/ymjy"/>
+    </wb-module>
+</project-modules>

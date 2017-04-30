@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<logs>
+
+	<log key="HireContractAction.saveContract" value="收房管理--保存合同" type="save" />
+
+	<log key="HireContractAction.saveRoom" value="收房管理--修改房间" type="save" />
+
+
+	<log key="HireDelivery.saveHireDelivery" value="收房管理--保存物业交割单"
+		type="save" />
+
+
+	<!-- 胡五音日志配置模块 -->
+	
+	<log key="DisposeCost.confirm2Perfomance" value="配置明细审核--提交绩效数据"
+		type="update" />
+
+	<!-- 张艳日志配置模块 -->
+	<log key="assignAction.grantResource" value="分配权限--给用户授权" type="save"/>
+	<log key="assignAction.grantResource" value="分配权限--给角色授权" type="save"/>
+	<log key="assignAction.grantResource" value="分配权限--给部门授权" type="save"/>
+	<log key="assignAction.listUserDetail" value="分配权限--角色权限管理-查看人员" type="view"/>
+	
+	
+	<!-- 刘丹日志配置模块 -->
+	
+	
+	<!-- 丁大峰日志配置模块 -->
+
+
+
+	<!-- 基础数据模块 -->
+	<log key="CodeAddressAction.listCodeAddress" value="基础数据--查看码表地址列表"
+		type="list" />
+	<log key="CodeAddressAction.saveCodeAddress" value="基础数据--添加码表地址"
+		type="save" />
+	<log key="CodeAddressAction.updateCodeAddress" value="基础数据--修改码表地址"
+		type="update" />
+	<log key="CodeAddressAction.deleteCodeAddress" value="基础数据--删除码表地址"
+		type="delete" />
+
+
+	<log key="DictionaryAction.listDictionary" value="基础数据--查看数据字典"
+		type="list" />
+	<log key="DictionaryAction.saveDictionary" value="基础数据--添加数据字典"
+		type="save" />
+	<log key="DictionaryAction.updateDictionary" value="基础数据--修改数据字典"
+		type="update" />
+	<log key="DictionaryAction.deleteDictionary" value="基础数据--删除数据字典"
+		type="delete" />
+
+
+	<!-- 用户管理配置模块 -->
+
+	<log key="UserAction.listUser" value="部门与用户管理--查看用户列表" type="list" />
+	<log key="UserAction.saveUser" value="部门与用户管理--添加用户" type="save" />
+	<log key="UserAction.updateUser" value="部门与用户管理--修改用户" type="update" />
+
+
+
+	<log key="RoleAction.listRole" value="部门与用户管理--查看角色列表" type="list" />
+	<log key="RoleAction.saveRole" value="部门与用户管理--添加角色" type="save" />
+	<log key="RoleAction.updateRole" value="部门与用户管理--修改角色" type="update" />
+	<log key="RoleAction.deleteRole" value="部门与用户管理--删除角色" type="delete" />
+
+
+
+	<log key="ParameterConfig.listParameterConfig" value="系统管理--查看参数列表"
+		type="list" />
+	<log key="ParameterConfig.updateParameterConfig" value="系统管理--修改参数"
+		type="list" />
+</logs>

@@ -1,0 +1,43 @@
+package org.hpin.reportdetail.dao;
+
+import java.util.List;
+import java.util.Map;
+
+import org.hpin.common.core.orm.BaseDao;
+import org.hpin.reportdetail.entity.ErpReadPDFMatchInfo;
+import org.springframework.stereotype.Repository;
+
+@Repository()
+public class ErpReadPDFMatchInfoDao extends BaseDao {
+
+	/**
+	 * erp_customer表中获取需要吉思朗数据
+	 * @return
+	 * @author tangxing
+	 * @date 2017-3-8下午5:17:44
+	 */
+	public List<Map<String, Object>> getCustomerAndFilePath(){
+		String sql = "select c.code,c.name,c.sex,c.age,rp.filepath "+
+				" from erp_customer c,erp_reportdetail_pdfcontent rp  "+
+				" where rp.customerid=c.id  "+
+				" and c.code like 'C%'  "+
+				" and c.code not like 'CS%'  "+
+				" and c.is_deleted=0  "+
+				" and c.branch_company<>'无创微磁支公司测试101'  "+
+				" and rp.matchstate='2' and rp.filepath is not null  "+
+				" and rp.createdate = (select max(p.createdate) from erp_reportdetail_pdfcontent p where p.code=rp.code)";
+		return this.getJdbcTemplate().queryForList(sql);
+	}
+	
+	/**
+	 * 获取ErpReadPDFMatchInfo集合
+	 * @return
+	 * @author tangxing
+	 * @date 2017-3-8下午5:17:29
+	 */
+	public List<ErpReadPDFMatchInfo> listErpReadPDFMatchInfo() {
+		String hql = "from ErpReadPDFMatchInfo where isReadPdf=0";
+		return this.getHibernateTemplate().find(hql);
+	}
+	
+}

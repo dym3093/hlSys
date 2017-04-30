@@ -1,0 +1,14 @@
+<graph caption='Monthly Sales Summary'  xAxisName='2010Äê' yAxisMinValue='100' yAxisName='Sales' decimalPrecision='0' formatNumberScale='0'  showNames='1' showValues='0'  showAlternateHGridColor='1' AlternateHGridColor='ff5904' divLineColor='ff5904' divLineAlpha='20' alternateHGridAlpha='5' >
+   <set name='Jan' value='174' hoverText='January'/>
+   <set name='Feb' value='198' hoverText='February'/>
+   <set name='Mar' value='218' hoverText='March'/>
+   <set name='Apr' value='238' hoverText='April'/>
+   <set name='May' value='296' hoverText='May'/>
+   <set name='Jun' value='276' hoverText='June'/>
+   <set name='Jul' value='318' hoverText='July'/>
+   <set name='Aug' value='397' hoverText='August'/>
+   <set name='Sep' value='370' hoverText='September'/>
+   <set name='Oct' value='20' hoverText='October'/>
+   <set name='Nov' value='33' hoverText='November' />
+   <set name='Dec' value='55' hoverText='December' />
+</graph>

@@ -1,0 +1,49 @@
+#send persion mail account
+mail.account=gene@healthlink.cn
+#send persion mail password
+mail.password=Yue123.com
+#发件人昵称
+mail.nickName=基因系统
+
+#receive persion account default mail "xuejunyang@healthlink.cn"
+receive.receiveMailAccount=shangkuntan@healthlink.cn
+
+############################################### 发送超时打印任务邮件 start #############################################
+
+#SMTP服务器域名
+mail.host.printTask=smtp.exmail.qq.com
+##邮件中的昵称
+mail.nickName.printTask=基因系统
+##杨明的邮箱
+mail.account.printTask=mingyang@healthlink.cn
+#mail.account.printTask=youmingdeng@healthlink.cn
+#shupan@healthlink.cn
+#测试邮箱
+#mail.account.printTask=youmingdeng@healthlink.cn
+#邮件主题
+mail.subject.printTask=超时打印任务信息
+#邮件内容
+mail.content.printTask=亲爱的盟友：<br/> &nbsp;&nbsp;&nbsp;&nbsp;附件内容为超时打印任务的打印任务信息，请知悉！<br/>&nbsp;&nbsp;&nbsp;&nbsp;系统邮件，请勿回复！谢谢！<br/><br/><br/><br/><br/>
+
+############################################### 发送超时打印任务邮件 end ###############################################
+
+############################################### 发送超时已下载客户信息的邮件 start #############################################
+#SMTP服务器域名
+host.yxz=smtp.exmail.qq.com
+##邮件中的昵称
+nickName.yxz=基因系统
+##邮件接收人的邮箱，多个接收人可以用英文输入状态的逗号(,)分隔
+account.to.yxz=hamidahan@healthlink.cn,yalingliu@healthlink.cn,yichenwang@healthlink.cn,mingyang@healthlink.cn,shupan@healthlink.cn
+#account.to.yxz=youmingdeng@healthlink.cn,shupan@healthlink.cn
+#客户称呼
+cust.yxz=亲爱的盟友
+#测试邮箱
+#account.to.yxz=youmingdeng@healthlink.cn,shangkuntan@healthlink.cn,benchuyuan@healthlink.cn,qiangxu@healthlink.cn,xingtang@healthlink.cn,chuanma@healthlink.cn,haowu@healthlink.cn
+#客户称呼
+#cust.yxz=客户
+#邮件主题
+subject.yxz=超时4天未处理的客户信息(已下载状态)
+#邮件内容
+content.yxz= <br/>&nbsp;&nbsp;&nbsp;&nbsp;目前有部分客户的报告已下载，但寄送时间超期，请知悉！<br/>明细详见附件。<br/>&nbsp;&nbsp;&nbsp;&nbsp;谢谢！<br/><br/><br/><br/><br/>
+
+############################################### 发送超时已下载客户信息的邮件 end ###############################################

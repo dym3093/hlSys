@@ -1,0 +1,84 @@
+/**
+ * @author DengYouming
+ * @since 2016-7-14 下午6:01:11
+ */
+package org.hpin.warehouse.dao;
+
+import java.util.List;
+import java.util.Map;
+
+import org.apache.commons.lang.StringUtils;
+import org.hibernate.Criteria;
+import org.hibernate.Query;
+import org.hibernate.Session;
+import org.hibernate.criterion.Restrictions;
+import org.hpin.common.core.orm.BaseDao;
+import org.hpin.common.widget.pagination.Page;
+import org.hpin.warehouse.entity.StoreApplicationDetail;
+import org.springframework.stereotype.Repository;
+import org.springframework.util.CollectionUtils;
+
+/**
+ * 物品申请明细表Dao
+ * @author DengYouming
+ * @since 2016-7-14 下午6:01:11
+ */
+@Repository
+public class StoreApplicationDetailDao extends BaseDao {
+
+	/**
+	 * 批量保存 物品申请明细
+	 * @param list
+	 * @return Integer
+	 * @throws Exception
+	 * @author DengYouming
+	 * @since 2016-7-14 下午6:03:07
+	 */
+	public Integer saveList(List<StoreApplicationDetail> list) throws Exception{
+		Integer num = 0;
+		if(!CollectionUtils.isEmpty(list)){
+			for(int i=0; i<list.size(); i++){
+				this.getHibernateTemplate().save(list.get(i));
+				num++;
+			}
+		}
+		return num;
+	}
+	
+	/**
+	 * 根据条件查询
+	 * @param params
+	 * @return List
+	 * @throws Exception
+	 * @author DengYouming
+	 * @since 2016-7-15 上午11:41:53
+	 */
+	public List<StoreApplicationDetail> listByProps(Map<String,Object> params) throws Exception{
+		List<StoreApplicationDetail> list = null;
+		Session session = null;
+		Criteria criteria = null;
+		if(!CollectionUtils.isEmpty(params)){
+			session = this.getHibernateTemplate().getSessionFactory().getCurrentSession();
+			criteria = session.createCriteria(StoreApplicationDetail.class);
+			//主表ID
+			String store_id = (String) params.get(StoreApplicationDetail.F_IDRELATED);
+			if(StringUtils.isNotEmpty(store_id)){
+				criteria.add(Restrictions.eq(StoreApplicationDetail.F_IDRELATED, store_id));
+			}
+			
+			//分页
+			int pageNum = 1;
+			int pageSize = 20;
+			if(params.get(Page.F_PAGENUM)!=null&& params.get(Page.F_PAGESIZE)!=null){
+				pageNum = (Integer) params.get(Page.F_PAGENUM);
+				pageSize = (Integer) params.get(Page.F_PAGESIZE);
+			}
+			int startNum = (pageNum-1)*pageSize;
+			criteria.setFirstResult(startNum);
+			criteria.setFetchSize(pageSize);
+			
+			list = criteria.list();
+		}
+		return list;
+	}
+}

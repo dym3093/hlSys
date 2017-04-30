@@ -1,0 +1,40 @@
+package org.hpin.reportdetail.job;
+
+import org.apache.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+
+/**
+ * 定时获取上传的报告文件
+ * @author ybc
+ * @date 2016-3-29
+ */
+public class ErpPdf2JpgJob {
+
+	private String jpgToPath;
+	
+	private static Logger logger = Logger.getLogger(ErpPdf2JpgJob.class);
+	
+	@Autowired
+	private ThreadPoolTaskExecutor taskExecutor;
+	
+	public synchronized void execute(){
+		logger.info("ErpPdf2JpgJob excute start time---开始执行转换图片任务" );
+		long start = System.currentTimeMillis();
+		//根据当前日期获取文件路径
+		ErpPdf2JpgThread match = new ErpPdf2JpgThread(jpgToPath);
+		taskExecutor.submit(match);
+		long end = System.currentTimeMillis();
+		
+		logger.info("ErpPdf2JpgJob excute use time---"+ (end-start));
+	}
+
+	public String getJpgToPath() {
+		return jpgToPath;
+	}
+
+	public void setJpgToPath(String jpgToPath) {
+		this.jpgToPath = jpgToPath;
+	}
+	
+}

@@ -1,0 +1,54 @@
+<div class="accordion" fillSpace="sideBar">
+	<div class="accordionHeader">
+		<h2><span>Folder</span>业务流程统计</h2>
+	</div>
+	<div class="accordionContent">
+		<ul class="tree treeFolder">
+			<li><a href="tabsPage.html" target="navTab">业务流程统计</a></li>
+		</ul>
+        <ul class="tree treeFolder">
+			<li><a href="tongjifenxi/baobiao.html" target="navTab">业务流程统计报表</a></li>
+		</ul>
+	</div>
+	<div class="accordionHeader">
+		<h2><span>Folder</span>服务业务信息统计</h2>
+	</div>
+	<div class="accordionContent">
+		<ul class="tree">
+			<li><a href="demo_upload.html" target="navTab" rel="demo_upload">服务业务信息统计</a></li>
+		</ul>
+	</div>
+	<div class="accordionHeader">
+		<h2><span>Folder</span>服务资源统计</h2>
+	</div>
+	<div class="accordionContent">
+		<ul class="tree">
+			<li><a href="newPage1.html" target="dialog" rel="dlg_page">服务资源统计</a></li>
+		</ul>
+	</div>
+	<div class="accordionHeader">
+		<h2><span>Folder</span>信息处理统计</h2>
+	</div>
+	<div class="accordionContent">
+		<ul class="tree">
+			<li><a href="newPage1.html" target="dialog" rel="dlg_page">信息处理统计</a></li>
+		</ul>
+	</div>
+		<div class="accordionHeader">
+		<h2><span>Folder</span>会员服务要素统计</h2>
+	</div>
+	<div class="accordionContent">
+		<ul class="tree">
+			<li><a href="newPage1.html" target="dialog" rel="dlg_page">会员服务要素统计</a></li>
+		</ul>
+	</div>
+		<div class="accordionHeader">
+		<h2><span>Folder</span>客户分析</h2>
+	</div>
+	<div class="accordionContent">
+		<ul class="tree">
+			<li><a href="newPage1.html" target="dialog" rel="dlg_page">客户分析</a></li>
+		</ul>
+	</div>
+</div>
+

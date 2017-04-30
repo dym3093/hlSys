@@ -1,0 +1,279 @@
+package org.hpin.warehouse.entity;
+
+import java.io.Serializable;
+import java.math.BigDecimal;
+import java.util.Date;
+
+import org.hpin.common.util.PreciseCompute;
+/**
+ * 
+ * @description: 入库实体类;(ERP_STOREGE_IN表)
+ * create by henry.xu 2016年10月9日
+ */
+public class ErpStoregeIn implements Serializable{
+	/**
+	 * 序列号
+	 */
+	private static final long serialVersionUID = -5482340870890993884L;
+	/**主键ID*/
+	private String id;
+	/**仓库ID STORE_WAREHOUSE表*/
+	private String storegeId;
+	
+	private String storegeName; //仓库名称;
+	
+	/**产品ID ERP_PRODUCT表*/
+	private String productId;
+	
+	private String productName;//产品名称;
+	
+	/**单价*/
+	private BigDecimal price;
+	/**数量*/
+	private Integer quantity;
+	/**总金额*/
+	private BigDecimal amount;
+	/**规格; 数据来源产品信息ERP_PRODUCT表*/
+	private String standard;
+	/**描述; 数据来源产品信息ERP_PRODUCT表*/
+	private String describe;
+	/**可用数量*/
+	private Integer useableQuantity;
+	/**卡号*/
+	private String cardNum;
+	/**开始卡号*/
+	private String cardStart;
+	/**结束卡号*/
+	private String cardEnd;
+	/**真正可用卡号*/
+	private String userCardNum;
+	
+	/**备注*/
+	private String remark;
+	/**创建人ID UM_USER表*/
+	private String createUserId;
+	/**创建时间*/
+	private Date createTime;
+	/**修改人ID UM_USER表*/
+	private String updateUserId;
+	/**修改时间*/
+	private Date updateTime;
+	/**是否删除 0 有效, 1 删除*/
+	private Integer isDeleted;
+	/**产品类型*/
+	private String productType;
+
+	// add by Damian 2017-02-07 begin
+	/** 供应商ID */
+	private String supplierId;
+	/** 流水号 */
+	private String serialNo;
+	/** 结算状态 */
+	private Integer settleStatus;
+	/** OA流水号 */
+	private String serialNoOA;
+	// add by Damian 2017-02-07 end
+	
+	/** 供货商名称 */
+	private String supplierName;	//add by leslieTong. 用于展示
+	
+	private String statusName;		//add by leslieTong. 用于导出显示状态汉字
+	
+	private Integer storegeStatus; //入库状态: 1正常入库, 0退货入库; create by Henry.xu 20170317
+
+	public Integer getStoregeStatus() {
+		return storegeStatus;
+	}
+	public void setStoregeStatus(Integer storegeStatus) {
+		this.storegeStatus = storegeStatus;
+	}
+	public String getUserCardNum() {
+		return userCardNum;
+	}
+	public void setUserCardNum(String userCardNum) {
+		this.userCardNum = userCardNum;
+	}
+	public String getId() {
+		return id;
+	}
+	public void setId(String id) {
+		this.id = id;
+	}
+	public String getStoregeId() {
+		return storegeId;
+	}
+	public void setStoregeId(String storegeId) {
+		this.storegeId = storegeId;
+	}
+	public String getProductId() {
+		return productId;
+	}
+	public void setProductId(String productId) {
+		this.productId = productId;
+	}
+	public BigDecimal getPrice() {
+		return PreciseCompute.mul(price, new BigDecimal(1));
+	}
+	public void setPrice(BigDecimal price) {
+		this.price = price;
+	}
+	
+	//参数转换处理;
+	public void setPriceBak(String priceBak) {
+		this.price = PreciseCompute.formatComma2BigDecimal(priceBak, 2);
+	}
+	
+	public BigDecimal getAmount() {
+		return PreciseCompute.mul(amount, new BigDecimal(1));
+	}
+	public void setAmount(BigDecimal amount) {
+		this.amount = amount;
+	}
+	
+	public void setAmountBak(String amountBak) {
+		this.amount = PreciseCompute.formatComma2BigDecimal(amountBak, 2);
+	}
+	public String getStandard() {
+		return standard;
+	}
+	public void setStandard(String standard) {
+		this.standard = standard;
+	}
+	public String getDescribe() {
+		return describe;
+	}
+	public void setDescribe(String describe) {
+		this.describe = describe;
+	}
+	
+	public Integer getQuantity() {
+		return quantity;
+	}
+	public void setQuantity(Integer quantity) {
+		this.quantity = quantity;
+	}
+	public Integer getUseableQuantity() {
+		return useableQuantity;
+	}
+	public void setUseableQuantity(Integer useableQuantity) {
+		this.useableQuantity = useableQuantity;
+	}
+	public String getCardNum() {
+		return cardNum;
+	}
+	public void setCardNum(String cardNum) {
+		this.cardNum = cardNum;
+	}
+	public String getCardStart() {
+		return cardStart;
+	}
+	public void setCardStart(String cardStart) {
+		this.cardStart = cardStart;
+	}
+	public String getCardEnd() {
+		return cardEnd;
+	}
+	public void setCardEnd(String cardEnd) {
+		this.cardEnd = cardEnd;
+	}
+	public String getRemark() {
+		return remark;
+	}
+	public void setRemark(String remark) {
+		this.remark = remark;
+	}
+	public String getCreateUserId() {
+		return createUserId;
+	}
+	public void setCreateUserId(String createUserId) {
+		this.createUserId = createUserId;
+	}
+	public Date getCreateTime() {
+		return createTime;
+	}
+	public void setCreateTime(Date createTime) {
+		this.createTime = createTime;
+	}
+	public String getUpdateUserId() {
+		return updateUserId;
+	}
+	public void setUpdateUserId(String updateUserId) {
+		this.updateUserId = updateUserId;
+	}
+	public Date getUpdateTime() {
+		return updateTime;
+	}
+	public void setUpdateTime(Date updateTime) {
+		this.updateTime = updateTime;
+	}
+	public Integer getIsDeleted() {
+		return isDeleted;
+	}
+	public void setIsDeleted(Integer isDeleted) {
+		this.isDeleted = isDeleted;
+	}
+	public String getProductType() {
+		return productType;
+	}
+	public void setProductType(String productType) {
+		this.productType = productType;
+	}
+	public String getStoregeName() {
+		return storegeName;
+	}
+	public void setStoregeName(String storegeName) {
+		this.storegeName = storegeName;
+	}
+	public String getProductName() {
+		return productName;
+	}
+	public void setProductName(String productName) {
+		this.productName = productName;
+	}
+
+
+	public String getSupplierId() {
+		return supplierId;
+	}
+
+	public void setSupplierId(String supplierId) {
+		this.supplierId = supplierId;
+	}
+
+	public String getSerialNo() {
+		return serialNo;
+	}
+
+	public void setSerialNo(String serialNo) {
+		this.serialNo = serialNo;
+	}
+
+	public Integer getSettleStatus() {
+		return settleStatus;
+	}
+
+	public void setSettleStatus(Integer settleStatus) {
+		this.settleStatus = settleStatus;
+	}
+
+	public String getSerialNoOA() {
+		return serialNoOA;
+	}
+
+	public void setSerialNoOA(String serialNoOA) {
+		this.serialNoOA = serialNoOA;
+	}
+	public String getSupplierName() {
+		return supplierName;
+	}
+	public void setSupplierName(String supplierName) {
+		this.supplierName = supplierName;
+	}
+	public String getStatusName() {
+		return statusName;
+	}
+	public void setStatusName(String statusName) {
+		this.statusName = statusName;
+	}
+	
+}

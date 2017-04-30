@@ -1,0 +1,455 @@
+package org.hpin.settlementManagement.dao;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+import org.hibernate.Criteria;
+import org.hibernate.Session;
+import org.hibernate.criterion.Order;
+import org.hibernate.criterion.Restrictions;
+import org.hpin.base.customerrelationship.entity.CustomerRelationShipPro;
+import org.hpin.base.dict.util.Constants;
+import org.hpin.common.core.orm.BaseDao;
+import org.hpin.common.core.orm.OrmConverter;
+import org.hpin.common.widget.pagination.Page;
+import org.hpin.settlementManagement.entity.ComboHistoryPrice;
+import org.hpin.settlementManagement.entity.ErpCompanyComboPrice;
+import org.springframework.stereotype.Repository;
+import org.ymjy.combo.entity.Combo;
+
+import com.itextpdf.text.pdf.PdfStructTreeController.returnType;
+/**
+ * 保险公司套餐价格表DAO: ERP_COMPANY_COMBO_PRICE 
+ * @author DengYouming
+ * @since 2016-5-4 下午4:31:47
+ */
+@Repository()
+public class ErpCompanyComboPriceDao extends BaseDao {
+
+    /**
+     * 分页获取对象
+     * 
+     * @param page
+     * @param searchMap
+     * @return
+     */
+    public List findByPage(Page page, Map searchMap) {
+        StringBuffer query = new StringBuffer(" from ErpCompanyComboPrice where 1=1");
+        List valueList = new ArrayList();
+        OrmConverter.assemblyQuery(query, searchMap, valueList);
+        return super.findByHql(page, query, valueList);
+    }
+    
+    
+    /**
+     * 根据ID获取套餐价
+     * @param id
+     * @return ErpCompanyComboPrice
+     */
+    public ErpCompanyComboPrice findById(String id){
+        return (ErpCompanyComboPrice)this.findById(ErpCompanyComboPrice.class, id);
+    }
+    
+    /**
+     * 保存ErpCompanyComboPrice对象
+     * @param entity
+     * @return boolean
+     * @throws Exception
+     * @author DengYouming
+     * @since 2016-5-6 上午11:28:55
+     */
+    public boolean addErpCompanyComboPrice(ErpCompanyComboPrice entity) throws Exception{
+    	boolean flag = false;
+    	Session session = this.getHibernateTemplate().getSessionFactory().getCurrentSession();
+    	session.getTransaction().begin();
+    	session.saveOrUpdate(entity);
+    	session.flush();
+    	session.clear();
+    	session.getTransaction().commit();
+//    	if(session!=null){
+//    		session.close();
+//    	}
+    	flag = true;
+   	
+    	return flag;
+    }
+    
+      
+    /**
+     * 查找所有未删除的数据
+     * @return List
+     * @author DengYouming
+     * @since 2016-5-6 上午11:42:40
+     */
+    public List listErpCompanyComboPrice(){
+        List list=null;
+        Session session = this.getHibernateTemplate().getSessionFactory().getCurrentSession();
+        Criteria criteria = session.createCriteria(ErpCompanyComboPrice.class);
+        criteria.add(Restrictions.ne(ErpCompanyComboPrice.F_STATUS, Constants.STATUS_DELETE_STR));
+        criteria.addOrder(Order.desc(ErpCompanyComboPrice.F_CREATETIME));
+        list = criteria.list();
+        return list;
+    }
+    
+    /**
+     * @param pageNum
+     * @param pageSize
+     * @return 分页查询所有支公司数据
+     */
+    public List listErpCompanyComboPrice(int pageSize, int pageNum,String salesman){
+    	int start=(pageNum-1)*pageSize;
+    	int end=pageNum*pageSize;
+    	String sql = "SELECT * "
+    			+ "FROM (SELECT ROWNUM rn,a.id as companyId, a.branch_commany as company,a.customer_name_simple as customerNameSimple,a.salesman as salesman,"
+    			+ "A.province as province,a.citey as city,a.create_time as createtime,length(a.combo)-length(replace(a.combo,','))+1 AS combocount "
+    			+ "FROM hl_customer_relationship A where a.is_deleted=0 and salesman='"+salesman+"' and rownum<="+end+")t where t.rn>"+start;
+    		return this.getJdbcTemplate().queryForList(sql);
+    }
+    
+    /**
+     * @param pageNum
+     * @param pageSize
+     * @param map
+     * @return 根据查询条件获取结果分页结果集
+     * @throws Exception 
+     */
+    public List listErpCompanyComboPrice(int pageSize, int pageNum,Map<String, Object> map,String salesman) throws Exception{
+    	String sql = getErpCompanyComboPriceCount(pageSize,pageNum,map,salesman);
+    	return this.getJdbcTemplate().queryForList(sql.toString());
+    }
+    
+    public long getTotalPageSize(Map<String, Object> map,String salesman) throws Exception{
+    	String sql = getErpCompanyComboPriceCount(map,salesman);
+    	return this.getJdbcTemplate().queryForLong(sql);
+	}
+    
+    /**
+     * @param pageSize
+     * @param pageNum
+     * @param map
+     * @return 获取在amin状态下登录的所有用户
+     * @throws Exception
+     */
+    public List listErpCompanyComboPrice(int pageSize, int pageNum,Map<String, Object> map) throws Exception{
+    	String sql = getAdminListErpCompanyComboPrice(pageSize,pageNum,map);
+    	return this.getJdbcTemplate().queryForList(sql.toString());
+    }
+    
+    /**
+     * @param map
+     * @return 获取所有的条数
+     * @throws Exception
+     */
+    public long getTotalPageSize(Map<String, Object> map) throws Exception{
+    	String sql = getAdminErpCompanyComboPriceCount(map);
+    	return this.getJdbcTemplate().queryForLong(sql);
+	}
+    
+    /**
+     * @param map 查询条件
+     * @param salesman 当前登录用户
+     * @return 根据条件查询结果查询出的结果数
+     * @throws Exception
+     */
+    public String getErpCompanyComboPriceCount(Map<String, Object> map,String salesman) throws Exception{
+    	StringBuffer sql =new StringBuffer();
+    	sql.append("SELECT count(1) FROM (SELECT ROWNUM rn,a.id as companyId, a.branch_commany as company,"
+    			+ "a.customer_name_simple as customerNameSimple,a.salesman as salesman,A.province as province,a.citey as city,"
+    			+ "a.create_time as createtime,length(a.combo)-length(replace(a.combo,','))+1 AS combocount "
+    			+ "FROM hl_customer_relationship A where a.is_deleted=0 and EXists(select id from HL_CUSTOMER_RELATIONSHIP_PRO where PROJECT_OWNER = '"+salesman+"' and a.id=CUSTOMER_RELATIONSHIP_ID)");//+end+")t where t.rn>"+start);	
+    	String company=(String)map.get("filter_and_company_LIKE_S");
+        String startTime=(String)map.get("filter_and_createTime_GEST_T");
+        String endTime=(String)map.get("filter_and_createTime_LEET_T");
+        if (company!=null) {
+        	sql.append(" and a.branch_commany like '%"+company+"%'");
+		}
+        if(startTime!=null){
+			sql.append(" and to_char(a.create_time,'yyyy-mm-dd') >'"+startTime+"'");
+		}
+        if(endTime!=null){
+			sql.append(" and to_char(a.create_time,'yyyy-mm-dd') <'"+endTime+"'");
+		}
+		sql.append(")t");
+        return sql.toString();
+    }
+    
+    /**
+     * @param pageSize	每页的数量
+     * @param pageNum	当前页数
+     * @param map	查询参数
+     * @param salesman	当前登录用户
+     * @return	根据查询条件得到的结果集
+     * @throws Exception
+     */
+    public String getErpCompanyComboPriceCount(int pageNum, int pageSize,Map<String, Object> map,String salesman) throws Exception{
+    	int start=(pageNum-1)*pageSize;
+    	int end=pageNum*pageSize;
+    	StringBuffer sql =new StringBuffer();
+    	sql.append("SELECT * FROM (SELECT ROWNUM rn,a.id as companyId, a.branch_commany as company,"
+    			+ "a.customer_name_simple as customerNameSimple,a.salesman as salesman, a.province as province,a.citey as city,"
+    			+ "a.create_time as createtime,length(a.combo)-length(replace(a.combo,','))+1 AS combocount "
+    			+ "FROM hl_customer_relationship a where a.is_deleted=0 and EXists(select id from HL_CUSTOMER_RELATIONSHIP_PRO where PROJECT_OWNER = '"+salesman+"' and a.id=CUSTOMER_RELATIONSHIP_ID)");//+end+")t where t.rn>"+start);	
+    	if(map.isEmpty()){
+    		sql.append(" and rownum<="+end+")t where t.rn>"+start);
+    		return sql.toString();
+    	}else {
+    		String company=(String)map.get("filter_and_company_LIKE_S");
+        	String startTime=(String)map.get("filter_and_createTime_GEST_T");
+        	String endTime=(String)map.get("filter_and_createTime_LEET_T");
+        	if (company!=null) {
+        		sql.append(" and a.branch_commany like '%"+company+"%'");
+			}
+        	if(startTime!=null){
+				sql.append(" and to_char(a.create_time,'yyyy-mm-dd') >'"+startTime+"'");
+			}
+        	if(endTime!=null){
+				sql.append(" and to_char(a.create_time,'yyyy-mm-dd') <'"+endTime+"'");
+			}
+				sql.append(" and rownum<="+end+")t where t.rn>"+start);
+        	return sql.toString();
+    	}
+    }
+    
+    public String getAdminListErpCompanyComboPrice(int pageNum, int pageSize,Map<String, Object> map) {
+    	int start=(pageNum-1)*pageSize;
+    	int end=pageNum*pageSize;
+    	StringBuffer sql =new StringBuffer();
+    	/*sql.append("SELECT * FROM (SELECT ROWNUM rn,a.id as companyId, a.branch_commany as company,"
+    			+ "a.customer_name_simple as customerNameSimple,a.salesman as salesman,A.province as province,a.citey as city,"
+    			+ "a.create_time as createtime,length(a.combo)-length(replace(a.combo,','))+1 AS combocount "
+    			+ "FROM hl_customer_relationship A where a.is_deleted=0 and rownum<="+end);//+end+")t where t.rn>"+start);	*/
+    	
+    	//2016-11-22 tx. 修改套餐数量的获取方式
+    	sql.append("SELECT * FROM (SELECT ROWNUM rn,a.id as companyId, a.branch_commany as company,"
+    			+ "a.customer_name_simple as customerNameSimple,a.salesman as salesman,A.province as province,a.citey as city,"
+    			+ "a.create_time as createtime,(select count(rs.combo_id) from ERP_RelationShipPro_Combo rs where rs.customer_relationship_pro_id in " 
+    			+ "(select t.id from hl_customer_relationship_pro t where t.customer_relationship_id=a.id)) AS combocount "
+    			+ "FROM hl_customer_relationship A where a.is_deleted=0 and rownum<="+end);//+end+")t where t.rn>"+start);
+    	if(map.isEmpty()){
+    		sql.append(" )t where t.rn>"+start);
+    		return sql.toString();
+    	}else {
+    		String company=(String)map.get("filter_and_company_LIKE_S");
+        	String startTime=(String)map.get("filter_and_createTime_GEST_T");
+        	String endTime=(String)map.get("filter_and_createTime_LEET_T");
+        	if (company!=null) {
+        		sql.append(" and a.branch_commany like '%"+company+"%'");
+			}
+        	if(startTime!=null){
+        		sql.append(" and to_char(a.create_time,'yyyy-mm-dd') >'"+startTime+"'");
+			}
+        	if(endTime!=null && startTime!=null && company!=null){
+				sql.append(" and to_char(a.create_time,'yyyy-mm-dd') <'"+endTime+"'");
+			}
+				sql.append(")t where t.rn>"+start);
+        	return sql.toString();
+    	}
+	}
+    
+    public String getAdminErpCompanyComboPriceCount(Map<String, Object> map) throws Exception{
+    	StringBuffer sql =new StringBuffer();
+    	sql.append("SELECT count(1) FROM (SELECT ROWNUM rn,a.id as companyId, a.branch_commany as company,"
+    			+ "a.customer_name_simple as customerNameSimple,a.salesman as salesman,A.province as province,a.citey as city,"
+    			+ "a.create_time as createtime,length(a.combo)-length(replace(a.combo,','))+1 AS combocount "
+    			+ "FROM hl_customer_relationship A ");//+end+")t where t.rn>"+start);	
+    	String company=(String)map.get("filter_and_company_LIKE_S");
+        String startTime=(String)map.get("filter_and_createTime_GEST_T");
+        String endTime=(String)map.get("filter_and_createTime_LEET_T");
+        if (company !=null || startTime !=null || endTime!=null) {
+			sql.append("where is_deleted=0 and");
+		}
+        if (company!=null) {
+        	sql.append(" a.branch_commany like '%"+company+"%'");
+        	if (startTime!=null) {
+				sql.append(" and ");
+			}
+		}
+        if(startTime!=null){
+			sql.append(" to_char(a.create_time,'yyyy-mm-dd') >'"+startTime+"'");
+		}
+        if(endTime!=null){
+        	if(company!=null || startTime!=null){
+        		sql.append("and");
+        	}
+			sql.append(" to_char(a.create_time,'yyyy-mm-dd') <'"+endTime+"'");
+		}
+		sql.append(")t");
+        return sql.toString();
+    }
+    
+    /**
+     * @return 所有公司的套餐数据
+     */
+    public int getErpCompanyComboPriceCount(String salesman){
+    	String sql="SELECT count(1) AS count FROM hl_customer_relationship A where a.salesman='"+salesman+"'";
+    	return this.getJdbcTemplate().queryForInt(sql);
+    }
+    
+    /**
+     * 套餐集合
+     * @return
+     */
+    public List listCombo(){
+        List list=null;
+        String queryString="from Combo where status=?";
+        list = this.getHibernateTemplate().find(queryString, new Object[]{"0"});
+        return list;
+    }
+
+    /*
+     * 创建一条历史价格记录
+     * @param comboHistoryPrice
+     */
+	public void saveHistoryPrice(ComboHistoryPrice comboHistoryPrice) {
+		super.save(comboHistoryPrice);
+	}
+	
+	/**
+	 * 批量删除公司套餐价格记录(逻辑删除)
+	 * @param ids
+	 * @return boolean
+	 * @throws Exception
+	 * @author DengYouming
+	 * @since 2016-5-5 下午5:16:26
+	 */
+    public boolean deleteErpCompanyComboPriceBatch(String ids) throws Exception{
+    	boolean flag = false;
+    	Session session = this.getHibernateTemplate().getSessionFactory().getCurrentSession();
+    	session.getTransaction().begin();
+    	try{
+	    	if(ids.indexOf(Constants.PUNCTUATION_COMMA)!=-1){
+	    		String[] idArr = ids.split(Constants.PUNCTUATION_COMMA);
+	    		for (int i = 0; i < idArr.length; i++) {
+					ErpCompanyComboPrice entity = this.findById(idArr[i]);
+					//逻辑删除
+					entity.setStatus(Constants.STATUS_DELETE_STR);
+					session.update(entity);
+					if(i!=0&&i%100==0){
+						session.flush();
+						session.clear();
+					}
+				}
+	    		session.flush();
+	    		session.clear();
+	    		flag = true;
+	    	}else{
+				ErpCompanyComboPrice entity = this.findById(ids);
+				//逻辑删除
+				entity.setStatus(Constants.STATUS_DELETE_STR);
+				session.update(entity);
+	    		session.flush();
+	    		session.clear();
+	    		flag = true;
+	    	}
+    	}catch(Exception e){
+    		e.printStackTrace();
+    		throw e;
+    	}finally{
+    		session.getTransaction().commit();
+//    		if(session!=null){
+//    			session.close();
+//    		}
+    	}
+    	
+    	return flag;
+    }
+    
+    /**
+     * 条件查询公司套餐价格
+     * @param props
+     * @return ErpCompanyComboPrice
+     * @throws Exception
+     * @author DengYouming
+     * @since 2016-5-8 下午8:16:51
+     */
+    public ErpCompanyComboPrice findCompanyComboPriceByProps(Map<String,Object> props) throws Exception{
+    	ErpCompanyComboPrice entity = null;
+    	
+    	if(props!=null){
+        	Session session = this.getHibernateTemplate().getSessionFactory().getCurrentSession();
+        	Criteria criteria = session.createCriteria(ErpCompanyComboPrice.class);
+        	//公司
+    		String company = (String) props.get(ErpCompanyComboPrice.F_COMPANY);
+    		if(company!=null&&company.length()>0){
+    			criteria.add(Restrictions.eq(ErpCompanyComboPrice.F_COMPANY, company));
+    		}
+    		//公司ID
+    		String companyId = (String) props.get(ErpCompanyComboPrice.F_COMPANYID);
+    		if(companyId!=null&&companyId.length()>0){
+    			criteria.add(Restrictions.eq(ErpCompanyComboPrice.F_COMPANYID, companyId));
+    		}
+    		//套餐名
+    		String combo = (String) props.get(ErpCompanyComboPrice.F_COMBO);
+    		if(combo!=null&&combo.length()>0){
+    			criteria.add(Restrictions.eq(ErpCompanyComboPrice.F_COMBO, combo));
+    		}
+    		//套餐ID
+    		String comboId = (String) props.get(ErpCompanyComboPrice.F_COMBOID);
+    		if(comboId!=null&&comboId.length()>0){
+    			criteria.add(Restrictions.eq(ErpCompanyComboPrice.F_COMBOID, comboId));
+    		}
+        	List list = criteria.list();
+        	if(list!=null&&list.size()>0){
+        		entity = (ErpCompanyComboPrice) list.get(0);
+        	}
+        	session.flush();
+        	session.clear();
+    	}
+    	return entity;
+    }
+    
+    /**
+     * 根据支公司ID获取项目类集合
+     * @param ProjectId
+     * @author tangxing
+     * @date 2016-11-17下午4:52:23
+     */
+    public List<CustomerRelationShipPro> getCustomerShipProByProjectId(String ProjectId){
+    	String hql = "from CustomerRelationShipPro where customerRelationShipId = ?";
+    	return this.getHibernateTemplate().find(hql, new Object[]{ProjectId});
+    }
+    
+    /**
+     * 根据套餐ID获取类
+     * @param comboId
+     * @return
+     * @author tangxing
+     * @date 2016-11-17下午5:19:00
+     */
+    public ErpCompanyComboPrice getCompanyComboByComboId(String comboId){
+		return this.getHibernateTemplate().get(ErpCompanyComboPrice.class, comboId);
+    }
+    
+    /**
+     * 根据项目ID获取 项目<——>套餐 对应info
+     * @param project
+     * @author tangxing
+     * @date 2016-11-17下午5:21:12
+     */
+    public List<Map<String, Object>> getProjectAndComboInfo(String projectId){
+    	String query = "select r.combo_id as comboId from ERP_RelationShipPro_Combo r where r.customer_relationship_pro_id=?";
+    	return this.getJdbcTemplate().queryForList(query, new Object[]{projectId});
+    }
+    
+    /**
+     * 根据套餐ID,支公司ID,项目ID 获取ErpCompanyComboPrice
+     * @param comboId
+     * @return
+     * @author tangxing
+     * @date 2016-11-17下午6:26:02
+     */
+    public List<ErpCompanyComboPrice> getErpCompanyComboPriceByComboId(String comboId,String companyId,String projectId){
+    	String hql = "from ErpCompanyComboPrice where comboId=? and companyId=? and projectId=?";
+    	return this.getHibernateTemplate().find(hql, new Object[]{comboId,companyId,projectId});
+    }
+    
+    public Combo getComboById(String comboId){
+    	return this.getHibernateTemplate().get(Combo.class, comboId);
+    }
+    
+    public CustomerRelationShipPro getProjectById(String projectId){
+    	return this.getHibernateTemplate().get(CustomerRelationShipPro.class, projectId);
+    }
+
+}

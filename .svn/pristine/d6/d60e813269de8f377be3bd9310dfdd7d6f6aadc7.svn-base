@@ -1,0 +1,44 @@
+package org.hpin.base.customerrelationship.dao;
+
+import java.util.List;
+
+import org.hpin.base.customerrelationship.entity.CustomerRelationShip;
+import org.hpin.base.customerrelationship.entity.PreSalesManMgr;
+import org.hpin.common.core.orm.BaseDao;
+import org.springframework.jdbc.core.BeanPropertyRowMapper;
+import org.springframework.stereotype.Repository;
+
+/**
+ * 
+ * @author ybc
+ * @since 2017/02/08
+ */
+@Repository("preSalesManMgrDao")
+@SuppressWarnings({ "unchecked", "rawtypes" })
+public class PreSalesManMgrDao extends BaseDao{
+
+	public List<CustomerRelationShip> getCompanyList(int i, String companyName) {
+		StringBuilder sql = new StringBuilder("select id id,branch_commany branchCommany,owned_company ownedCompany,customer_name_simple customerNameSimple from hl_customer_relationship where 1 = 1 ");
+		switch (i) {
+		case 1:
+			sql.append("and customer_name_simple like '%").append(companyName).append("%'");
+			break;
+
+		default:
+			sql.append("and branch_commany like '%").append(companyName).append("%'");
+			break;
+		}
+		return this.getJdbcTemplate().query(sql.toString(), new BeanPropertyRowMapper(CustomerRelationShip.class));
+	}
+	
+	//通过 姓名，营销员id，手机号做重复判断
+	public boolean hasObjByNoAndName(PreSalesManMgr salesMan){
+		String hql = "from PreSalesManMgr where salesman = ? and employeeNo=? and employeePhone=?";
+		List<PreSalesManMgr> resultList = this.getHibernateTemplate().find(hql, new Object[]{salesMan.getSalesman(),salesMan.getEmployeeNo(),salesMan.getEmployeePhone()});
+		if(null!=resultList&&resultList.size()>0){
+			return true;
+		}
+		return false;
+	}
+	
+}

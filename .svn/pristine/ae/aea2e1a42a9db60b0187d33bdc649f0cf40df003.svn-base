@@ -1,0 +1,96 @@
+package org.hpin.venueStaffSettlement.entity.vo;
+
+import java.math.BigDecimal;
+
+public class NonConferenceCost {
+	
+	private String projectCode;		//项目编码
+	private String projectUser;		//项目负责人
+	private String projectName;		//项目名称
+	private String projectType;		//项目类型
+	
+	private String name;				//姓名
+	private BigDecimal travelCost;		//差旅费
+	private BigDecimal cityCost;		//市内交通费
+	private BigDecimal provinceCost;	//往返交通费
+	private BigDecimal hotelCost;		//住宿费
+	private BigDecimal laborCost;		//劳务费
+	private BigDecimal otherCost;		//其他费用
+	private BigDecimal amount;			//小计
+	
+	public String getProjectCode() {
+		return projectCode;
+	}
+	public void setProjectCode(String projectCode) {
+		this.projectCode = projectCode;
+	}
+	public String getProjectUser() {
+		return projectUser;
+	}
+	public void setProjectUser(String projectUser) {
+		this.projectUser = projectUser;
+	}
+	public String getProjectName() {
+		return projectName;
+	}
+	public void setProjectName(String projectName) {
+		this.projectName = projectName;
+	}
+	public String getProjectType() {
+		return projectType;
+	}
+	public void setProjectType(String projectType) {
+		this.projectType = projectType;
+	}
+	public BigDecimal getTravelCost() {
+		return travelCost;
+	}
+	public void setTravelCost(BigDecimal travelCost) {
+		this.travelCost = travelCost;
+	}
+	public BigDecimal getCityCost() {
+		return cityCost;
+	}
+	public void setCityCost(BigDecimal cityCost) {
+		this.cityCost = cityCost;
+	}
+	public BigDecimal getProvinceCost() {
+		return provinceCost;
+	}
+	public void setProvinceCost(BigDecimal provinceCost) {
+		this.provinceCost = provinceCost;
+	}
+	public BigDecimal getHotelCost() {
+		return hotelCost;
+	}
+	public void setHotelCost(BigDecimal hotelCost) {
+		this.hotelCost = hotelCost;
+	}
+	public BigDecimal getLaborCost() {
+		return laborCost;
+	}
+	public void setLaborCost(BigDecimal laborCost) {
+		this.laborCost = laborCost;
+	}
+	public BigDecimal getOtherCost() {
+		return otherCost;
+	}
+	public void setOtherCost(BigDecimal otherCost) {
+		this.otherCost = otherCost;
+	}
+	public BigDecimal getAmount() {
+		return amount;
+	}
+	public void setAmount(BigDecimal amount) {
+		this.amount = amount;
+	}
+	public String getName() {
+		return name;
+	}
+	public void setName(String name) {
+		this.name = name;
+	}
+	
+	
+	
+}

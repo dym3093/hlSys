@@ -1,0 +1,835 @@
+package org.hpin.reportdetail.web;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.text.ParseException;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Future;
+
+import javax.servlet.http.HttpServletRequest;
+
+import net.sf.json.JSONArray;
+import net.sf.json.JSONObject;
+
+import org.apache.log4j.Logger;
+import org.apache.struts2.ServletActionContext;
+import org.apache.struts2.convention.annotation.Action;
+import org.apache.struts2.convention.annotation.Namespace;
+import org.apache.struts2.convention.annotation.Result;
+import org.apache.struts2.convention.annotation.Results;
+import org.hpin.common.Constant;
+import org.hpin.common.core.SpringTool;
+import org.hpin.common.core.web.BaseAction;
+import org.hpin.common.util.HttpTool;
+import org.hpin.common.util.PropsUtils;
+import org.hpin.common.util.StrUtils;
+import org.hpin.common.widget.pagination.Page;
+import org.hpin.events.entity.ErpCustomer;
+import org.hpin.events.service.ErpCustomerService;
+import org.hpin.reportdetail.entity.ErpCusPdfViewBean;
+import org.hpin.reportdetail.entity.ErpReportFileTask;
+import org.hpin.reportdetail.entity.ErpReportFileTaskBean;
+import org.hpin.reportdetail.entity.ErpReportdetailPDFContent;
+import org.hpin.reportdetail.entity.ReportFileTaskView;
+import org.hpin.reportdetail.job.ErpPdfMatchThread;
+import org.hpin.reportdetail.service.ErpReportFileTaskService;
+import org.hpin.reportdetail.service.ErpReportdetailPDFContentService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+
+@Namespace("/report")
+@Action("reportFileTask")
+@Results({
+	@Result(name="listReportTask",location="/WEB-INF/reportdetail/reportFileTask.jsp"),
+	@Result(name="toTaskDetail",location="/WEB-INF/reportdetail/reportFileTaskDetail.jsp"),
+	@Result(name="toMatchDetail",location="/WEB-INF/reportdetail/reportFileMatchDetail.jsp"),
+	@Result(name="toMatchDetailAll",location="/WEB-INF/reportdetail/reportFileMatchDetailAll.jsp"),
+	@Result(name="listUnRecordAll",location="/WEB-INF/reportdetail/reportFileUnRecord.jsp"),
+	@Result(name="listMatchAll",location="/WEB-INF/reportdetail/reportFileMatchAll.jsp"),
+	@Result(name="listManualCus",location="/WEB-INF/reportdetail/listManualCus.jsp"),
+	@Result(name="queryReport",location="/WEB-INF/reportdetail/queryReportByExl.jsp"),
+	@Result(name="showManualMatch",location="/WEB-INF/reportdetail/showManualMatch.jsp"),
+})
+
+/**
+ * 报告任务
+ * @author ybc
+ */
+public class ErpReportFileTaskAction extends BaseAction {
+	
+	private static final long serialVersionUID = 1L;
+
+	private Logger log = Logger.getLogger(ErpReportFileTaskAction.class);
+	
+	ErpReportFileTaskService taskService = (ErpReportFileTaskService) SpringTool.getBean(ErpReportFileTaskService.class);
+	
+	ErpReportdetailPDFContentService contentService = (ErpReportdetailPDFContentService) SpringTool.getBean(ErpReportdetailPDFContentService.class);
+	
+	ErpCustomerService customerService = (ErpCustomerService)SpringTool.getBean(ErpCustomerService.class);
+	private ErpReportdetailPDFContent detailContent;
+	private File affix;
+	@Autowired
+	private ThreadPoolTaskExecutor taskExecutor;
+	
+	/**
+	 * 查询
+	 * @return
+	 */
+	public String query(){
+		try {
+			page = new Page(HttpTool.getPageNum(),HttpTool.getPageSize());
+			Map paramsMap = buildSearch();
+			paramsMap.put("order_createdate", "desc");
+			page = findByPage(page, paramsMap);
+			taskService.dealTaskView(page);
+		} catch (ParseException e) {
+			log.error("ErpReportFileTaskAction query", e);
+		}
+		return "listReportTask";
+	}
+	
+	//任务详情
+	public String toTaskDetail(){
+		try{
+			ErpReportFileTask reporttask = taskService.getById(id);
+			String batchno = reporttask.getBatchno();
+			//子公司数量
+			Map<String,Integer> companyMap = new HashMap<String,Integer>();
+			//获取客户信息
+			List<ErpCustomer> customerList =  taskService.getCustomerInfo(batchno);
+			//提取展示信息
+			List<Map<String,String>> lists = taskService.getTaskCompanyInfo(customerList,companyMap);
+			
+			List<ErpReportFileTaskBean> taskBeans = taskService.dealTaskBean(lists,batchno,companyMap);
+			
+			HttpTool.setAttribute("reporttask", reporttask);
+			HttpTool.setAttribute("taskBeans", taskBeans);
+			
+		}catch(Exception e){
+			log.error("ErpReportFileTaskAction toTaskDetail", e);
+		}
+		return "toTaskDetail";
+	}
+	
+	//匹配详情
+	public String toMatchDetail(){
+		try{
+			ErpReportFileTask reporttask = taskService.getById(id);
+			ReportFileTaskView taskView = taskService.getTaskView(reporttask);
+			//批次号
+			String batchno = reporttask.getBatchno();
+			page = new Page(HttpTool.getPageNum(),HttpTool.getPageSize());
+			Map paramsMap = buildSearch();
+			paramsMap.put("filter_and_batchno_EQ_S",batchno);
+			contentsfindByPage(page, paramsMap);
+			
+			HttpTool.setAttribute("reporttask", taskView);
+			HttpTool.setAttribute("contentBeans", page.getResults());
+			
+		}catch(Exception e){
+			log.error("ErpReportFileTaskAction toMatchDetail", e);
+		}
+		return "toMatchDetail";
+	}
+	
+	//匹配详情
+	public String toMatchDetailAll(){
+		try{
+			page = new Page(HttpTool.getPageNum(),HttpTool.getPageSize());
+			Map paramsMap = buildSearch();
+			String codeValues = "";
+			if (paramsMap.containsKey("filter_and_code_LIKE_S")) {
+				codeValues = (String)paramsMap.get("filter_and_code_LIKE_S");
+				
+			}
+			if (paramsMap.containsKey("filter_and_code_IN_S")) {
+				codeValues = (String)paramsMap.get("filter_and_code_IN_S");
+				
+			}
+			if(!("").equals(codeValues)){
+				HttpTool.setAttribute("codes",codeValues);
+				
+			}
+			if("0".equals(paramsMap.get("filter_and_matchstate_EQ_I"))){
+				paramsMap.put("filter_and_isrepeat_EQ_I", 1);	//与本批次重复
+				paramsMap.remove("filter_and_matchstate_EQ_I");
+				HttpTool.setAttribute("filter_and_isrepeat_EQ_I",0);
+				
+			}else if("1".equals(paramsMap.get("filter_and_matchstate_EQ_I"))){
+				paramsMap.put("filter_and_isrepeat_EQ_I", 2);		//与其他批次重复
+				paramsMap.remove("filter_and_matchstate_EQ_I");
+				HttpTool.setAttribute("filter_and_isrepeat_EQ_I",1);
+				
+			}
+			paramsMap.put("order_createdate", "desc");
+			contentsfindByPage(page, paramsMap);
+			
+		}catch(Exception e){
+			log.error("ErpReportFileTaskAction toMatchDetail", e);
+			
+		}
+		return "toMatchDetailAll";
+	}
+	
+	//上传文件读取其中的条码并展示在页面
+	public void importCodesByExcel(){
+		JSONObject json = new JSONObject();
+		File file = this.getAffix();
+		List<String> codeList = new ArrayList<String>();
+		if(null!=file){
+			codeList = taskService.getCodeByExcel(file);
+		}
+		if(!codeList.isEmpty()){
+			String codes = StrUtils.list2String(codeList);
+			json.put("codes",codes);
+			json.put("result","success");
+		}else{
+			json.put("result","fail");
+		}
+		renderJson(json);
+	}
+	
+	public String downloadAllFile() throws Exception{
+		JSONObject json = new JSONObject();
+		String batchno = HttpTool.getParameter("batchno");
+		String branchCompany = HttpTool.getParameter("branchCompany");
+		if(branchCompany.equals("")){
+			branchCompany=null;
+		}
+		HttpServletRequest request = ServletActionContext.getRequest();
+		StringBuffer url = request.getRequestURL();
+		
+		//含域名上下文的URL
+		String contextUrl = url.delete(url.length()-request.getRequestURI().length(), url.length()).append(request.getContextPath()).append("/").toString()+"filetmp/";
+		//存放下载的本地路径
+		String localUrl = request.getSession().getServletContext().getRealPath("filetmp");
+		StringBuilder rootPath = new StringBuilder(localUrl+File.separator);
+		File file = new File(rootPath.toString());
+		if(!file.exists()){
+			file.mkdir();
+		}
+		String downloadurl = contextUrl + taskService.downloadFile(rootPath,batchno,branchCompany);
+		json.put("downloadurl", downloadurl);
+		renderJson(json);
+		return null;
+	}
+	
+	//处理全部未去重的批次号
+	public void dealUnRepeatTask(){
+		JSONObject json = new JSONObject();
+		List<Map<String,String>> list = new ArrayList<Map<String,String>>();
+		List<String> batchnos = taskService.queryUnRepeatBatchno();
+		for(String batchno : batchnos){
+			Map<String,String> map = new HashMap<String,String>();
+			try{
+				boolean result = contentService.dealRepeatContents(batchno);
+				log.info("ErpReportFileTaskAction dealUnRepeatTask over ,result : "+result);
+				map.put("batchno",batchno);
+				map.put("res",String.valueOf(result));
+			}catch(Exception e){
+				log.error("ErpReportFileTaskAction dealUnRepeatTask error ", e);
+				map.put("batchno",batchno);
+				map.put("res","Exception");
+				continue;
+			}
+			list.add(map);
+		}
+		json.put("results",list);
+		renderJson(json);
+	}
+	
+	//查询未去重的批次号
+	public void queryUnRepeatTask(){
+		JSONObject json = new JSONObject();
+		List<String> batchnos = taskService.queryUnRepeatBatchno();
+		json.put("results",batchnos);
+		renderJson(json);
+	}
+	
+	//处理单个未去重的批次号
+	public void dealOneUnRepeatTask(){
+		JSONObject json = new JSONObject();
+		String batchno = HttpTool.getParameter("batchno");
+		Map<String,String> map = new HashMap<String,String>();
+		try{
+			boolean result = contentService.dealRepeatContents(batchno);
+			log.info("ErpReportFileTaskAction dealUnRepeatTask over ,result : "+result);
+			map.put("res",String.valueOf(result));
+		}catch(Exception e){
+			log.error("ErpReportFileTaskAction dealUnRepeatTask error ", e);
+			map.put("res","Exception");
+		}
+		json.put("results",map);
+		renderJson(json);
+	}
+	
+	//查询未成功入库的PDF
+	public void queryPdfFile(){
+		JSONObject json = new JSONObject();
+		String pdfpath = HttpTool.getParameter("pdfpath");
+		String batchno = HttpTool.getParameter("batchno");
+		List<String> pdfNameList = contentService.queryPdfFileName(batchno);
+		List<String> unInPdfPath = contentService.matchPdfInByPath(pdfpath,pdfNameList);
+		json.put("results",unInPdfPath);
+		renderJson(json);
+	}
+	
+	//添加未成功入库的PDF至数据库
+	public void addPdfFile(){
+		JSONObject json = new JSONObject();
+		String pdfpath = HttpTool.getParameter("pdfpath");
+		String batchno = HttpTool.getParameter("batchno");
+		List<String> pdfNameList = contentService.queryPdfFileName(batchno);
+		List<String> unInPdfPath = contentService.matchPdfInByPath(pdfpath,pdfNameList);
+		int pdfnum = 0;
+		if(0!=unInPdfPath.size()){
+			pdfnum = contentService.dealPdfContentByFile(unInPdfPath,batchno);
+		}
+		json.put("results",pdfnum);
+		renderJson(json);
+	}
+	
+	//查询未匹配会员信息批次号
+	public void queryUnMatchBatchno(){
+		JSONObject json = new JSONObject();
+		List<String> batchnoList = new ArrayList<String>();
+		batchnoList = taskService.queryUnMatchBatchno();
+		json.put("results",batchnoList);
+		renderJson(json);
+	}
+	
+	//人工比对
+	public String queryManualToCusMatch() throws Exception{
+		page = new Page(HttpTool.getPageNum(),HttpTool.getPageSize());
+		Map paramsMap = new HashMap();
+		paramsMap.put("order_createdate", "desc");
+		paramsMap.put("filter_and_isdisrepeat_EQ_I",0);
+		paramsMap.put("filter_and_ismatch_EQ_I",0);
+		findByPage(page,paramsMap);
+		return "listManualCus";
+	}
+	
+	//会员信息比对
+	public void dealCustomerMatch(){
+		JSONObject json = new JSONObject();
+		String batchno = HttpTool.getParameter("batchno");
+		try{
+			//batchno = new String(batchno.getBytes("ISO-8859-1"),"UTF-8");
+			//去重任务
+			boolean isDoRepeat = contentService.dealRepeatContents(batchno);
+			//利用线程池执行比对任务 
+			if(isDoRepeat){
+				ErpPdfMatchThread match = new ErpPdfMatchThread(batchno);
+				Future<Map<String, String>> result = taskExecutor.submit(match);
+				json.put("isRepeat","success");
+				json.put("results",result.get());
+			}else{
+				taskService.updateTaskState(batchno);
+				json.put("isRepeat","fail");
+			}
+			renderJson(json);
+		}catch(Exception e){
+			log.error("ErpReportFileTaskAction dealCustomerMatch", e);
+			json.put("exception",e);
+			renderJson(json);
+		}
+	}
+	
+	//查询PDF内容未入库的信息
+	public void queryUnInDB(){
+		JSONObject json = new JSONObject();
+		List<Map<String,String>> result = contentService.queryPdfCntUnInDB();
+		json.put("results",result);
+		renderJson(json);
+	}
+	
+	//将批次号中未成功提取内容的PDF再次读取
+	public void addPdfCusInfo(){
+		JSONObject json = new JSONObject();
+		String batchno = HttpTool.getParameter("batchno");
+		Map<String,String> map = contentService.addPdfCusInfo(batchno);
+		json.put("results",map);
+		renderJson(json);
+	}
+	
+	//根据不同类型获取内容信息
+	public String queryDetailInfo(){
+		try{
+			String batchno = HttpTool.getParameter("batchno");
+			String type = HttpTool.getParameter("tasktype");
+			ErpReportFileTask reporttask = taskService.queryTaskByBatch(batchno);
+			ReportFileTaskView taskView = taskService.getTaskView(reporttask);
+			page = new Page(HttpTool.getPageNum(),HttpTool.getPageSize());
+			Map paramsMap = buildSearch();
+			paramsMap.put("filter_and_batchno_EQ_S",batchno);
+			if(("0").equals(type)){
+				HttpTool.setAttribute("isrecord","0");
+				HttpTool.setAttribute("tasktype","0");
+			}
+			if(("1").equals(type)){
+				HttpTool.setAttribute("isrecord","1");
+				HttpTool.setAttribute("matchstate","1");
+				HttpTool.setAttribute("tasktype","1");
+			}
+			if(("2").equals(type)){
+				HttpTool.setAttribute("isrecord","1");
+				HttpTool.setAttribute("matchstate","2");
+				HttpTool.setAttribute("tasktype","2");
+			}
+			if(("3").equals(type)){
+				HttpTool.setAttribute("isrecord","1");
+				HttpTool.setAttribute("matchstate","3");
+				HttpTool.setAttribute("tasktype","3");
+			}
+			if(("4").equals(type)){
+				HttpTool.setAttribute("isrecord","1");
+				HttpTool.setAttribute("matchstate","4");
+				HttpTool.setAttribute("tasktype","4");
+			}
+			if(("5").equals(type)){
+				HttpTool.setAttribute("isrecord","1");
+				HttpTool.setAttribute("matchstate","5");
+				HttpTool.setAttribute("tasktype","5");
+			}
+			if(("6").equals(type)){
+				HttpTool.setAttribute("isrecord","1");
+				HttpTool.setAttribute("isrepeat","1");
+				HttpTool.setAttribute("tasktype","6");
+			}
+			if(("7").equals(type)){
+				HttpTool.setAttribute("isrecord","1");
+				HttpTool.setAttribute("isrepeat","2");
+				HttpTool.setAttribute("tasktype","7");
+			}
+			if(("8").equals(type)){
+				HttpTool.setAttribute("isrecord","1");
+				HttpTool.setAttribute("matchstate","7");
+				HttpTool.setAttribute("tasktype","8");
+			}
+			if(("9").equals(type)){
+				HttpTool.setAttribute("isrecord","1");
+				HttpTool.setAttribute("matchstate","8");
+				HttpTool.setAttribute("tasktype","9");
+			}
+			if(("10").equals(type)){
+				HttpTool.setAttribute("isrecord","1");
+				HttpTool.setAttribute("matchstate","9");
+				HttpTool.setAttribute("tasktype","10");
+			}
+			if(("11").equals(type)){
+				HttpTool.setAttribute("isrecord","1");
+				HttpTool.setAttribute("matchstate","10");
+				HttpTool.setAttribute("tasktype","11");
+			}
+			
+			contentsfindByPage(page, paramsMap);
+			HttpTool.setAttribute("reporttask", taskView);
+			HttpTool.setAttribute("contentBeans", page.getResults());
+			
+		}catch(Exception e){
+			log.error("ErpReportFileTaskAction queryDetailInfo", e);
+		}
+		return "toMatchDetail";
+	}
+	
+	//根据打印ID获取PDF内容信息
+	public String queryPdfContentByPrintNo(){
+		String printno = HttpTool.getParameter("printno");
+		List<ErpReportdetailPDFContent> list = contentService.getContentsByPrintId(printno);
+		HttpTool.setAttribute("printTaskPdf",list);
+		return "taskPdf";
+	}
+	
+	//查询所有未读取的PDF信息,并将读取内容显示出来
+	public String queryAllUnRecord() throws Exception{
+		page = new Page(HttpTool.getPageNum(),HttpTool.getPageSize());
+		Map paramsMap = buildSearch();
+		paramsMap.put("filter_and_isrecord_EQ_I",0);
+		//List<ErpReportdetailPDFContent> list = contentService.queryPdfUnRecord();
+		//List<ErpReportUnRecordView> views = contentService.getUnRecordView(list);
+		//page.setResults(views);
+		page = contentsfindByPage(page,paramsMap);
+		if(paramsMap.containsKey("filter_and_batchno_EQ_S")){
+			HttpTool.setAttribute("filter_and_batchno_EQ_S",paramsMap.get("filter_and_batchno_EQ_S"));
+		}
+		HttpTool.setAttribute("unRecordView",page.getResults());
+		return "listUnRecordAll";
+	}
+	
+	//重新读取PDF信息
+	public void readPdfContent(){
+		JSONObject json = new JSONObject();
+		String pdfids = HttpTool.getParameter("pdfids");
+		String pdfid[] = null;
+		if(pdfids.indexOf(",")!=-1){
+			pdfid = pdfids.split(",");
+		}else{
+			pdfid = new String[1];
+			pdfid[0]=pdfids;
+		}
+		contentService.readPdfContent(pdfid);
+		json.put("result","success");
+		renderJson(json);
+	}
+	
+	//获取匹配成功的PDF与会员信息
+	public String queryPdfAndCusInfo(){
+		try{
+			page = new Page(HttpTool.getPageNum(),HttpTool.getPageSize());
+			Map paramsMap = buildSearch();
+			paramsMap.put("filter_and_isrecord_EQ_I",1);
+			paramsMap.put("filter_and_matchstate_IN_S","1,2");
+			paramsMap.put("order_createdate", "desc");
+			page = contentsfindByPage(page, paramsMap);
+			contentService.dealPdfAndCusView(page);
+		}catch(Exception e){
+			log.error("queryPdfAndCusInfo", e);
+		}
+		return "listMatchAll";
+	}
+	
+	//报告批量下载
+	public String queryReportFile2Down() throws Exception{
+		String type = HttpTool.getParameter("type");
+		List<String> surplus = new ArrayList<String>();
+		if(null!=type){
+			page = new Page(HttpTool.getPageNum(),HttpTool.getPageSize());
+			Map paramsMap = buildSearch();
+			String codeValues = (String)paramsMap.get("filter_and_code_IN_S");
+			if(!("").equals(codeValues)){
+				HttpTool.setAttribute("codes",codeValues);
+			}
+			paramsMap.put("filter_and_isDeleted_EQ_I", 0);
+			paramsMap.put("order_createTime", "desc");
+			customerfindByPage(page, paramsMap);
+			//获取未找到的条码
+			surplus = customerService.queryUnFindCodes(page.getResults(),codeValues);
+			HttpTool.setAttribute("surplus",surplus);
+			page.setResults(createCusPdfView(page.getResults()));
+		}
+		return "queryReport";
+	}
+	
+	//根据条码提供下载
+	public void downReportByCodes() throws Exception{
+		String downloadurl = "";
+		JSONObject json = new JSONObject();
+		String codes = HttpTool.getParameter("codes");
+		List<ErpReportdetailPDFContent> contents = contentService.queryContentsByCodes(codes);
+		if(contents.size()>0){
+			HttpServletRequest request = ServletActionContext.getRequest();
+			StringBuffer url = request.getRequestURL();
+			//含域名上下文的URL
+			String contextUrl = url.delete(url.length()-request.getRequestURI().length(), url.length()).append(request.getContextPath()).append("/").toString()+"filetmp/";
+			//存放下载的本地路径
+			String localUrl = request.getSession().getServletContext().getRealPath("filetmp");
+			StringBuilder rootPath = new StringBuilder(localUrl+File.separator);
+			File file = new File(rootPath.toString());
+			if(!file.exists()){
+				file.mkdir();
+			}
+			downloadurl = contextUrl + taskService.downloadFileByCodes(rootPath,contents);
+			json.put("result","success");
+			json.put("downloadurl", downloadurl);
+		}else{
+			json.put("result","success");
+		}
+		renderJson(json);
+	}
+	
+	public Page findByPage(Page page , Map paramsMap){
+		taskService.findByPage(page, paramsMap);
+		return page ;
+	}
+	
+	public Page contentsfindByPage(Page page , Map paramsMap){
+		contentService.findByPage(page, paramsMap);
+		return page ;
+	}
+	
+	public Page customerfindByPage(Page page , Map paramsMap){
+		customerService.findByPage(page, paramsMap);
+		return page ;
+	}
+
+	//导出excel(将状态改为中文)
+	public Page exportContentByExl(Page page , Map paramsMap){
+		Page resultPage = contentsfindByPage(page , paramsMap);
+		List<ErpReportdetailPDFContent> resultContents = resultPage.getResults();
+		for(ErpReportdetailPDFContent content : resultContents){
+			int isrecord = content.getIsrecord();
+			int isrepeat = content.getIsrepeat();
+			int matchstate = content.getMatchstate();
+			if(0==isrecord){
+				content.setMatchstateView("未读取成功");
+				continue;
+			}else if(1==isrecord){
+				if(1==isrepeat){
+					content.setMatchstateView("批次内重复");
+					continue;
+				}
+				if(2==isrepeat){
+					content.setMatchstateView("与其他批次重复");
+					continue;
+				}
+				if(1==matchstate){
+					content.setMatchstateView("与系统重复");
+					continue;
+				}
+				if(2==matchstate){
+					content.setMatchstateView("匹配成功");
+					continue;
+				}
+				if(3==matchstate){
+					content.setMatchstateView("未匹配成功");
+					continue;
+				}
+				if(4==matchstate){
+					content.setMatchstateView("异常数据");
+					continue;
+				}
+				if(5==matchstate){
+					content.setMatchstateView("会员信息多条");
+					continue;
+				}
+			}
+		}
+		resultPage.setResults(resultContents);
+		return resultPage;
+	}
+	
+	public List<ErpCusPdfViewBean> createCusPdfView(List<ErpCustomer> resultCustomers){
+		List<ErpCusPdfViewBean> cusPdfList = new ArrayList<ErpCusPdfViewBean>();
+		for(ErpCustomer cus : resultCustomers){
+			ErpCusPdfViewBean cusPdfView = new ErpCusPdfViewBean();
+			cusPdfView.setName(cus.getName());
+			cusPdfView.setSex(cus.getSex());
+			cusPdfView.setAge(cus.getAge());
+			cusPdfView.setCode(cus.getCode());
+			cusPdfView.setCreateTime(cus.getCreateTime());
+			//通过条码查找报告内容表
+			if(null!=cus.getCode()&&!("").equals(cus.getCode())){
+				List<ErpReportdetailPDFContent> contentList = contentService.queryContentsByCode(cus.getCode());
+				if(null==contentList||0==contentList.size()){
+					cusPdfView.setMatchstateView("未上传报告");
+				}else{
+					if(cus.getPdffilepath().length()>53){
+						cusPdfView.setMatchstateView("有报告");
+					}else{
+						cusPdfView.setMatchstateView("无报告");
+					}
+				}
+			}
+			cusPdfList.add(cusPdfView);
+		}
+		return cusPdfList;
+	}
+	
+	//导出excel(将状态改为中文)
+	public Page exportCustomerByExl(Page page , Map paramsMap){
+		String codeValues = (String)paramsMap.get("filter_and_code_IN_S");
+		paramsMap.put("filter_and_isDeleted_EQ_I", 0);
+		paramsMap.put("order_createTime", "desc");
+		Page resultPage = customerfindByPage(page , paramsMap);
+		List<ErpCustomer> resultCustomers = resultPage.getResults();
+		//获取未找到的条码
+		List<String> surplus = customerService.queryUnFindCodes(resultCustomers,codeValues);
+		List<ErpCusPdfViewBean> cusPdfList = new ArrayList<ErpCusPdfViewBean>();
+		for(ErpCustomer cus : resultCustomers){
+			ErpCusPdfViewBean cusPdfView = new ErpCusPdfViewBean();
+			cusPdfView.setName(cus.getName());
+			cusPdfView.setSex(cus.getSex());
+			cusPdfView.setAge(cus.getAge());
+			cusPdfView.setCode(cus.getCode());
+			cusPdfView.setCreateTime(cus.getCreateTime());
+			//通过条码查找报告内容表
+			if(null!=cus.getCode()&&!("").equals(cus.getCode())){
+				List<ErpReportdetailPDFContent> contentList = contentService.queryContentsByCode(cus.getCode());
+				if(null==contentList||0==contentList.size()){
+					cusPdfView.setMatchstateView("未上传报告");
+				}else{
+					if(cus.getPdffilepath().length()>53){
+						cusPdfView.setMatchstateView("有报告");
+					}else{
+						cusPdfView.setMatchstateView("无报告");
+					}
+					
+				}
+			}
+			cusPdfList.add(cusPdfView);
+		}
+		if(null!=surplus&&0<surplus.size()){
+			Iterator<String> iter = surplus.iterator();
+			while(iter.hasNext()){
+				String curcode = iter.next();
+				ErpCusPdfViewBean cusPdfView = new ErpCusPdfViewBean();
+				cusPdfView.setCode(curcode);
+				cusPdfList.add(cusPdfView);
+			}
+		}
+		resultPage.setResults(cusPdfList);
+		return resultPage;
+	}
+	
+	//人工匹配弹出框
+	public String showManualMatch(){
+		HttpTool.setAttribute("pdfid", HttpTool.getParameter("pdfid"));
+		return "showManualMatch";
+	}
+	
+	//人工匹配查询分页
+	public String manualMatch(){
+		JSONObject json = new JSONObject();
+		try {
+			Map searchMap = buildSearch();
+			if (searchMap.isEmpty()) {
+				json.accumulate("statusCode", 300);
+				json.accumulate("message", "请输入条形码！");
+				renderJson(json);
+				return null;
+			}else {
+				page = new Page(HttpTool.getPageNum() , HttpTool.getPageSize());
+				searchMap.put("filter_and_isDeleted_EQ_I", 0);
+				List<ErpCustomer> userInfolList= customerService.findByPage(page, searchMap);
+				page.setResults(userInfolList);
+			}
+		} catch (Exception e) {
+			log.error("manualMatch(人工匹配)", e);
+		}
+		HttpTool.setAttribute("pdfid", HttpTool.getParameter("pdfid"));
+		return "showManualMatch";
+	}
+	
+	public String setManualData(){
+		JSONObject jsonObject = new JSONObject();
+		try {
+			JSONArray json = JSONArray.fromObject(HttpTool.getParameter("dataJson"));
+			String customerId = json.getJSONObject(0).getString("id");
+			String pdfId = json.getJSONObject(0).getString("pdfid");
+			String code = json.getJSONObject(0).getString("code");
+			ErpCustomer customer = (ErpCustomer) customerService.findById(customerId);
+			ErpReportdetailPDFContent pdfContent = (ErpReportdetailPDFContent) contentService.findById(pdfId);
+			ErpReportFileTask reportTask = (ErpReportFileTask)taskService.getBatchNo(pdfContent.getBatchno());
+			
+			List<ErpReportdetailPDFContent> sameCodeContentList =  contentService.getPdfSize(code);
+//			FileInputStream fis = new FileInputStream(new File("z:/"+customer1.getPdffilepath().substring(42, customer1.getPdffilepath().length())));	//获取erpcustomer的文件路径
+			int fileSize=0;
+			if (customer.getPdffilepath()!=null) {
+				FileInputStream fis = new FileInputStream(new File(customer.getPdffilepath().replace("ftp://gene:gene@geneym.healthlink.cn/gene","Z:")));//获取erpcustomer的文件路径
+				fileSize = fis.available();//erpcustomer的文件大小
+				fis.close();
+			}
+			//pdf与customer比较
+			//需要修改
+			if(customer.getPdffilepath()==null){
+				customer.setPdffilepath((pdfContent.getFilepath()).replace("Z:","ftp://gene:gene@geneym.healthlink.cn/gene"));	//设置erpcustomer表的pdf文件路径
+				customer.setStatusYm(PropsUtils.getInt("status","statusYm.ycj"));//会员报告状态， 300:电子报告已出 add by YoumingDeng 2016-12-14
+				pdfContent.setMatchstate(2);
+				reportTask.setUpdatenum(reportTask.getUpdatenum()!=null?reportTask.getUpdatenum()+1:1);
+			}else{
+				if(Math.abs(Integer.valueOf(pdfContent.getFilesize())-fileSize)<20){
+					pdfContent.setMatchstate(1);
+				}else{
+					customer.setPdffilepath((pdfContent.getFilepath()).replace("Z:","ftp://gene:gene@geneym.healthlink.cn/gene"));	//设置erpcustomer表的pdf文件路径
+					customer.setStatusYm(PropsUtils.getInt("status","statusYm.ycj"));//会员报告状态， 300:电子报告已出 add by YoumingDeng 2016-12-14
+					pdfContent.setMatchstate(2);
+					reportTask.setUpdatenum(reportTask.getUpdatenum()!=null?reportTask.getUpdatenum()+1:1);
+				}
+			}
+			
+			String mealName=customer.getSetmealName().trim();
+			if(Constant.getPrintMealName().contains(mealName)){
+				pdfContent.setPs("0");// 需要远盟打印
+				if(contentService.isUnPrint(pdfContent.getCode(),pdfContent.getUsername(),pdfContent.getSex())){
+					pdfContent.setPs("99");// 人工确认不需要打印
+				}
+			}else {
+				pdfContent.setPs("9");
+			}
+			if (sameCodeContentList.size()>=1) {
+				for(ErpReportdetailPDFContent pdf:sameCodeContentList){
+					if (Math.abs(Integer.valueOf(pdf.getFilesize())-Integer.valueOf(pdfContent.getFilesize()))<20) {
+						pdfContent.setIsrepeat(1);
+						reportTask.setRepeatnum(reportTask.getRepeatnum()!=null?reportTask.getRepeatnum()+1:1);
+						break;
+					}else {
+						pdfContent.setIsrepeat(0);
+					}
+				}
+			}else {
+				pdfContent.setIsrepeat(0);
+			}
+			pdfContent.setAge(customer.getAge());
+			pdfContent.setSex(customer.getSex());
+			pdfContent.setUsername(customer.getName());
+			pdfContent.setCode(customer.getCode());
+			pdfContent.setCustomerid(customer.getId());
+			pdfContent.setUpdatedate(new Date());
+			pdfContent.setProvice(customer.getProvice());
+			pdfContent.setCity(customer.getCity());
+			pdfContent.setBranch_company(customer.getBranchCompanyId());
+			pdfContent.setEvents_no(customer.getEventsNo());
+			pdfContent.setSetmeal_name(customer.getSetmealName());
+			pdfContent.setSales_man(customer.getSalesMan());
+			pdfContent.setIsrecord(1);
+			contentService.update(pdfContent);
+			customerService.update(customer);
+			taskService.update(reportTask);
+			jsonObject.put("count", 1);
+		} catch (Exception e) {
+			e.printStackTrace();
+			jsonObject.put("count", 0);
+			log.error("setManualData", e);
+		}
+		renderJson(jsonObject);
+		return null;
+	}
+	
+	//处理PDF异常文件
+	public void dealPdfAbnormal(){
+		JSONObject jsonObject = new JSONObject();
+		String pdfid = HttpTool.getParameter("pdfid");
+		try{
+			if(pdfid!=null&&!pdfid.equals("")){
+				int resnum = taskService.dealPdfAbnormal(pdfid,6);
+				log.info("dealPdfAbnormal pdfContent table id : "+pdfid+"return num : "+resnum);
+				if(resnum==1){
+					jsonObject.put("result", "success");
+				}else{
+					jsonObject.put("result", "fail");
+				}
+			}else{
+				jsonObject.put("result", "fail");
+			}
+		}catch(Exception e){
+			log.error("dealPdfAbnormal id:"+pdfid, e);
+		}
+		renderJson(jsonObject);
+	}
+	
+	public ErpReportdetailPDFContent getDetailContent() {
+		return detailContent;
+	}
+
+	public void setDetailContent(ErpReportdetailPDFContent detailContent) {
+		this.detailContent = detailContent;
+	}
+
+	public File getAffix() {
+		return affix;
+	}
+
+	public void setAffix(File affix) {
+		this.affix = affix;
+	}
+	
+	public static void main(String[] args) {
+		
+	}
+	
+}

@@ -1,0 +1,146 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"%>
+<%@ include file="/common/taglibs.jsp"%>
+<%@ page import="java.util.List"%>
+<%@ page import="java.util.Calendar"%>
+<%@ page import="java.text.SimpleDateFormat"%>
+
+<div class="pageHeader">
+	<form
+		id="pagerFindForm" 
+		action="${path }/statistics/queryaction!queryReport.action" 
+		method="post" 
+		rel="pagerForm" 
+		onsubmit="this.action='${path }/statistics/queryaction!queryReport.action'; return navTabSearch(this); ">
+        <input type="hidden" name="configId" value="${actionMap.configId }" />
+	
+	<div class="searchBar">
+	  <table class="pageFormContent num1_tab">
+      	<tr>
+      		<td><label>批次号：</label></td>
+      		<td><input name=filter_and_batchNo_LIKE_S value="${actionMap.filter_and_batchNo_LIKE_S }" class="textInput"></td>
+      		<td></td>
+      		<td><label>条形码：</label></td>
+      		<td><input name="filter_and_code_LIKE_S" value="${actionMap.filter_and_code_LIKE_S }" class="textInput"></td>
+      		<td></td>
+      		<td><label>是否存在报告：</label></td>
+      		<td><select name="filter_and_filePathStatus_S" style="width:195px;margin-top:6px;margin-left:5px; line-height: 25px;">
+						<option value="" selected='selected'>---请选择---</option>
+						<option value="is not null" ${filter_and_filePathStatus_S == 'is not null' ? "selected='selected'" : ''}>是</option>
+						<option value="is null" ${filter_and_filePathStatus_S == 'is null' ? "selected='selected'" : ''}>否</option>
+					</select>
+			</td>
+			<td></td>
+      	</tr>
+		<tr>
+            <td><label>报告发布日期：</label></td>
+			<td>
+				<input type="text" name="filter_and_createTime_GE_T" value="${ actionMap.filter_and_createTime_GE_T }"  id="d7111" style="width: 170px;" onFocus="WdatePicker({minDate:'2010-01-01',maxDate:'#F{$dp.$D(\'d7112\')}'})" class="required"  readonly="readonly" />
+				<a class="inputDateButton" href="javascript:;">选择</a>
+			</td>
+			<td></td>
+			<td><label>到：</label></td>
+			<td>
+				<input type="text" name="filter_and_createTime_LE_T" value="${ actionMap.filter_and_createTime_LE_T }"   id="d7112" style="width: 170px;" onFocus="WdatePicker({minDate:'#F{$dp.$D(\'d7111\')}'})" readonly="readonly" />
+				<a class="inputDateButton" href="javascript:;">选择</a>	
+			</td>
+			<td></td>
+			<td></td>
+      		<td>
+		        <div style="width:100px;" class="subBar">	
+		            <ul>
+					    <li><div class="buttonActive"><div class="buttonContent"><button type="submit" >查找</button></div></div></li>
+					    <li><div class="buttonActive"><div class="buttonContent"><button type="button" id="clearText">重置</button></div></div></li>
+					</ul>
+				</div>
+		  	</td>            
+		</tr>	  
+	  </table>
+	</div>
+	</form>
+</div>
+  
+
+<div class="tabs">
+	<div style="margin-bottom: 0px;"class="tip">
+		<span>报表</span>
+	</div>
+    <div class="tabsContent" style="background-color:#FFF">
+	<div style="width:100%">
+		<div id="jbsxBox" class="unitBox">
+			<div class="pageContent">
+				<div class="panelBar">
+					<jsp:include page="/common/pagination.jsp" />
+					 <ul class="toolBar">
+					<c:if test="${page.results != null && !empty page.results }">
+						<web:exportExcelTag4Jdbc 
+										pagerFormId="pagerFindForm" 
+										pagerMethodName="queryResults" 
+										actionAllUrl="org.hpin.statistics.briefness.web.QueryAction" 
+										informationTableId="exportTable"
+										fileName="stat148"
+										configId="stat148"></web:exportExcelTag4Jdbc>
+					</c:if>
+					</ul>
+				</div>					
+				<table class="list" width="100%" layoutH="150" id = "exportTable"> 
+				   <thead>
+					<tr>
+					    <th>序号</th>   
+					    <th nowrap="nowrap" export = "true" columnIndex = "0" columnChName = "批次号">批次号</th>
+					    <th nowrap="nowrap" export = "true" columnIndex = "1" columnChName = "条形码">条形码</th>
+					    <th nowrap="nowrap" export = "true" columnIndex = "2" columnChName = "姓名">姓名</th>
+					    <th nowrap="nowrap" export = "true" columnIndex = "3" columnChName = "性别">性别</th>
+					    <th nowrap="nowrap" export = "true" columnIndex = "4" columnChName = "电话">电话</th>
+					    <th nowrap="nowrap" export = "true" columnIndex = "5" columnChName = "套餐名称">套餐名称</th>
+					    <th nowrap="nowrap" export = "true" columnIndex = "6" columnChName = "是否有报告">是否有报告</th>
+					    <th nowrap="nowrap" export = "true" columnIndex = "7" columnChName = "报告发布日期">报告发布日期</th>			    
+					</tr>
+				  </thead>
+				  <tbody>
+					
+					<c:forEach items="${page.results }" var="members" varStatus="status">
+					  <tr>
+						 <td align="center">
+							${status.count }
+						</td> 
+						<td align="center">  ${members[0]}</td>
+						<td align="center">  ${members[1]}</td>
+						<td align="center">  ${members[2]}</td>
+						<td align="center">  ${members[3]}</td>
+						<td align="center">  ${members[4]}</td>
+						<td align="center">  ${members[5]}</td>	
+						<td align="center">  ${members[6]}</td>
+						<td align="center">  ${members[7]}</td>
+					  </tr>
+					</c:forEach>
+					</tbody>
+				  </table>
+			  </div>
+		</div>
+	</div>
+  </div>
+</div>
+
+<script>
+
+	$(function() {
+		$("td[name='report_td']").each(function() {
+			var str = $(this).attr("path");
+			var htmlStr = "";
+			if(str != null && str != "") {
+				var arr = str.split(",");
+				if(arr.length > 1) {
+					htmlStr += "<a href='"+arr[0]+"'>"+arr[0].substring(arr[0].length-8, arr[0].length)+"</a>";
+					htmlStr += ",";
+					htmlStr += "<a href='"+arr[1]+"'>"+arr[1].substring(arr[1].length-8, arr[1].length)+"</a>";
+				}else {
+					htmlStr += "<a href='"+arr[0]+"'>"+arr[0].substring(arr[0].length-8, arr[0].length)+"</a>";
+				}
+			}
+			
+			$(this).html(htmlStr);
+		});
+	
+	})
+
+</script>

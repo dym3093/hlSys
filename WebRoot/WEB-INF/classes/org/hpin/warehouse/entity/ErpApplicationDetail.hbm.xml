@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping>
+    <class name="org.hpin.warehouse.entity.ErpApplicationDetail" table="ERP_APPLICATION_DETAIL">
+        <id name="id" type="java.lang.String">
+			<column name="ID" />
+			<generator class="uuid" />
+		</id>
+        
+        <property name="applicationId" type="java.lang.String">
+            <column name="APPLICATION_ID"/>
+        </property>
+        <property name="proComboId" type="java.lang.String">
+            <column name="PROCOMBO_ID"/>
+        </property>
+        <property name="productId" type="java.lang.String">
+            <column name="PRODUCT_ID"/>
+        </property>
+        <property name="productName" type="java.lang.String">
+            <column name="PRODUCT_NAME"/>
+        </property>
+        <property name="standard" type="java.lang.String">
+            <column name="STANDARD"/>
+        </property>
+        <property name="applicationCount" type="java.lang.Integer">
+            <column name="APPLICATION_COUNT"/>
+        </property>
+        <property name="sendCount" type="java.lang.Integer">
+            <column name="SEND_COUNT"/>
+        </property>
+        <property name="status" type="java.lang.Integer">
+            <column name="STATUS"/>
+        </property>
+        
+        <!-- 默认字段 -->
+        <property name="createUserId" type="java.lang.String">
+            <column name="CREATE_USER_ID"/>
+        </property>
+        <property name="createTime" type="java.util.Date">
+            <column name="CREATE_TIME"/>
+        </property>
+        <property name="updateUserId" type="java.lang.String">
+            <column name="UPDATE_USER_ID"/>
+        </property>
+      
+        <property name="updateTime" type="java.util.Date">
+            <column name="UPDATE_TIME" />
+        </property>
+     
+        <property name="isDeleted" type="java.lang.Integer">
+            <column name="IS_DELETED" precision="4" scale="0" />
+        </property>
+    </class>
+</hibernate-mapping>

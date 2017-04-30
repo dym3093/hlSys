@@ -1,0 +1,75 @@
+
+<div class="pageContent">
+	<form method="post" action="demo/common/ajaxDone.html" class="pageForm required-validate" onsubmit="return validateCallback(this, navTabAjaxDone);">
+		<div class="pageFormContent" layoutH="56">
+		<div class="tip"><span>任务工单新增</span></div>
+			<p>
+				<label>工单主题：</label>
+				<input type="text" name="keyword" size="93"/>
+			</p>
+			<p>
+				<label>工单流水号：</label>
+				<input type="text" name="keyword" size="30" readonly="readonly"/>
+			</p>
+			<div class="divider"></div>
+			<p>
+				<label>客户名称：</label><input type="text"  size="25"  name="orgLookup.orgName" value="" suggestFields="orgNum,orgName" suggestUrl="demo/database/db_lookupSuggest.html" lookupGroup="orgLookup" />
+				<a class="btnLook" href="demo/database/dwzOrgLookup.html" lookupGroup="orgLookup">查找带回</a>	
+			</p>
+			<p>
+				<label>产品名称：</label><input type="text" size="25"  name="orgLookup.orgName" value="" suggestFields="orgNum,orgName" suggestUrl="demo/database/db_lookupSuggest.html" lookupGroup="orgLookup" />
+				<a class="btnLook" href="demo/database/dwzOrgLookup.html" lookupGroup="orgLookup">查找带回</a>
+			</p>
+			<p>
+				<label>产品编号：</label>
+				<input type="text" size="30" />
+			</p>
+			
+			<p>
+				<label>任务类型：</label>
+				  <select class="combox" name="xinxizhuangtai">
+				<option value="请选择">选择</option>
+				<option value="one"></option>
+				<option value="two"></option>
+				<option value="three"></option>
+			</select>
+			</p>
+			
+			<p>
+				<label>限制日期：</label>
+				<input type="text" name="startDate" class="date" size="20" /><a class="inputDateButton" href="javascript:;">选择</a>
+			</p>
+			
+			
+			
+			
+			<div class="divider"></div>
+			<p class="nowrap">
+				<label>任务描述：</label>
+				<textarea name="textarea1" cols="113" rows="2"></textarea>
+			</p>
+			<p class="nowrap">
+				<label>备注：</label>
+				<textarea name="textarea1" cols="113" rows="2"></textarea>
+			</p>
+		
+		
+			<div class="divider"></div>
+			<p>
+				<label>派往角色：</label>
+				<a class="required button" href="xitongguanli/zuzhiguanli/paidantree.html" target="dialog" width="300"  height="300"><span>选择派往角色</span></a>
+			</p>
+			
+		</div>
+		<div class="formBar">
+			<ul>
+				<!--<li><a class="buttonActive" href="javascript:;"><span>保存</span></a></li>-->
+				<li><div class="buttonActive"><div class="buttonContent"><button >派单</button></div></div></li>
+				<li>
+					<div class="button"><div class="buttonContent"><button type="button">重置</button></div></div>
+				</li>
+				<li><div class="buttonActive"><div class="buttonContent"><button >保存草稿</button></div></div></li>
+			</ul>
+		</div>
+	
+</div>

@@ -1,0 +1,386 @@
+/**
+ * dym
+ * 2016-4-26 下午2:36:30
+ */
+package org.hpin.settlementManagement.dao;
+
+import java.sql.CallableStatement;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Types;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.commons.lang.StringUtils;
+import org.hibernate.Criteria;
+import org.hibernate.Session;
+import org.hibernate.Transaction;
+import org.hibernate.criterion.MatchMode;
+import org.hibernate.criterion.Restrictions;
+import org.hpin.base.dict.util.Constants;
+import org.hpin.common.core.orm.BaseDao;
+import org.hpin.common.core.orm.OrmConverter;
+import org.hpin.common.widget.pagination.Page;
+import org.hpin.settlementManagement.entity.ErpCustomerSettleBX;
+import org.hpin.settlementManagement.entity.ErpSettlementTaskBX;
+import org.springframework.stereotype.Repository;
+
+/**
+ * 保险公司结算任务DAO
+ * @author DengYouming
+ * @since 2016-5-1 下午4:25:33
+ */
+@Repository()
+public class ErpSettlementTaskBXDao extends BaseDao{
+
+	public Session openSession() throws Exception{
+		Session session = null;
+		if(session!=null){
+			getHibernateTemplate().getSessionFactory().openSession();
+		}
+		return session;
+	}
+	
+	/**
+	 * 根据参数修改计算任务转态;
+	 * create by henry.xu
+	 * @param params (status结算状态0未收款1代收款2已收款, )
+	 * @throws Exception
+	 */
+	public void updateSettlementTaskStatus(Map<String, Object> params) throws Exception {
+		//修改语句;
+		StringBuilder stbUpdate = new StringBuilder("UPDATE ERP_SETTLEMENT_TASK_BX set status=? WHERE ID=?");
+		//参数
+		Object[] obj = new Object[2];
+		if(params != null) {
+			obj[0] = params.get("status");
+			obj[1] = params.get("settlementId");
+		}
+		
+		this.getJdbcTemplate().update(stbUpdate.toString(), obj);
+
+	}
+
+	/**
+	 * 分页查询
+	 * @param page
+	 * @param searchMap
+	 * @return
+	 * @author DengYouming
+	 * @since 2016-4-26 下午7:29:36
+	 */
+    public List findByPage(Page page, Map searchMap) {
+        StringBuffer query = new StringBuffer(" from ErpSettlementTaskBX where 1=1 ");
+        searchMap.put("create_time", "desc");
+        List valueList = new ArrayList();
+        OrmConverter.assemblyQuery(query, searchMap, valueList);
+        return super.findByHql(page, query, valueList);
+    }
+    
+    /**
+     * 会计页面的查询
+     * @param page
+     * @param searchMap
+     * @return
+     * @author DengYouming
+     * @throws SQLException 
+     * @since 2016-9-5 下午4:26:07
+     */
+    public List findByPageKj(Page page, Map searchMap) throws SQLException {
+    	StringBuffer sqlBuff = new StringBuffer("select r.*, s.bank_name, s.bank_num from (select id, task_no, task_name, create_time, create_user, pro_user, company_num, set_meal_num, total_amount, actual_total_amount, payment_type, status from erp_settlement_task_bx t where 1=1 ");
+	    
+        Object[] values = new Object[searchMap.keySet().size()];
+        
+        Iterator iter = searchMap.keySet().iterator();
+        
+        int i = 0;
+        String key;
+        while(iter.hasNext()){
+        	key = (String) iter.next();
+        	if("filter_and_taskNo_LIKE_S".equals(key)){
+        		sqlBuff.append(" and t.TASK_NO like '%'||?||'%'");
+        	}else if("filter_and_projectNo_LIKE_S".equals(key)){
+        		sqlBuff.append(" and t.PROJECT_NO like '%'||?||'%'");
+        	}else if("filter_and_createUser_LIKE_S".equals(key)){
+        		sqlBuff.append(" and t.CREATE_USER like '%'||?||'%'");
+        	}else if("filter_and_proUser_LIKE_S".equals(key)){
+        		sqlBuff.append(" and t.PRO_USER like '%'||?||'%'");
+        	}else if("filter_and_createTime_GEST_T".equals(key)){
+        		sqlBuff.append(" and  t.CREATE_TIME > to_date(?||' 00:00:00', 'yyyy-mm-dd hh24:mi:ss') ");
+        	}else if("filter_and_createTime_LEET_T".equals(key)){
+        		sqlBuff.append(" and  t.CREATE_TIME < to_date(?||' 23:59:59', 'yyyy-mm-dd hh24:mi:ss') ");
+        	}
+        	values[i] = searchMap.get(key);
+        	i++;
+        }
+
+        sqlBuff.append(" and t.STATUS in (?) order by t.create_time desc ) r ");
+	    sqlBuff.append(" left join (select p.settlement_id, p.bank_num, b.bank_name ");
+	    sqlBuff.append(" from ERP_PROCEEDS p, ERP_BANK b where p.proc_bank_id = b.id) s  on r.id = s.settlement_id ");
+
+	    System.out.println("sql: "+ sqlBuff.toString());
+	    
+	    Connection conn;
+	    PreparedStatement ps;
+	    ResultSet rs = null;
+	    if(sqlBuff!=null){
+		    conn = this.getJdbcTemplate().getDataSource().getConnection();
+		    ps = conn.prepareCall(sqlBuff.toString());
+		    rs = ps.executeQuery();
+	    }
+    	return super.findBySql(page, sqlBuff.toString(), values);
+    }
+    
+    public List listByPage(Map<String, Object> searchMap) throws Exception{
+    	List resultList = null;
+    	StringBuffer query = new StringBuffer(" from ErpSettlementTaskBX where 1=1 and status <> '-1' ");
+    	Session session = this.openSession();
+    	Criteria criteria = session.createCriteria(ErpSettlementTaskBX.class);
+    	
+    	criteria.add(Restrictions.eq("", ""));
+    	return resultList;
+    }
+    
+    /**
+     * 列出所有数据
+     * @return
+     * @author DengYouming
+     * @since 2016-4-27 下午2:20:41
+     */
+    public List<ErpSettlementTaskBX> listAll(){
+       	Session session = getHibernateTemplate().getSessionFactory().openSession();
+    	Criteria criteria = session.createCriteria(ErpSettlementTaskBX.class);
+    	List<ErpSettlementTaskBX> list = criteria.list();
+    	session.close();
+    	return list;
+    }
+
+    /**
+     * 保存ErpSettlementTaskBX对象
+     * @param obj
+     * @author DengYouming
+     * @since 2016-4-27 上午5:46:38
+     */
+    public void saveSettlementTask(ErpSettlementTaskBX obj){
+    	Session session = getHibernateTemplate().getSessionFactory().openSession();
+    	Transaction tx = session.beginTransaction();
+    	tx.begin();
+    	session.saveOrUpdate("ErpSettlementTaskBX", obj);
+    	tx.commit();
+    	if(session!=null){
+    		session.close();
+    	}
+    }
+    
+    /**
+     * 根据条件查询ErpSettlementTaskBX
+     * @param params
+     * @return List
+     * @throws Exception
+     * @author DengYouming
+     * @since 2016-5-9 下午4:37:12
+     */
+    public List<ErpSettlementTaskBX> listErpSettlementTaskBX(Map<String,Object> params) throws Exception{
+    	List<ErpSettlementTaskBX> list;
+    	Session session = null;
+    	Criteria criteria = null;
+    	if(params!=null){
+	    	session = getHibernateTemplate().getSessionFactory().openSession();
+	    	criteria = session.createCriteria(ErpSettlementTaskBX.class);
+	    	if(StringUtils.isNotEmpty((String)params.get(ErpSettlementTaskBX.F_ID))){
+	    		String id = (String)params.get(ErpSettlementTaskBX.F_ID);
+	    		if(id!=null&&id.length()>0){
+		    		if(id.indexOf(",")!=-1){
+		    			String[] idArr = id.split(Constants.PUNCTUATION_COMMA);
+		    			criteria.add(Restrictions.in(ErpSettlementTaskBX.F_ID, idArr));
+		    		}else{
+		    			criteria.add(Restrictions.eq(ErpSettlementTaskBX.F_ID, id));
+		    		}
+	    		}
+	    	}
+	    	
+	    	String creater = (String)params.get(ErpSettlementTaskBX.F_CREATEUSER);
+	    	if(StringUtils.isNotEmpty(creater)){
+	    		criteria.add(Restrictions.eq(ErpSettlementTaskBX.F_CREATEUSER, creater));
+	    	}
+	    	
+	    	if(StringUtils.isNotEmpty((String)params.get(ErpSettlementTaskBX.F_STATUS))){
+	    		String status = (String)params.get(ErpSettlementTaskBX.F_STATUS);
+	    		if(status!=null&&status.length()>0){
+		    		if(status.indexOf(",")!=-1){
+		    			String[] statusArr = status.split(Constants.PUNCTUATION_COMMA);
+		    			criteria.add(Restrictions.in(ErpSettlementTaskBX.F_STATUS, statusArr));
+		    		}else{
+		    			criteria.add(Restrictions.eq(ErpSettlementTaskBX.F_STATUS, status));
+		    		}
+	    		}
+	    	}
+	    	
+	    	String taskNo = (String)params.get(ErpSettlementTaskBX.F_TASKNO);
+	    	if(StringUtils.isNotEmpty(taskNo)){
+	    		criteria.add(Restrictions.like(ErpSettlementTaskBX.F_TASKNO, taskNo, MatchMode.ANYWHERE));
+	    	}
+	       	String taskName = (String)params.get(ErpSettlementTaskBX.F_TASKNAME);
+	    	if(StringUtils.isNotEmpty(taskName)){
+	    		criteria.add(Restrictions.ilike(ErpSettlementTaskBX.F_TASKNAME, taskName, MatchMode.ANYWHERE));
+	    	}
+	       	String projectNo = (String)params.get(ErpSettlementTaskBX.F_PROJECTNO);
+	    	if(StringUtils.isNotEmpty(projectNo)){
+	    		criteria.add(Restrictions.like(ErpSettlementTaskBX.F_PROJECTNO, projectNo, MatchMode.ANYWHERE));
+	    	}
+	    	
+	    	SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+	    			
+	    	String createTimeGe = (String)params.get("filter_and_createTime_GEST_T");
+	     	if(StringUtils.isNotEmpty(createTimeGe)){
+	    		criteria.add(Restrictions.ge(ErpSettlementTaskBX.F_CREATETIME, sdf.parse(createTimeGe+" 00:00:00")));
+	    	}
+	    	String createTimeLe = (String)params.get("filter_and_createTime_LEET_T");
+	     	if(StringUtils.isNotEmpty(createTimeLe)){
+	    		criteria.add(Restrictions.le(ErpSettlementTaskBX.F_CREATETIME, sdf.parse(createTimeLe+" 23:59:59")));
+	    	}
+    	}
+    	list = criteria.list();
+    	if(session!=null){
+    		session.close();
+    	}
+    	return list;
+    }
+    
+    /**
+     * 批量保存ErpSettlementTaskBX
+     * @param list
+     * @author DengYouming
+     * @since 2016-5-9 下午6:23:39
+     */
+    public void saveSettlementTaskList(List<ErpSettlementTaskBX> list) throws Exception{
+    	Session session = getHibernateTemplate().getSessionFactory().openSession();
+    	Transaction tx = session.beginTransaction();
+    	if(list!=null&&list.size()>0){
+	    	tx.begin();
+	    	for (int i=0; i<list.size(); i++) {
+				session.saveOrUpdate(list.get(i));
+				if(i!=0&&i%100==0){
+					session.flush();
+					session.clear();
+				}
+			}
+	    	session.flush();
+			session.clear();
+	    	tx.commit();
+	    	if(session!=null){
+	    		session.close();
+	    	}
+    	}
+    }
+    
+    /**
+     * 取消按钮
+     * @param settleId
+     * @return Integer 
+     * @throws Exception
+     * @author DengYouming
+     * @since 2016-8-11 下午5:39:58
+     */
+    public Integer cancelTask(String settleId, String userName) throws Exception{
+    	Integer num = 0;
+    	if(StringUtils.isNotEmpty(settleId)){
+    		Connection conn = this.getJdbcTemplate().getDataSource().getConnection();
+    		String sql = "{call ERP_COMM_PKG.cancelSettleTask(?,?,?)}";
+    		CallableStatement cs = conn.prepareCall(sql);
+    		cs.setString(1, settleId);
+    		cs.setString(2, userName);
+    		cs.registerOutParameter(3, Types.INTEGER);
+    		cs.execute();
+    		num = cs.getInt(3);
+    		conn.commit();
+    		if(cs!=null){
+    			cs.close();
+    		}
+    		if(conn!=null){
+    			conn.close();
+    		}
+    	}
+    	return num;
+    }
+    
+    /**
+     * 处理结算相关业务逻辑
+     * @param settleId 结算任务ID
+     * @param info 场次号或场次ID或会员ID（均可用逗号拼接）
+     * @param userName 当前操作人姓名
+     * @param userId 当前操作人ID
+     * @return Map 结果集
+     * @throws Exception
+     * @author DengYouming
+     * @since 2016-8-30 上午10:10:30
+     */
+    public Map<String,String> dealSettleBX(String settleId, String info, String userName, String userId) throws Exception{
+    	Map<String,String> result = null;
+    	if(StringUtils.isNotEmpty(settleId)&&StringUtils.isNotEmpty(userName)&&StringUtils.isNotEmpty(userId)){
+    		Connection conn = this.getJdbcTemplate().getDataSource().getConnection();
+    		String sql = "{call ERP_COMM_PKG.dealSettleBX(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)}";
+    		CallableStatement cs = conn.prepareCall(sql);
+    		cs.setString(1, settleId);
+    		cs.setString(2, info);
+    		cs.setString(3, userName);
+    		cs.setString(4, userId);
+    		cs.registerOutParameter(5, Types.INTEGER);
+    		cs.registerOutParameter(6, Types.DECIMAL);
+    		cs.registerOutParameter(7, Types.INTEGER);
+    		cs.registerOutParameter(8, Types.INTEGER);
+    		cs.registerOutParameter(9, Types.CHAR);
+    		cs.registerOutParameter(10, Types.DECIMAL);
+    		cs.registerOutParameter(11, Types.CHAR);
+    		cs.registerOutParameter(12, Types.CHAR);
+    		cs.registerOutParameter(13, Types.CHAR);
+    		cs.registerOutParameter(14, Types.CHAR);
+    		cs.registerOutParameter(15, Types.CHAR);
+    		cs.execute();
+			result = new HashMap<String, String>();
+			result.put(ErpSettlementTaskBX.F_TOTALPERSONNUM, ""+cs.getInt(5));
+			result.put(ErpSettlementTaskBX.F_TOTALAMOUNT, ""+cs.getBigDecimal(6));
+			result.put(ErpSettlementTaskBX.F_SETMEALNUM, ""+cs.getInt(7));
+			result.put(ErpSettlementTaskBX.F_COMPANYNUM, ""+cs.getInt(8));
+			result.put(ErpSettlementTaskBX.F_REMARK, cs.getString(9));
+			result.put(ErpSettlementTaskBX.F_ACTUALTOTALAMOUNT, cs.getString(10));
+			result.put(ErpSettlementTaskBX.F_PROUSER, cs.getString(11));
+			result.put(ErpSettlementTaskBX.F_BRANCHCOMPANY, cs.getString(12));
+			result.put(ErpSettlementTaskBX.F_OWNEDCOMPANY, cs.getString(13));
+			result.put(ErpSettlementTaskBX.F_BRANCHCOMPANYID, cs.getString(14));
+			result.put(ErpSettlementTaskBX.F_OWNEDCOMPANYID, cs.getString(15));
+    		
+    	}
+    	return result;
+    }
+    
+    /**
+     * 根据结算ID，获取结算客户信息
+     * @param settBXId
+     * @return
+     * @author tangxing
+     * @date 2017-2-4下午12:05:40
+     */
+    public List<ErpCustomerSettleBX> getCustomerSettleBXBySettleId(String settBXId){
+    	String hql = "from ErpCustomerSettleBX where settleId=?";
+    	return this.getHibernateTemplate().find(hql,new Object[]{settBXId});
+    }
+    
+    /**
+     * 根据regionId获取省份城市
+     * @param regionId
+     * @return
+     * @author tangxing
+     * @date 2017-2-6下午1:30:24
+     */
+    public List<Map<String, Object>> getRegionById(String regionId){
+    	String sql = "select hr.region_name as regionName from hl_region hr where hr.id = ? ";
+    	return this.getJdbcTemplate().queryForList(sql, new Object[]{regionId});
+    }
+}

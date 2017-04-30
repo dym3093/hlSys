@@ -1,0 +1,231 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"%>
+<%@ include file="/common/taglibs.jsp"%>
+
+<%
+String path = request.getContextPath();
+String userRoles = (String)request.getAttribute("userRoles");
+String userId = (String)request.getAttribute("userId");
+%>
+
+<style type="text/css">
+	.spn1{
+		padding-left: 60px;
+	}
+	.spn2{
+		padding-left: 10px;
+	}
+</style>
+
+
+<script type="text/javascript" language="javascript">
+function updateState(type){
+	$("input[name=tasktype]").val(type);
+	if(type=='0'){
+		$("#exportIsRecord").val("0");
+		$("#exportMatchState").val("");
+		$("#exportIsrepeat").val("");
+	}
+	if(type=='1'){
+		$("#exportIsRecord").val("1");
+		$("#exportMatchState").val("1");
+		$("#exportIsrepeat").val("");
+	}
+	if(type=='2'){
+		$("#exportIsRecord").val("1");
+		$("#exportMatchState").val("2");
+		$("#exportIsrepeat").val("");
+	}
+	if(type=='3'){
+		$("#exportIsRecord").val("1");
+		$("#exportMatchState").val("3");
+		$("#exportIsrepeat").val("");
+	}
+	if(type=='4'){
+		$("#exportIsRecord").val("1");
+		$("#exportMatchState").val("4");
+		$("#exportIsrepeat").val("");
+	}
+	if(type=='5'){
+		$("#exportIsRecord").val("1");
+		$("#exportMatchState").val("5");
+		$("#exportIsrepeat").val("");
+	}
+	if(type=='6'){
+		$("#exportIsRecord").val("1");
+		$("#exportMatchState").val("");
+		$("#exportIsrepeat").val("1");
+	}
+	if(type=='7'){
+		$("#exportIsRecord").val("1");
+		$("#exportMatchState").val("");
+		$("#exportIsrepeat").val("2");
+	}
+	if(type=='8'){
+		$("#exportIsRecord").val("1");
+		$("#exportMatchState").val("7");
+		$("#exportIsrepeat").val("");
+	}
+	if(type=='9'){
+		$("#exportIsRecord").val("1");
+		$("#exportMatchState").val("8");
+		$("#exportIsrepeat").val("");
+	}
+	if(type=='10'){
+		$("#exportIsRecord").val("1");
+		$("#exportMatchState").val("9");
+		$("#exportIsrepeat").val("");
+	}
+	if(type=='11'){
+		$("#exportIsRecord").val("1");
+		$("#exportMatchState").val("10");
+		$("#exportIsrepeat").val("");
+	}
+	$("#pdfContentForm").submit();
+}
+</script>
+
+    <form onsubmit="if(this.action!='${path}/report/reportFileTask!queryDetailInfo.action'){this.action ='${path}/report/reportFileTask!queryDetailInfo.action';};return navTabSearch(this);" action="${path}/report/reportFileTask!queryDetailInfo.action" method="post" rel ="pagerForm" id="pdfContentForm">
+        <input type="hidden" value="${reporttask.batchno}" name="batchno">
+        <input type="hidden" value="${tasktype}" name="tasktype">
+        <input type="hidden" id="exportIsRecord" value="${isrecord}" name="filter_and_isrecord_EQ_I">
+        <input type="hidden" id="exportMatchState" value="${matchstate}" name="filter_and_matchstate_EQ_I">
+        <input type="hidden" id="exportIsrepeat" value="${isrepeat}" name="filter_and_isrepeat_EQ_I">
+        <input type="hidden" name="filter_and_batchno_EQ_S" value="${reporttask.batchno}"/>
+        
+        <div class="tip"><span>匹配信息</span></div>
+        <div class="pageHeader">
+            <table id="lineHeight">
+                <tr>
+                    <td class="spn1">
+	                	<label>批次号：</label>
+	                    <span id="batchno">${reporttask.batchno}</span>
+                    </td>
+                    <td class="spn1">
+                        <label>任务日期：</label>
+                        <c:if test="${not empty reporttask.createdate}"><span>${fn:substring(reporttask.createdate,0,17)}00</span></c:if>
+                        <c:if test="${empty reporttask.createdate}"><span>${reporttask.createdate}</span></c:if>
+                    </td>
+                    <td class="spn1">
+                        <label>报告文件总数：</label>
+                        <span>${reporttask.pdftotal}</span>
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td style="padding-left: 60px;">
+                        <label>本批内重复：</label>
+                        <span><a style="color:#F00;line-height:30px;" href="javascript:updateState(6)">${reporttask.inbthrepeatnum}</a></span>
+                    </td>
+                    <td class="spn2">
+                        <label>与其他批次重复：</label>
+                        <span><a style="color:#F00;line-height:30px;" href="javascript:updateState(7)">${reporttask.otherbthrepeatnum}</a></span>
+                    </td>
+                    <td class="spn2">
+                        <label>报告文件总数：</label>
+                        <span>${reporttask.pdftotal}</span>
+                    </td>
+                    <td class="spn2">
+                        <label>匹配成功：</label>
+                        <span><a style="color:#F00;line-height:30px;" href="javascript:updateState(2)">${reporttask.updatenum}</a></span>
+                    </td>
+                    <td class="spn2">
+                        <label>未匹配成功：</label>
+                        <span><a  style="color:#F00;line-height:30px;" href="javascript:updateState(3)">${reporttask.unmatchnum}</a></span>
+                    </td>
+                    <td class="spn2">
+                        <label>读取失败数量：</label>
+                        <span><a style="color:#F00;line-height:30px;" href="javascript:updateState(0)">${reporttask.unrecordnum}</a></span>
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td style="padding-left: 60px;">
+                        <label>异常数量：</label>
+                        <span><a style="color:#F00;line-height:30px;"  href="javascript:updateState(4)">${reporttask.abnormalnnum}</a></span>
+                    </td>
+                    <td class="spn2">
+                        <label>会员信息多条：</label>
+                        <span><a style="color:#F00;line-height:30px;" href="javascript:updateState(5)">${reporttask.cusmorenum}</a></span>
+                    </td>
+                     <td class="spn2">
+                        <label>没有对应的远盟套餐：</label>
+                        <span><a  style="color:#F00;line-height:30px;" href="javascript:updateState(8)">${reporttask.noYMCombo}</a></span>
+                    </td>
+                    <td class="spn2">
+                        <label>套餐不匹配：</label>
+                        <span><a style="color:#F00;line-height:30px;" href="javascript:updateState(9)">${reporttask.noCustomerCombo2SY}</a></span>
+                    </td>
+                    <td class="spn2">
+                        <label>没有对应的申友套餐：</label>
+                        <span><a style="color:#F00;line-height:30px;" href="javascript:updateState(10)">${reporttask.noSYCombo}</a></span>
+                    </td>
+                    <td class="spn2">
+                        <label>文件名有误：</label>
+                        <span><a style="color:#F00;line-height:30px;" href="javascript:updateState(11)">${reporttask.errorPdfName}</a></span>
+                    </td>
+                    
+                </tr>
+            </table>
+        </div>
+    </form>
+    
+    <div class="tip"><span>匹配详情清单</span></div>
+    <div class="panelBar">
+        <ul class="toolBar">
+            <web:exportExcelTag
+                    pagerFormId="pdfContentForm"
+                    pagerMethodName="contentsfindByPage"
+                    actionAllUrl="org.hpin.reportdetail.web.ErpReportFileTaskAction"
+                    informationTableId="exportExcelTable"
+                    fileName="detailContent"></web:exportExcelTag>
+        </ul>
+        <jsp:include page="/common/pagination.jsp" />
+    </div>
+    <table class="list" width="100%" layoutH="170" id="exportExcelTable">
+        <thead>
+        <tr>
+            <th nowrap="nowrap" width="40">序号</th>
+            <th nowrap="nowrap" export="true" columnEnName="code" columnChName="条码">条码</th>
+            <th nowrap="nowrap" export="true" columnEnName="username" columnChName="姓名">姓名</th>
+            <th nowrap="nowrap" export="true" columnEnName="sex" columnChName="性别">性别</th>
+            <th nowrap="nowrap" export="true" columnEnName="age" columnChName="年龄">年龄</th>
+            <th nowrap="nowrap" export="true" columnEnName="setmeal_name" columnChName="套餐">套餐</th>
+            <th nowrap="nowrap" export="true" columnEnName="pdfname" columnChName="报告名称">报告名称</th>
+            <th nowrap="nowrap" export="false" columnEnName="matchstate" columnChName="状态">状态</th>
+            <th nowrap="nowrap" export="true" columnEnName="createdate" columnChName="创建日期">创建日期</th>
+            <th>操作</th>
+        </tr>
+        </thead>
+        <tbody>
+        <c:forEach items="${contentBeans}" var="details" varStatus="status">
+            <tr target="sid_user" rel="${details.id}">
+                <td nowrap="nowrap" align="center">${status.count}</td>
+                <td nowrap="nowrap" align="center">${details.code}</td>
+                <td nowrap="nowrap" align="center">${details.username}</td>
+                <td nowrap="nowrap" align="center">${details.sex}</td>
+                <td nowrap="nowrap" align="center">${details.age}</td>
+                <td nowrap="nowrap" align="center">${details.setmeal_name}</td>
+                <td nowrap="nowrap" align="center">${details.pdfname}</td>
+                <td nowrap="nowrap" align="center">
+                    <c:if test="${details.isrecord==0}"> 未读取成功</c:if>
+                    <c:if test="${details.isrecord==1}">
+                        <c:if test="${details.matchstate==2}">匹配成功</c:if>
+                        <c:if test="${details.matchstate==3}">未匹配成功</c:if>
+                        <c:if test="${details.matchstate==4}">异常数据</c:if>
+                        <c:if test="${details.matchstate==5}">会员信息多条</c:if>
+                        <c:if test="${details.matchstate==7}">没有对应的远盟套餐</c:if>
+						<c:if test="${details.matchstate==8}">套餐不匹配</c:if>
+						<c:if test="${details.matchstate==9}">没有对应的申友套餐</c:if>
+						<c:if test="${details.matchstate==10}">文件名有误</c:if>
+                        <c:if test="${details.isrepeat==1}">本批次重复</c:if>
+                        <c:if test="${details.isrepeat==2}">与其他批次重复</c:if>
+                    </c:if>
+                </td>
+                <td nowrap="nowrap" align="center">${fn:substring(details.createdate,0,17)}00</td>
+                <td align="center">
+                    <a target="_blank" href="${fn:replace(details.filepath,'/home/ftp/transact','http://img.healthlink.cn:8099/ymReport')}">查看</a>
+                </td>
+            </tr>
+        </c:forEach>
+        </tbody>
+    </table>

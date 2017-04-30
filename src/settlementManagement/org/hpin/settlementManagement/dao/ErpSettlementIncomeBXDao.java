@@ -1,0 +1,71 @@
+package org.hpin.settlementManagement.dao;
+
+import org.apache.commons.lang.StringUtils;
+import org.dom4j.DocumentException;
+import org.hpin.base.usermanager.entity.User;
+import org.hpin.common.core.orm.BaseDao;
+import org.hpin.common.util.XmlUtils;
+import org.hpin.settlementManagement.entity.ErpSettlementIncomeBX;
+import org.springframework.stereotype.Repository;
+import org.springframework.util.CollectionUtils;
+
+import java.io.FileNotFoundException;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.List;
+
+/**
+ * 保险公司结算模块，结算任务中的其他收入表DAO
+ * @since 17-3-9
+ * @author damian
+ */
+@Repository
+public class ErpSettlementIncomeBXDao extends BaseDao{
+    /**
+     * 批量保存
+     * @param list
+     * @return Integer
+     * @author Damian
+     * @since 2017-03-10
+     */
+    public Integer saveOrUpdateList(List<ErpSettlementIncomeBX> list, User user, String taskId) throws Exception{
+        Integer count = 0;
+        if (!CollectionUtils.isEmpty(list)){
+            Date now = Calendar.getInstance().getTime();
+            String userName = user.getUserName();
+            String userId = user.getId();
+
+            ErpSettlementIncomeBX oldIncome;
+
+            for (ErpSettlementIncomeBX obj:list){
+                if (StringUtils.isEmpty(obj.getId())) {
+                    obj.setTaskId(taskId);
+                    obj.setStatus(0);
+                    obj.setStatusUpdateTime(now);
+                    obj.setIsDeleted(0);
+                    obj.setCreateTime(now);
+
+                    obj.setCreateUserName(userName);
+                    obj.setCreateUserId(userId);
+
+                    this.getHibernateTemplate().save(obj);
+                } else {
+                    oldIncome = (ErpSettlementIncomeBX) this.findById(ErpSettlementIncomeBX.class, obj.getId());
+
+                    oldIncome.setIncomeType(obj.getIncomeType());
+                    oldIncome.setAmount(obj.getAmount());
+                    oldIncome.setRemark(obj.getRemark());
+
+                    oldIncome.setUpdateTime(now);
+                    oldIncome.setUpdateUserName(userName);
+                    oldIncome.setUpdateUserId(userId);
+
+                    this.getHibernateTemplate().update(oldIncome);
+                }
+                count++;
+            }
+        }
+        return count;
+    }
+
+}

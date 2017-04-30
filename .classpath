@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="src/configfiles"/>
+	<classpathentry kind="src" path="src/physical"/>
+	<classpathentry kind="src" path="src/foreign"/>
+	<classpathentry kind="src" path="src/venueStaffSettlement"/>
+	<classpathentry kind="src" path="src/children"/>
+	<classpathentry kind="src" path="src/common"/>
+	<classpathentry kind="src" path="src/orgnizationManager"/>
+	<classpathentry kind="src" path="src/report"/>
+	<classpathentry kind="src" path="src/systemConfig"/>
+	<classpathentry kind="src" path="src/system"/>
+	<classpathentry kind="src" path="src/business/barcode"/>
+	<classpathentry excluding="barcode/" kind="src" path="src/business"/>
+	<classpathentry kind="src" path="src/comboManage"/>
+	<classpathentry kind="src" path="src/events"/>
+	<classpathentry kind="src" path="src/security"/>
+	<classpathentry kind="src" path="src/reportdetail"/>
+	<classpathentry kind="src" path="src/warehouse"/>
+	<classpathentry excluding="configfiles/|common/|orgnizationManager/|report/|systemConfig/|system/|business/barcode/|business/|comboManage/|events/|security/|reportdetail/|warehouse/|org/hpin/genepack/entity/|genepack/|settlementManagement/|venueStaffSettlement/|children/|foreign/|physical/" kind="src" path="src"/>
+	<classpathentry kind="src" path="src/genepack"/>
+	<classpathentry kind="src" path="src/settlementManagement"/>
+	<classpathentry kind="con" path="org.eclipse.jst.j2ee.internal.web.container"/>
+	<classpathentry kind="con" path="org.eclipse.jst.j2ee.internal.module.container"/>
+	<classpathentry kind="con" path="com.genuitec.runtime.library/com.genuitec.generic_5.0"/>
+	<classpathentry kind="con" path="com.genuitec.runtime.library/com.genuitec.jstl_1.2">
+		<attributes>
+			<attribute name="org.eclipse.jst.component.dependency" value="WEB-INF/lib"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="output" path="WebRoot/WEB-INF/classes"/>
+</classpath>

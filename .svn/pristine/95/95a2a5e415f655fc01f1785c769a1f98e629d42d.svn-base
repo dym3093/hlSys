@@ -1,0 +1,104 @@
+package org.hpin.reportdetail.job;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+
+/**
+ * 定时获取上传的报告文件
+ * @author ybc
+ * @date 2016-3-29
+ */
+public class ErpPdf2JpgJob {
+
+	private String jpgToPath;
+	private String commonPage01;	//公共页01
+	private String commonPage02;	//公共页02
+	private String commonPage03;	//公共页03
+	private String commonPage04;	//公共页04
+	private String commonPage05;	//公共页04
+	
+	@Autowired
+	private ThreadPoolTaskExecutor taskExecutor;
+	
+	public synchronized void execute(){
+		Logger logger = Logger.getLogger("pdf2jpg");
+		logger.info("ErpPdf2JpgJob excute start time---开始执行转换图片任务" );
+		long start = System.currentTimeMillis();
+		//根据当前日期获取文件路径
+		ErpPdf2JpgThread match = new ErpPdf2JpgThread(jpgToPath,mapCommonPages());
+		taskExecutor.submit(match);
+		long end = System.currentTimeMillis();
+		
+		logger.info("ErpPdf2JpgJob excute use time---"+ (end-start));
+	}
+	
+	/**
+	 * @author Carly
+	 * @since 2017年3月15日14:32:57
+	 * @return 需要添加的公共页
+	 */
+	private Map<Integer, String> mapCommonPages() {
+		Map<Integer, String> mapCommonPages = new HashMap<Integer, String>();
+		mapCommonPages.put(1, commonPage01);
+		mapCommonPages.put(2, commonPage02);
+		mapCommonPages.put(3, commonPage03);
+		mapCommonPages.put(4, commonPage04);
+		mapCommonPages.put(5, commonPage05);
+		return mapCommonPages;
+	}
+	
+	public String getJpgToPath() {
+		return jpgToPath;
+	}
+
+	public void setJpgToPath(String jpgToPath) {
+		this.jpgToPath = jpgToPath;
+	}
+
+	public String getCommonPage01() {
+		return commonPage01;
+	}
+
+	public void setCommonPage01(String commonPage01) {
+		this.commonPage01 = commonPage01;
+	}
+
+	public String getCommonPage02() {
+		return commonPage02;
+	}
+
+	public void setCommonPage02(String commonPage02) {
+		this.commonPage02 = commonPage02;
+	}
+
+	public String getCommonPage03() {
+		return commonPage03;
+	}
+
+	public void setCommonPage03(String commonPage03) {
+		this.commonPage03 = commonPage03;
+	}
+
+	public String getCommonPage04() {
+		return commonPage04;
+	}
+
+	public void setCommonPage04(String commonPage04) {
+		this.commonPage04 = commonPage04;
+	}
+
+	public String getCommonPage05() {
+		return commonPage05;
+	}
+
+	public void setCommonPage05(String commonPage05) {
+		this.commonPage05 = commonPage05;
+	}
+	
+}

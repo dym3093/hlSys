@@ -1,0 +1,762 @@
+/**
+ * 
+ */
+package org.hpin.reportdetail.web;
+
+import java.io.File;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import javax.servlet.http.HttpServletRequest;
+
+import org.apache.commons.lang.StringUtils;
+import org.apache.log4j.Logger;
+import org.apache.struts2.ServletActionContext;
+import org.apache.struts2.convention.annotation.Action;
+import org.apache.struts2.convention.annotation.Namespace;
+import org.apache.struts2.convention.annotation.Result;
+import org.apache.struts2.convention.annotation.Results;
+import org.hpin.base.usermanager.entity.User;
+import org.hpin.common.core.SpringTool;
+import org.hpin.common.core.web.BaseAction;
+import org.hpin.common.util.HttpTool;
+import org.hpin.common.widget.pagination.Page;
+import org.hpin.events.entity.ErpEvents;
+import org.hpin.reportdetail.entity.ErpBaseEmpInfo;
+import org.hpin.reportdetail.entity.ErpReportExpressHis;
+import org.hpin.reportdetail.entity.vo.ErpReportDetailVo;
+import org.hpin.reportdetail.entity.vo.ErpReportExpressBaseInfo;
+import org.hpin.reportdetail.entity.vo.ErpReportExpressQuery;
+import org.hpin.reportdetail.entity.vo.ErpReportInfoVo;
+import org.hpin.reportdetail.service.ErpReportExpressService;
+
+import net.sf.json.JSONObject;
+
+
+/**
+ * @author machuan
+ * @date 2016年12月12日
+ */
+@Namespace("/reportdetail")
+@Action("reportDelivery")
+@Results({
+    @Result(name="listReportDelivery",location="/WEB-INF/reportdetail/listReportDelivery.jsp"),
+    @Result(name="toBatchDeal",location="/WEB-INF/reportdetail/batchDeal.jsp"),
+    @Result(name="toExpressEntry",location="/WEB-INF/reportdetail/expressEntry.jsp"),
+    @Result(name="toChangeExpress",location="/WEB-INF/reportdetail/changeExpress.jsp"),
+    @Result(name="toShowHis",location="/WEB-INF/reportdetail/showHis.jsp"),
+    @Result(name="expressDetail",location="/WEB-INF/reportdetail/expressDetail.jsp"),
+    @Result(name="toSendEmail",location="/WEB-INF/reportdetail/sendEmail.jsp"),
+    @Result(name="importReportExpress",location="/WEB-INF/reportdetail/importReportExpress.jsp"),
+})  
+@SuppressWarnings("rawtypes")
+public class ReportDeliveryAction extends BaseAction{
+	private static final long serialVersionUID = 1L;
+	private ErpReportExpressService service = (ErpReportExpressService) SpringTool.getBean(ErpReportExpressService.class);
+	private Logger log = Logger.getLogger(ReportDeliveryAction.class);
+	
+	private ErpReportExpressQuery searchQuery;
+	private String affixFileName;
+	private File affix;
+	/**
+	 * 报告寄送页面分页
+	 * @return
+	 * @author machuan
+	 * @date  2016年12月20日
+	 */
+	public String listReportDelivery(){
+		try {
+			String aaaa = HttpTool.getParameter("aaaa");
+			page = new Page(HttpTool.getPageNum(),HttpTool.getPageSize());
+			if(searchQuery!=null){
+				service.listReportDelivery(page,searchQuery);
+			}
+			HttpTool.setAttribute("aaaa", aaaa);
+			log.info("listReportDelivery--success!");
+		} catch (Exception e) {
+			log.error("listReportDelivery--error:  ", e);
+		}
+        return "listReportDelivery";
+    }
+	
+	/**
+	 * 报告寄送页面分页
+	 * @return
+	 * @author machuan
+	 * @date  2016年12月20日
+	 */
+	public String listReportDeliveryByCode(){
+		try {
+			String customerCode = HttpTool.getParameter("customerCode");
+			page = new Page(HttpTool.getPageNum(),HttpTool.getPageSize());
+			service.listReportDeliveryByCode(page,customerCode);
+			HttpTool.setAttribute("customerCode", customerCode);
+			log.info("listReportDeliveryByCode--success!");
+		} catch (Exception e) {
+			log.error("listReportDeliveryByCode--error:  ", e);
+		}
+		return "listReportDelivery";
+	}
+	
+	/**
+	 * 跳转批量处理页面
+	 * @return
+	 * @author machuan
+	 * @date  2016年12月20日
+	 */
+	public String toBatchDeal(){
+		try {
+			String ids = HttpTool.getParameter("ids");
+			String eventsId = HttpTool.getParameter("eventsId");
+			String []arrId = new String []{};
+			if(StringUtils.isNotBlank(ids)){
+				arrId = ids.split(",");
+			}
+			if(StringUtils.isNotBlank(eventsId)){
+				arrId = new String[]{eventsId};
+			}
+			String dept = HttpTool.getParameter("dept");
+			String reportType = HttpTool.getParameter("reportType");
+			String customerIds = HttpTool.getParameter("customerIds");
+			String comboName = HttpTool.getParameter("comboName");
+			String reportCode = HttpTool.getParameter("reportCode");
+			if(StringUtils.isBlank(reportCode)){
+				reportCode = UUID.randomUUID().toString().replaceAll("-", "");
+				//2017-01-04 将所有场次的客户信息保存到临时表中
+				service.saveExpressTemp(ids.split(","),reportCode);
+			}
+			HttpTool.setAttribute("reportCode", reportCode);
+			HttpTool.setAttribute("ids", ids);
+			HttpTool.setAttribute("eventsId", eventsId);
+			HttpTool.setAttribute("dept", dept);
+			HttpTool.setAttribute("reportType", reportType);
+			HttpTool.setAttribute("customerIds", customerIds);
+			HttpTool.setAttribute("comboName", comboName);
+			//根据场次id获取场次信息 并保存到页面
+			List<ErpEvents> list = service.findEventsByIds(ids.split(","));
+			HttpTool.setAttribute("erpEventsList", list);
+			//部门信息 放到页面上
+			List<Map<String, Object>> links = service.findDeptByIds(arrId);
+			HttpTool.setAttribute("links", links);
+			//套餐信息 放在页面上
+			List<Map<String, Object>> combos = service.findCombosByEventIds(arrId);
+			HttpTool.setAttribute("combos", combos);
+			//根据场次id展示客户信息清单
+			page = new Page(HttpTool.getPageNum(), HttpTool.getPageSize());
+			service.findBatchDealInfo(page,arrId,dept,reportType,comboName);
+		} catch (Exception e) {
+			log.error("toBatchDeal--error: ",e);
+		}
+		return "toBatchDeal";
+	}
+	/**
+	 * 根据场次Id 获取 批次号  批次日期，录入人数等信息
+	 * @author machuan
+	 * @date  2016年12月15日
+	 */
+	public void findEventInfoByNo(){
+		String eventID = HttpTool.getParameter("eventID");
+		JSONObject json = new JSONObject();
+		try{
+			if(StringUtils.isNotBlank(eventID)){
+				Map<String,Object> map = service.findEventInfoByNo(eventID);
+				json.put("batchno", map.get("batchno"));
+				DateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+				json.put("eventDate",df.format(map.get("eventDate")));
+				json.put("customerNum", map.get("customerNum"));
+			}
+		}catch(Exception e){
+			json.put("error", "获取信息失败！");
+			log.error("findEventInfoByNo--error : ", e);
+		}
+		renderJson(json);
+		
+	}
+	
+	/**
+	 * 跳转录入信息页面
+	 * @return
+	 * @author machuan
+	 * @date  2016年12月20日
+	 */
+	public String toExpressEntry(){
+		//拿到页面传过来的参数，从报告寄送页面过来的是 eventID ，从场次信息页面进来的是customerID集合，以“，”隔开
+		String eventNo = HttpTool.getParameter("eventNo");
+		//2017-01-04 批量处理修改 传入reportCode 
+		String reportCode = HttpTool.getParameter("reportCode");
+		String reportId = HttpTool.getParameter("reportId");
+		String allEventsIds = HttpTool.getParameter("allEventsIds");
+		//如果是变更页面进来的  再查询出之前快递的基本信息
+		try{
+			if(StringUtils.isNotBlank(reportId)){
+				ErpReportExpressBaseInfo baseInfo = service.findExpressBaseInfoByReportId(reportId);
+				HttpTool.setAttribute("baseInfo", baseInfo);
+			}
+		}catch(Exception e){
+			log.error("toExpressEntry--error: ",e);
+		}
+		HttpTool.setAttribute("eventNo", eventNo);
+		HttpTool.setAttribute("reportCode", reportCode);
+		HttpTool.setAttribute("reportId", reportId);
+		HttpTool.setAttribute("allEventsIds", allEventsIds);
+		return "toExpressEntry";
+	}
+	
+	
+	/**
+	 * 跳转快递信息变更页面
+	 * @return
+	 * @author machuan
+	 * @date  2017年4月5日
+	 */
+	public String toChangeExpress(){
+		String reportId = HttpTool.getParameter("reportId");
+		//如果是变更页面进来的  再查询出之前快递的基本信息
+		try{
+			ErpReportExpressBaseInfo baseInfo = service.findExpressBaseInfoByReportId(reportId);
+			HttpTool.setAttribute("baseInfo", baseInfo);
+		}catch(Exception e){
+			log.error("toChangeExpress--error: ",e);
+		}
+		HttpTool.setAttribute("reportId", reportId);
+		return "toChangeExpress";
+	}
+	
+	/**
+	 * 跳转变更历史页面
+	 * @return
+	 * @author machuan
+	 * @date  2017年4月5日
+	 */
+	public String toShowHis(){
+		String reportId = HttpTool.getParameter("reportId");
+		try{
+			//根据reportId拿到所有的变更历史
+			List<ErpReportExpressHis> hisList = service.findHisByReportId(reportId);
+			HttpTool.setAttribute("hisList", hisList);
+		}catch(Exception e){
+			log.error("toShowHis--error: ",e);
+		}
+		HttpTool.setAttribute("reportId", reportId);
+		return "toShowHis";
+	}
+	
+	/**
+	 * 快递信息录入
+	 * @author machuan
+	 * @date  2016年12月15日
+	 */
+	public void expressEntry(){
+		JSONObject jsonObject = new JSONObject();
+		try{
+			User currentUser = (User)HttpTool.getSession().getAttribute("currentUser");
+	        String userName=currentUser.getUserName();
+	        HttpServletRequest request = ServletActionContext.getRequest();
+			//拿到页面传过来的参数
+			String expressCommany = HttpTool.getParameter("expressCommany");
+			String expressNo = HttpTool.getParameter("expressNo");
+			String expressWeight = HttpTool.getParameter("expressWeight");
+			String expressCost = HttpTool.getParameter("expressCost");
+			//验证 expressCommany，expressNo，expressWeight不为空，expressCost不为空且为数字，email不为空且为邮件格式
+			//20170106 修改 此处不发送邮件
+			if(!checkExpress(expressCommany,expressNo,expressWeight,expressCost)){
+				jsonObject.accumulate("status", "300");
+				jsonObject.accumulate("message", "快递信息格式有误，请修改后再试！");
+				renderJson(jsonObject);
+				return;
+			}
+			String eventNo = HttpTool.getParameter("eventNo");
+			String reportCode = HttpTool.getParameter("reportCode");
+			String reportId = HttpTool.getParameter("reportId");
+			String allEventsIds = HttpTool.getParameter("allEventsIds");
+			//快递信息录入，并且发送邮件
+			String reportID =service.expressEntry(request,expressCommany,expressNo,expressWeight,expressCost,eventNo,reportCode,reportId,allEventsIds,userName);
+			
+			service.dealUpdateState(reportID);
+			
+			jsonObject.accumulate("status", "200");
+			jsonObject.accumulate("message", "快递信息录入成功！");
+			log.info("expressEntry--reportID=="+reportID);
+			//发送邮件
+			//20170106 修改 此处不发送邮件
+//			service.sendEmail(request,reportID,expressNo,userName);
+		}catch(Exception e){
+			log.error("expressEntry--error : ",e);
+			jsonObject.accumulate("status", "300");
+			jsonObject.accumulate("message", "快递信息录入失败！请稍后再试");
+		}
+		renderJson(jsonObject);
+	}
+	
+	
+	/**
+	 * 快递信息修改
+	 * @author machuan
+	 * @date  2017年4月5日
+	 */
+	public void changeExpress(){
+		JSONObject jsonObject = new JSONObject();
+		try{
+			User currentUser = (User)HttpTool.getSession().getAttribute("currentUser");
+	        String userName=currentUser.getUserName();
+	        HttpServletRequest request = ServletActionContext.getRequest();
+			//拿到页面传过来的参数
+			String expressCommany = HttpTool.getParameter("expressCommany");
+			String expressNo = HttpTool.getParameter("expressNo");
+			String expressWeight = HttpTool.getParameter("expressWeight");
+			String expressCost = HttpTool.getParameter("expressCost");
+			String reason = HttpTool.getParameter("reason");
+			//验证 expressCommany，expressNo，expressWeight不为空，expressCost不为空且为数字，email不为空且为邮件格式
+			//20170106 修改 此处不发送邮件
+			if(!checkExpress(expressCommany,expressNo,expressWeight,expressCost)){
+				jsonObject.accumulate("status", "300");
+				jsonObject.accumulate("message", "快递信息格式有误，请修改后再试！");
+				renderJson(jsonObject);
+				return;
+			}
+			String reportId = HttpTool.getParameter("reportId");
+			//快递信息录入
+			service.changeExpress(request,reportId,expressCommany,expressNo,expressWeight,expressCost,userName,reason);
+			
+			jsonObject.accumulate("status", "200");
+			jsonObject.accumulate("message", "快递信息修改成功！");
+			log.info("changeExpress--reportID=="+reportId);
+		}catch(Exception e){
+			log.error("changeExpress--error : ",e);
+			jsonObject.accumulate("status", "300");
+			jsonObject.accumulate("message", "快递信息修改失败！请稍后再试");
+		}
+		renderJson(jsonObject);
+	}
+	
+	/**
+	 * 验证 expressCommany，expressNo，expressWeight不为空，expressCost不为空且为数字，email不为空且为邮件格式
+	 * @param expressCommany
+	 * @param expressNo
+	 * @param expressWeight
+	 * @param expressCost
+	 * @param email
+	 * @return
+	 * @author machuan
+	 * @date  2016年12月21日
+	 */
+	private boolean checkExpress(String expressCommany, String expressNo, String expressWeight, String expressCost) {
+		//验证 expressCommany，expressNo，expressWeight不为空
+		if(StringUtils.isBlank(expressCommany)||StringUtils.isBlank(expressNo)||StringUtils.isBlank(expressWeight)){
+			return false;
+		}
+		//expressCost不为空且为数字
+		if(StringUtils.isNotBlank(expressCost)){
+			String numRegEx = "^\\d+(\\.\\d+)?$";
+			Pattern pattern = Pattern.compile(numRegEx);
+			Matcher matcher = pattern.matcher(expressCost);
+			if(!matcher.matches()){
+				return false;
+			};
+		}else{
+			return false;
+		}
+		//email不为空且为邮件格式
+		/*if(StringUtils.isNotBlank(email)){
+			String check = "^([a-z0-9A-Z]+[-|_|\\.]?)+[a-z0-9A-Z]@([a-z0-9A-Z]+(-[a-z0-9A-Z]+)?\\.)+[a-zA-Z]{2,}$";
+            Pattern regex = Pattern.compile(check);
+            Matcher matcher = regex.matcher(email);
+			if(!matcher.matches()){
+				return false;
+			};
+		}else{
+			return false;
+		}*/
+		return true;
+	}
+
+	/**
+	 * 跳转到寄送明细页面
+	 * @return
+	 * @author machuan
+	 * @date  2016年12月16日
+	 */
+	public String expressDetail(){
+		try {
+			String reportIds = HttpTool.getParameter("reportIds");
+			HttpTool.setAttribute("reportIds", reportIds);
+			page = new Page(HttpTool.getPageNum(),HttpTool.getPageSize());
+			service.expressDetail(page,searchQuery);
+			log.info("expressDetail--success!");
+		} catch (Exception e) {
+			log.error("expressDetail--error:  ", e);
+		}
+		return "expressDetail";
+	}
+	
+	public void cancelExpress(){
+		String reportId = HttpTool.getParameter("reportId");
+		JSONObject jsonObject = new JSONObject();
+		try {
+			service.cancelExpress(reportId);
+			jsonObject.accumulate("status", "200");
+			jsonObject.accumulate("message", "撤销成功！");
+		} catch (Exception e) {
+			log.error("cancelExpress---error : ",e);
+			jsonObject.accumulate("status", "300");
+			jsonObject.accumulate("message", "撤销失败！请稍后再试");
+		}
+		renderJson(jsonObject);
+	}
+	
+	/**
+	 * 根据场次id判断是否有多个不同的支公司
+	 * @author machuan
+	 * @date  2016年12月20日
+	 */
+	public void findBranchCompanyByEventIds(){
+		String eventsIds = HttpTool.getParameter("eventsIds");
+		JSONObject jsonObject = new JSONObject();
+		try{
+			boolean flag = service.findBranchCompanyByEventIds(eventsIds);
+			jsonObject.accumulate("status", "200");
+			jsonObject.accumulate("flag", flag);
+		}catch(Exception e){
+			log.error("findBranchCompanyByEventIds---error : ",e);
+			jsonObject.accumulate("status", "300");
+			jsonObject.accumulate("message", "服务异常！请稍后再试。");
+		}
+		renderJson(jsonObject);
+	}
+	
+	/**
+	 * 根据客户id判断是否有重复寄送的数据
+	 * @author machuan
+	 * @date  2016年12月20日
+	 */
+	public void findRepeatExpressByCustomerIds(){
+		String customerIds = HttpTool.getParameter("customerIds");
+		JSONObject jsonObject = new JSONObject();
+		try{
+			boolean flag = service.findRepeatExpressByCustomerIds(customerIds);
+			jsonObject.accumulate("status", "200");
+			jsonObject.accumulate("flag", flag);
+		}catch(Exception e){
+			log.error("findRepeatExpressByCustomerIds---error : ",e);
+			jsonObject.accumulate("status", "300");
+			jsonObject.accumulate("message", "服务异常！请稍后再试。");
+		}
+		renderJson(jsonObject);
+	}
+	
+	/**
+	 * 根据客户id判断是否有重复寄送的数据
+	 * @author machuan
+	 * @date  2016年12月20日
+	 */
+	public void findRepeatExpressByReportCode(){
+		String reportCode = HttpTool.getParameter("reportCode");
+		JSONObject jsonObject = new JSONObject();
+		try{
+			//根据reportCode 获取所有customerId
+			String customerIds = service.findCustomerInfo(reportCode);
+			if(StringUtils.isBlank(customerIds)){
+				log.info("findRepeatExpressByReportCode--未选择数据。");
+				jsonObject.accumulate("status", "200");
+				jsonObject.accumulate("msg", "请至少选择一条数据！");
+				renderJson(jsonObject);
+				return;
+			}
+			boolean flag = service.findRepeatExpressByCustomerIds(customerIds);
+			jsonObject.accumulate("status", "200");
+			jsonObject.accumulate("flag", flag);
+		}catch(Exception e){
+			log.error("findRepeatExpressByCustomerIds---error : ",e);
+			jsonObject.accumulate("status", "300");
+			jsonObject.accumulate("message", "服务异常！请稍后再试。");
+		}
+		renderJson(jsonObject);
+	}
+	/**
+	 * 根据场次号判断是否有重复寄送的数据
+	 * @author machuan
+	 * @date  2016年12月20日
+	 */
+	public void findRepeatExpressByeventNo(){
+		String eventNo = HttpTool.getParameter("eventNo");
+		JSONObject jsonObject = new JSONObject();
+		try{
+			boolean flag = service.findRepeatExpressByeventNo(eventNo);
+			jsonObject.accumulate("status", "200");
+			jsonObject.accumulate("flag", flag);
+		}catch(Exception e){
+			log.error("findRepeatExpressByeventNo---error : ",e);
+			jsonObject.accumulate("status", "300");
+			jsonObject.accumulate("message", "服务异常！请稍后再试。");
+		}
+		renderJson(jsonObject);
+	}
+	
+	/**
+	 * 根据场次id判断是否有重复寄送的数据
+	 * @author machuan
+	 * @date  2016年12月20日
+	 */
+	public void findRepeatExpressByeventIds(){
+		String eventsIdss = HttpTool.getParameter("eventsIdss");
+		JSONObject jsonObject = new JSONObject();
+		try{
+			boolean flag = service.findRepeatExpressByeventIds(eventsIdss);
+			jsonObject.accumulate("status", "200");
+			jsonObject.accumulate("flag", flag);
+		}catch(Exception e){
+			log.error("findRepeatExpressByeventIds---error : ",e);
+			jsonObject.accumulate("status", "300");
+			jsonObject.accumulate("message", "服务异常！请稍后再试。");
+		}
+		renderJson(jsonObject);
+	}
+	
+	
+	/**
+	 * 导出场次信息的excel表
+	 * @author machuan
+	 * @date  2016年12月29日
+	 */
+	public void exportExcelForReport(){
+		JSONObject json = new JSONObject();
+		HttpServletRequest request = ServletActionContext.getRequest();
+		String excelPath = "";
+		try {
+			String eventsIds = HttpTool.getParameter("eventsIds");
+			String reportType = HttpTool.getParameter("reportType");
+			String dept = HttpTool.getParameter("dept");
+			String comboName = HttpTool.getParameter("comboName");
+			String []arrId = eventsIds.split(",");
+			List<ErpReportInfoVo> list = service.findInfoForExport(dept,reportType,arrId,comboName);
+			excelPath= service.exportExcelForReport(request, list,arrId[0]);
+			log.info("exportExcelForReport--excelPath:"+excelPath);
+			//TODO 获得返回的EXCEL地址  地址需要修改 2017-01-09 usr 替换为home
+			excelPath = excelPath.replace("/home/ymdata/erpReportExpress","http://img.healthlink.cn:8099/erpReportExpress");
+		} catch (Exception e) {
+			log.error("exportExcelForReport----error: ", e);
+		}
+		log.info("exportExcelForReport---path--"+excelPath);
+		json.put("path",excelPath);
+		renderJson(json);
+	}
+	
+	public void findCustomerInfo(){
+		JSONObject jsonObject = new JSONObject();
+		String reportCode = HttpTool.getParameter("reportCode");
+		HttpTool.setAttribute("reportCode", reportCode);
+		try{
+			String customerIds = service.findCustomerInfo(reportCode);
+			jsonObject.accumulate("status", "200");
+			jsonObject.accumulate("customerIds", customerIds);
+		}catch(Exception e){
+			log.error("findCustomerInfo--error: ",e);
+			jsonObject.accumulate("status", "300");
+			jsonObject.accumulate("msg", "服务异常，请稍后再试！");
+		}
+		renderJson(jsonObject);
+	}
+	
+	public void saveOrDelTemp(){
+		JSONObject jsonObject = new JSONObject();
+		String c_reportCode = HttpTool.getParameter("c_reportCode");
+		String c_customerId = HttpTool.getParameter("c_customerId");
+		String c_flag = HttpTool.getParameter("c_flag");
+		try{
+			service.saveOrDelTemp(c_reportCode,c_customerId,c_flag);
+			jsonObject.accumulate("status", "200");
+		}catch(Exception e){
+			log.error("findCustomerInfo--error: ",e);
+			jsonObject.accumulate("status", "300");
+			jsonObject.accumulate("msg", "服务异常，请稍后再试！");
+		}
+		renderJson(jsonObject);
+	}
+	
+	/**
+	 * 获取邮寄明细已选中数据
+	 * @author machuan
+	 * @date  2017年1月6日
+	 */
+	public void showChooseExpress(){
+		JSONObject jsonObject = new JSONObject();
+		String reportIds = HttpTool.getParameter("reportIds");
+		try{
+			if(StringUtils.isNotBlank(reportIds)){
+				String []arrId = reportIds.split(",");
+				List<ErpReportDetailVo> list = service.showChooseExpress(arrId);
+				jsonObject.accumulate("status", "200");
+				jsonObject.accumulate("data", list);
+			}else{
+				jsonObject.accumulate("status", "300");
+				jsonObject.accumulate("message", "未选择数据！");
+				renderJson(jsonObject);
+				return;
+			}
+		}catch(Exception e){
+			log.error("showChooseExpress--error: ",e);
+			jsonObject.accumulate("status", "300");
+			jsonObject.accumulate("message", "服务异常，请稍后再试！");
+		}
+		renderJson(jsonObject);
+	}
+	
+	/**
+	 * 发送邮件页面
+	 * @return
+	 * @author machuan
+	 * @date  2017年1月6日
+	 */
+	public String findBaseEmpInfo(){
+		String reportIds = HttpTool.getParameter("reportIds");
+		HttpTool.setAttribute("reportIds", reportIds);
+		try {
+			Map searchMap = super.buildSearch();
+			page = new Page(HttpTool.getPageNum(),HttpTool.getPageSize());
+			List<ErpBaseEmpInfo> baseInfoList = service.findBaseEmpInfo(page, searchMap);
+			page.setResults(baseInfoList) ;
+			log.info("findBaseEmpInfo--success!");
+		} catch (Exception e) {
+			log.error("findBaseEmpInfo--error:  ", e);
+		}
+		return "toSendEmail";
+	}
+	
+	/**
+	 * 获取发送邮件页中已选中数据
+	 * @author machuan
+	 * @date  2017年1月6日
+	 */
+	public void showChooseEmail(){
+		JSONObject jsonObject = new JSONObject();
+		String baseInfoIds = HttpTool.getParameter("baseInfoIds");
+		HttpTool.setAttribute("baseInfoIds", baseInfoIds);
+		try{
+			if(StringUtils.isNotBlank(baseInfoIds)){
+				String []arrId = baseInfoIds.split(",");
+				List<ErpBaseEmpInfo> list = service.showChooseEmail(arrId);
+				jsonObject.accumulate("status", "200");
+				jsonObject.accumulate("data", list);
+			}else{
+				jsonObject.accumulate("status", "300");
+				jsonObject.accumulate("message", "未选择数据！");
+				renderJson(jsonObject);
+				return;
+			}
+		}catch(Exception e){
+			log.error("showChooseExpress--error: ",e);
+			jsonObject.accumulate("status", "300");
+			jsonObject.accumulate("message", "服务异常，请稍后再试！");
+		}
+		renderJson(jsonObject);
+	}
+	
+	/**
+	 * 发送邮件
+	 * @author machuan
+	 * @date  2017年1月6日
+	 */
+	public void sendEmail(){
+		JSONObject jsonObject = new JSONObject();
+		try{
+			User currentUser = (User)HttpTool.getSession().getAttribute("currentUser");
+	        String userName=currentUser.getUserName();
+	        HttpServletRequest request = ServletActionContext.getRequest();
+			//拿到页面传过来的参数
+			String baseInfoIds = HttpTool.getParameter("baseInfoIds");
+			String reportIds = HttpTool.getParameter("reportIds");
+			//发送邮件
+			service.sendEmail(request,reportIds,baseInfoIds,userName);
+			jsonObject.accumulate("status", "200");
+			jsonObject.accumulate("message", "邮件发送成功！");
+		}catch(Exception e){
+			log.error("sendEmail--error : ",e);
+			jsonObject.accumulate("status", "300");
+			jsonObject.accumulate("message", "邮件发送失败！请稍后再试");
+		}
+		renderJson(jsonObject);
+	}
+	
+	public String importReportExpress(){
+		return "importReportExpress";
+	}
+	
+	@SuppressWarnings("unchecked")
+	public String saveReportExpress(){
+		JSONObject json = new JSONObject();
+		try {
+			//保存
+			int count = 0;
+			//合约截止时间
+			log.info("saveReportExpress affixFileName"+affixFileName);
+			String type = affixFileName.substring(affixFileName.lastIndexOf(".")+1, affixFileName.length());
+			if ("xlsx".equals(type)) {
+				Map<String, Object> map= service.saveReportExpress(affix, affixFileName);
+				log.info("saveReportExpress message:"+map.get("message"));
+				if((Boolean) map.get("flag")){
+					//改变客户状态
+					Set<String> set = (Set) map.get("reportId");
+					for(String str : set){
+						service.dealUpdateState(str);
+					}
+					json.accumulate("statusCode", 200);
+					json.accumulate("navTabId", super.navTabId);
+					json.accumulate("callbackType", "1,"+count);
+					json.accumulate("message", map.get("message"));
+				}else{
+					json.accumulate("statusCode", 300);
+					json.accumulate("navTabId", super.navTabId);
+					json.accumulate("callbackType", "1,"+count);
+					json.accumulate("message", map.get("message"));
+				}
+			}else if (!"xlsx".equals(type)) {
+				json.accumulate("statusCode", 300);
+	    		json.accumulate("message", "导入异常,请检查EXCEL");
+	    		json.accumulate("navTabId", "menu_31");
+	    		json.accumulate("callbackType", "1,0");
+			}
+		}
+		catch (Exception ex) {
+			log.info("saveCustomer Exception"+ex);
+			json.accumulate("statusCode", 300);
+			json.accumulate("message", "导入异常,请检查EXCEL");
+			json.accumulate("navTabId", "menu_31");
+			json.accumulate("callbackType", "1,0");
+		}finally{
+			HttpServletRequest request = ServletActionContext.getRequest();
+			request.getSession().setAttribute(ServerProcessAction.INEXPORT, "1");
+			renderJson(json);
+		}
+		return null;
+	}
+	
+	public ErpReportExpressQuery getSearchQuery() {
+		return searchQuery;
+	}
+
+	public void setSearchQuery(ErpReportExpressQuery searchQuery) {
+		this.searchQuery = searchQuery;
+	}
+
+	public String getAffixFileName() {
+		return affixFileName;
+	}
+
+	public void setAffixFileName(String affixFileName) {
+		this.affixFileName = affixFileName;
+	}
+
+	public File getAffix() {
+		return affix;
+	}
+
+	public void setAffix(File affix) {
+		this.affix = affix;
+	}
+}

@@ -1,0 +1,76 @@
+package org.hpin.base.dict.service;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+
+import org.hpin.base.dict.dao.DictMailBaseDao;
+import org.hpin.base.dict.entity.DictMailBase;
+import org.hpin.base.dict.entity.DictMailSysdict;
+import org.hpin.base.usermanager.entity.User;
+import org.hpin.common.core.orm.BaseService;
+import org.hpin.common.widget.pagination.Page;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.BeanPropertyRowMapper;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+@Service(value="org.hpin.base.dict.service.DictMailBaseService")
+@Transactional()
+public class DictMailBaseService extends BaseService{
+
+	@Autowired
+	private DictMailBaseDao dictMailBaseDao;
+
+	
+	/**
+	 * 条件查询
+	 * @param page
+	 * @param params
+	 */
+	@SuppressWarnings("rawtypes")
+	public void findDictMailByPage(Page page, HashMap<String, String> params) {
+		//list查询参数;
+		List<Object> objs = new ArrayList<Object>();
+
+		//sql
+		//查询参数处理
+		StringBuilder jdbcsql = this.dictMailBaseDao.dealDictMailSql(params);
+
+		//根据创建时间排序,降序;
+		jdbcsql.append(" order by m.CREATE_TIME desc, m.id  ");
+
+
+		//count
+		long count = this.dictMailBaseDao.findJdbcCount(jdbcsql, objs);
+		page.setTotalCount(count);
+
+		//list
+		objs.add(page.getPageNumEndCount());
+		objs.add(page.getPageNumStartCount());
+		BeanPropertyRowMapper<DictMailBase> rowMapper = new BeanPropertyRowMapper<DictMailBase>(DictMailBase.class);
+		List<?> list = this.dictMailBaseDao.findJdbcList(jdbcsql, objs, rowMapper);
+		page.setResults(list);
+		
+	}
+
+
+	public void saveProCombo(DictMailBase dictMailBase, User userInfo,
+			List<DictMailSysdict> dictMailSysdicts) {
+		// TODO Auto-generated method stub
+		
+	}
+
+
+	public void updateProCombo(DictMailBase dictMailBase, User userInfo,
+			List<DictMailSysdict> dictMailSysdicts) {
+		// TODO Auto-generated method stub
+		
+	}
+
+
+	public List<DictMailSysdict> findDictMailSysdictsByMailId(String id) {
+		String jdbcsql = "select id, SYS_DICTTYPE_DICTID sysDicttyoeDictId from DICT_MAIL_SYSDICT where MAIL_BASE_ID = '"+id+"'";
+		BeanPropertyRowMapper<DictMailSysdict> rowMapper = new BeanPropertyRowMapper<DictMailSysdict>(DictMailSysdict.class);
+		return this.dictMailBaseDao.getJdbcTemplate().query(jdbcsql.toString(), rowMapper);
+	}
+}

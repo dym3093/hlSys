@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<MAIL>
+    <TYPES>
+       <TYPE>
+	       <TYPE_CODE>MAIL_1</TYPE_CODE>
+	       <TYPE_NAME>编码</TYPE_NAME>
+           <LABEL>
+               <LABEL_NAME>MAIL1_retrieveRoomContractNo</LABEL_NAME>
+               <LABEL_VALUE>收房合同号</LABEL_VALUE>
+           </LABEL>
+       </TYPE>
+       <TYPE>
+	       <TYPE_CODE>email</TYPE_CODE>
+	       <TYPE_NAME>催收邮件提醒</TYPE_NAME>
+           <LABEL>
+               <LABEL_NAME>email_userName</LABEL_NAME>
+               <LABEL_VALUE>用户名</LABEL_VALUE>
+           </LABEL>
+       </TYPE>
+    </TYPES>
+</MAIL>

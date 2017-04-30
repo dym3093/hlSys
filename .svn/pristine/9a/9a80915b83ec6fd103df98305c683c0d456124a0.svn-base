@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+	
+<hibernate-mapping>
+    <class name="org.hpin.settlementManagement.entity.ErpJYSettleTaskDetail" table="ERP_JYSETTLETASK_DETAIL">
+        <id name="id" type="java.lang.String">
+            <column name="ID" />
+            <generator class="uuid" />
+        </id>
+        <property name="settleTaskId" type="java.lang.String">
+            <column name="SETTLETASK_ID" />
+        </property>
+        <property name="sumAmount" type="java.math.BigDecimal">
+            <column name="SUM_AMOUNT" />
+        </property>
+        <property name="geCompany" type="java.lang.String">
+            <column name="GECOMPANY"/>
+        </property>
+        <property name="geCompanyId" type="java.lang.String">
+            <column name="GECOMPANY_ID" />
+        </property>
+        <property name="payTime" type="java.util.Date">
+            <column name="PAY_TIME" />
+        </property>
+        <property name="payBank" type="java.lang.String">
+            <column name="PAY_BANK"/>
+        </property>
+        <property name="payMode" type="java.lang.String">
+            <column name="PAY_MODE"/>
+        </property>
+        <property name="currentAmount" type="java.math.BigDecimal">
+            <column name="CURRENT_AMOUNT"/>
+        </property>
+        <property name="noPayAmount" type="java.math.BigDecimal">
+            <column name="NOPAY_AMOUNT"/>
+        </property>
+        <property name="OANo" type="java.lang.String">
+            <column name="OANO"/>
+        </property>
+        <property name="collectionCompany" type="java.lang.String">
+            <column name="COLLECTION_COMPANY"/>
+        </property>
+        <property name="collectionCompanyId" type="java.lang.String">
+            <column name="COLLECTION_COMPANYID"/>
+        </property>
+        <property name="createTime" type="java.util.Date">
+            <column name="CREATE_TIME"/>
+        </property>
+        <property name="createUserName" type="java.lang.String">
+            <column name="CREATE_USER_NAME"/>
+        </property>
+        <property name="note" type="java.lang.String">
+            <column name="NOTE" />
+        </property>
+    </class>
+</hibernate-mapping>

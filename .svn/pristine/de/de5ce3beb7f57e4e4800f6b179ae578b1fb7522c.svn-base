@@ -1,0 +1,125 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"%>
+<%@ include file="/common/taglibs.jsp"%>
+
+<%
+String path = request.getContextPath();
+String userRoles = (String)request.getAttribute("userRoles");
+String userId = (String)request.getAttribute("userId");
+
+%>
+
+<style type="text/css">
+
+</style>
+<script type="text/javascript" language="javascript">
+
+	$("#checkAll",$.pdialog.getCurrent()).change(function (){//全选
+		if($(this).attr("checked")=="checked"){
+			$(this).parents("table").children().eq(1).find(":checkbox").attr("checked",true);
+		}else{
+			$(this).parents("table").children().eq(1).find(":checkbox").attr("checked",false);
+		}
+	});
+
+	function confirmRepeatPrintTask(){
+		var checkbox = $("#ids:checked",$.pdialog.getCurrent());
+		if($(checkbox).length==0){
+			alertMsg.info("请选择要重复打印的任务");
+			return;
+		}
+		var arr = [];
+		$(checkbox).each(function(index,items){
+			arr[index] = items.value;
+		});
+		var ids = arr.join();
+		$.ajax({	
+			type: "post",
+			cache :false,
+			dateType:"json",
+			data:{"ids":ids},
+			url: "${path}/reportdetail/erpRepeatPrintTask!confirmRepeatPrintTask.action",
+			success: function(data){
+				if(eval("("+data+")").count==1){
+					alertMsg.correct("添加成功");
+					navTab.reload("${path}/reportdetail/erpRepeatPrintTask!listRepeatPrintTask.action", {navTabId: "menu_402881b25775e2b6015775e798e10004"});
+					$.pdialog.closeCurrent();
+				}else{
+					alertMsg.error("添加失败");
+				}
+ 			},
+			error :function(){
+				alert("服务发生异常，请稍后再试！");
+				return;
+			}
+		});
+	}
+	
+	function clearInput(){
+		$("#code",$.pdialog.getCurrent()).val('');  
+	}
+</script>
+<div class="tip"><span>查询</span></div>
+<div class="pageHeader">
+	<form id="pagerFindForm" onsubmit="if(this.action != '${path}/reportdetail/erpRepeatPrintTask!getRepeatPrintTask.action'){this.action = '${path}/reportdetail/erpRepeatPrintTask!getRepeatPrintTask.action' ;} ;return dialogSearch(this);" action="${path}/reportdetail/erpRepeatPrintTask!getRepeatPrintTask.action" method="post">
+		<div class="searchBar">
+			<table class="pageFormContent">
+				<tr>
+					<td>
+						<label>条形码：</label>
+						<input type="text" name="filter_and_code_LIKE_S" id="code" value="${filter_and_code_LIKE_S}"/> 
+					</td>
+					<td colspan="2" style="padding-left:30px;">
+						<div class="buttonActive" style="float:right;"><div class="buttonContent"><button type="submit">查找</button></div></div>
+						<div class="buttonActive" style="float:right;"><div class="buttonContent"><button type="button" onclick="clearInput()">重置</button></div></div>
+					</td>
+				</tr>
+			</table>
+		</div>
+	</form>
+</div>
+
+<div class="pageContent">
+	<div class="panelBar">
+		<ul class="toolBar">
+            <li><a class="add" href="javascript:void(0)" onclick="confirmRepeatPrintTask()"><span>确认选择</span></a></li>
+		</ul>
+		<jsp:include page="/common/paginationDialog.jsp" />
+	</div>	
+	<table class="list" width="100%" layoutH="170" id="exportExcelTable"> 
+		<thead>
+			<tr>
+				<th width="50">序号<input id="checkAll" type="checkbox" /></th>
+				<th>条形码</th>
+				<th>姓名</th>
+				<th>年龄</th>
+				<th>性别</th>
+				<th>套餐名称</th>
+				<th>报告类型</th>
+				<th>创建时间</th>
+			</tr>
+			
+		</thead>
+		<tbody>
+			<c:forEach items="${page.results}" var="pdfContent" varStatus="status">
+				<tr target="sid_user" rel="${pdfContent.id }">
+					<td align="center">${status.count}
+						<input id="ids" type="checkbox" value="${pdfContent.id}"/>
+					</td>
+					<td align="center">${pdfContent.code}</td>
+					<td align="center">${pdfContent.userName}</td>
+					<td align="center">${pdfContent.age}</td>
+					<td align="center">${pdfContent.gender}</td>
+					<td align="center">${pdfContent.combo}</td>
+					<td align="center">
+						<c:if test="${pdfContent.type=='0'}">基因报告</c:if>
+						<c:if test="${pdfContent.type=='2'}">癌筛报告</c:if>
+						<c:if test="${pdfContent.type=='3'}">癌筛报告单</c:if>
+						<c:if test="${pdfContent.type=='4'}">1+X报告</c:if>
+						<c:if test="${pdfContent.type=='5'}">无创报告</c:if>
+					</td>
+					<td align="center">${fn:substring(pdfContent.createTime,0,19)}</td>
+				</tr>
+			</c:forEach>
+		</tbody>
+	</table>
+</div> 

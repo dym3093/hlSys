@@ -1,0 +1,208 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"%>
+<%@ include file="/common/taglibs.jsp"%>
+<%
+String path = request.getContextPath();
+String userRoles = (String)request.getAttribute("userRoles");
+String userId = (String)request.getAttribute("userId");
+%>
+<script type="text/javascript" language="javascript">
+
+// function syncPdfContent2Cus(unMatchId,cusid,pdfId){
+	
+// 	var url = "${path}/report/unMatch!viewSettlementBX.action?unMatchId="+unMatchId+"&cusId="+cusId+"&pdfId="+pdfId;
+	
+// 	$.pdialog.open("${path}/settlementManagement/erpSettlementTaskBX!viewSettlementBX.action?settleId="+settleId, "viewSettlementBX", "查看结算任务明细", 
+// 			{width:600,height:400,max:false,mask:true,mixable:true,minable:true,resizable:true,drawable:true,fresh:true});
+// 		$.ajax({
+// 			type: "post",
+// 			cache :false,
+// 			dataType: "json",
+// 			url: "${path}/report/unMatch!syncPdfContent2Cus.action",
+// 			data: {"id":id,"cusid":cusid,"pdfid":pdfid},
+// 			success: function(data){
+// 				if(data.result=='success'){
+// 					alert("同步成功！");
+// 					return navTabSearch(this);
+// 				}else{
+// 					alert("同步失败！");
+// 				}
+// 			},
+// 			error :function(data){
+// 				alert("服务发生异常，请稍后再试！");
+// 			}
+// 		});
+// 	}
+	
+function showSynchronizeInfo(unMatchId,cusId,pdfId){
+	
+	var url = "${path}/report/unMatch!showSynchronizeInfo.action?unMatchId="+unMatchId+"&cusId="+cusId+"&pdfId="+pdfId+"&synType=1";
+	$.pdialog.open(url, "showSynchronizeInfo", "同步会员信息到报告", 
+			{width:550,height:300,max:false,mask:true,mixable:true,minable:true,resizable:true,drawable:true,fresh:true});
+	
+ 	}
+ 	
+function pdfError(id){
+		$.ajax({
+			type: "post",
+			cache :false,
+			dataType: "json",
+			url: "${path}/report/unMatch!dealPdfError.action",
+			data: {"id":id},
+			success: function(data){
+				if(data.result=='success'){
+					alert("同步成功！");
+					var form = "${path}/report/unMatch!query.action";
+					return navTabSearch(form);
+				}else{
+					alertMsg.correct("同步失败！");
+				}
+			},
+			error :function(data){
+				alertMsg.error("服务发生异常，请稍后再试！");
+			}
+		});
+	}
+	
+function cancelPrint(me, pdfid, batchNo, unMatchId){
+	
+	$.ajax({
+		type: "post",
+		cache :false,
+		dataType: "json",
+		url: "${path}/report/unMatch!cancelPrint.action",
+		data: {"pdfid":pdfid, "batchNo" : batchNo, "unMatchId":unMatchId},
+		success: function(data){
+			if (data.result == 1) {
+				alertMsg.correct("取消打印成功！");
+				var form = "${path}/report/unMatch!query.action";
+				return navTabSearch(form);
+				
+			} else {
+				alertMsg.warn("取消打印失败！");
+				
+			}
+		},
+		error :function(data){
+			alertMsg.error("服务发生异常，请稍后再试！");
+			
+		}
+	});
+}
+</script>
+
+<div class="tip"><span>未匹配查询</span></div>
+<div class="pageHeader">
+    <form onsubmit="if(this.action!='${path}/report/unMatch!query.action'){this.action ='${path}/report/unMatch!query.action';};return navTabSearch(this);" action="${path}/report/unMatch!query.action" rel="pagerForm">
+      <div class="searchBar">
+        <table class="pageFormContent">
+          <tr>
+           <!-- <td><span>匹配状态：</span>
+              <select id="modifystate" name="filter_and_modifystate_EQ_S" rel="iselect">
+                <option value="">请选择</option>
+                <option value="1">匹配数据失败</option>
+                <option value="0">会员信息缺失</option>
+              </select></td>-->
+            <td>
+            	<label>批次号：</label> 
+				<input type="text" name="filter_and_pdfBthNo_EQ_S" value="${filter_and_pdfBthNo_EQ_S}"/>
+            </td>
+            <td>
+            	<label>姓名：</label> 
+				<input type="text" name="filter_and_pdfusername_LIKE_S" value="${filter_and_pdfusername_LIKE_S}"/>
+            </td>
+            <td>
+            	<label>条码：</label> 
+				<input type="text" name="filter_and_pdfcode_EQ_S" value="${filter_and_pdfcode_EQ_S}"/>
+            </td>
+          </tr>
+          <tr>
+          	<td><label>报告匹配开始日期：</label> 
+          		<input type="text" name="filter_and_createdate_GEST_T" id="d1" style="width: 170px;"
+						onFocus="WdatePicker({minDate:'2010-01-01',maxDate:'#F{$dp.$D(\'d2\')}'})"
+						readonly="readonly" value="${filter_and_createdate_GEST_T}" />
+				<a class="inputDateButton" href="javascript:;">选择</a>
+			</td>
+			<td><label>报告匹配结束日期：</label> 
+				<input type="text"
+						name="filter_and_createdate_LEET_T" id="d2" style="width: 170px;"
+						onFocus="WdatePicker({minDate:'#F{$dp.$D(\'d1\')}'})"
+						readonly="readonly" value="${filter_and_createdate_LEET_T}" />
+				<a class="inputDateButton" href="javascript:;">选择</a>
+			</td>
+			<td>
+            	<label>报告套餐：</label> 
+				<input type="text" name="filter_and_pdfCombo_LIKE_S" value="${filter_and_pdfCombo_LIKE_S}"/>
+            </td>
+            <td><div class="buttonActive">
+                <div class="buttonContent">
+                  <button type="submit">查询</button>
+                </div>
+              </div></td>
+          </tr>
+        </table>
+      </div>
+    </form>
+</div>
+<div class="pageContent">
+  <div class="panelBar"> 
+    <!-- <ul class="toolBar">
+			<a href="javascript:void(0)" onclick="downloadAllExcel('')">下载</a>
+		</ul> --> 
+    <!--<ul class="toolBar">
+			<web:exportExcelTag
+					pagerFormId="pdfContentForm"
+					pagerMethodName="contentsfindByPage"
+					actionAllUrl="org.hpin.reportdetail.web.ErpReportFileTaskAction"
+					informationTableId="exportExcelTable"
+					fileName="detailContent"></web:exportExcelTag>
+		</ul>-->
+    <jsp:include page="/common/pagination.jsp" />
+  </div>
+  <table class="list" width="100%" id="exportExcelTable" layoutH="170">
+    <thead>
+      <tr>
+        <th width="40">序号</th>
+        <th>报告批次</th>
+        <th>报告姓名</th>
+        <th>报告性别</th>
+        <th>报告条码</th>
+        <th>报告套餐</th>
+        <th>报告匹配时间</th>
+        <th>操作</th>
+        <th>系统姓名</th>
+        <th>系统性别</th>
+        <th>系统条码</th>
+        <th>系统套餐</th>
+        <th>系统创建时间</th>
+        <th>操作</th>
+      </tr>
+    </thead>
+    <tbody>
+      <c:forEach items="${page.results}" var="bean" varStatus="status">
+        <tr beanid="${bean.id}">
+          <td align="center">${status.count}</td>
+          <td align="center">${bean.pdfBthNo}</td>
+          <td align="center">${bean.pdfusername}</td>
+          <td align="center">${bean.pdfusersex}</td>
+          <td align="center">${bean.pdfcode}</td>
+          <td align="center">${bean.pdfCombo}</td>
+          <td align="center">${fn:substring(bean.createdate,0,19)}</td>
+          <td align="center"><a target="_blank" href="${fn:replace(bean.pdffilepath,'/home/ftp/transact','http://img.healthlink.cn:8099/ymReport')}">查看</a></td>
+          <td style="color:#FF0000" align="center">${bean.cususername}</td>
+          <td style="color:#FF0000" align="center">${bean.cususersex}</td>
+          <td style="color:#FF0000" align="center">${bean.cuscode}</td>
+          <td style="color:#FF0000" align="center">${bean.cusCombo}</td>
+          <td align="center">${fn:substring(bean.cusCreateDate,0,19)}</td>
+          <td style="color:#FF0000" align="center">
+            <!--<a href="${path}/report/unMatch!queryModifyInfo.action?id=${bean.id}" target="dialog" width="800" height="600">更改</a>-->
+            <a href="javascript:void(0)" onclick="cancelPrint(this,'${bean.pdfid}','${bean.pdfBthNo }', '${bean.id}')"><span style="color:#00688B">取消打印</span></a>
+            <%-- <a href="javascript:void(0)" onclick="syncPdfContent2Cus('${bean.id}','${bean.cusid}','${bean.pdfid}')"><span style="color:#000">同步会员信息</span></a> --%>
+            <%-- <a href="javascript:void(0)" onclick="pdfError('${bean.id}')"><span style="color:#F00">PDF报告错误</span></a> --%>
+            <a href="javascript:void(0)" onclick="showSynchronizeInfo('${bean.id}','${bean.cusid}','${bean.pdfid}')"><span style="color:#00F">同步PDF信息</span></a>
+          </td>
+        </tr>
+      </c:forEach>
+    </tbody>
+  </table>
+
+</div>

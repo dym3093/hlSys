@@ -1,0 +1,204 @@
+package org.hpin.warehouse.service;
+
+import java.util.*;
+
+import org.apache.commons.lang.StringUtils;
+import org.hpin.base.usermanager.entity.User;
+import org.hpin.common.core.orm.BaseService;
+import org.hpin.common.util.DateUtils;
+import org.hpin.common.widget.pagination.Page;
+import org.hpin.warehouse.dao.ErpStoregeInDao;
+import org.hpin.warehouse.entity.ErpStoregeIn;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.BeanPropertyRowMapper;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+/**
+ * 
+ * @description: 入库service
+ * create by henry.xu 2016年10月9日
+ */
+@Service
+@Transactional
+public class ErpStoregeInService extends BaseService {
+	
+	@Autowired
+	private ErpStoregeInDao erpStoregeInDao;
+	
+	/**
+	 * 修改数据;
+	 * @param storegeIn
+	 * @param userInfo
+	 */
+	public void updateStroregeIn(ErpStoregeIn storegeIn, User userInfo) {
+		ErpStoregeIn old = this.findStoregeInById(storegeIn.getId()) ;
+		
+		old.setAmount(storegeIn.getAmount());
+		old.setCardEnd(storegeIn.getCardEnd());
+		old.setCardNum(storegeIn.getCardNum());
+		old.setCardStart(storegeIn.getCardStart());
+		old.setDescribe(storegeIn.getDescribe());
+		old.setPrice(storegeIn.getPrice());
+		old.setProductId(storegeIn.getProductId());
+		old.setProductType(storegeIn.getProductType());
+		old.setQuantity(storegeIn.getQuantity());
+		old.setStandard(storegeIn.getStandard());
+		old.setUpdateTime(new Date());
+		old.setUpdateUserId(userInfo.getId());
+		old.setUseableQuantity(storegeIn.getQuantity());
+		old.setUserCardNum(storegeIn.getUserCardNum());
+		
+		this.erpStoregeInDao.updateStroregeIn(old);
+	}
+
+	
+	/**
+	 * 根据Id查询入库对象
+	 * @param id
+	 * @return
+	 */
+	public ErpStoregeIn findStoregeInById(String id) {
+		return this.erpStoregeInDao.findStoregeInById(id);
+	}
+
+
+	/**
+	 * 保存入库数据;
+	 * 	    可用数量：Number型（规则：保存入库信息时，获取当前记录的入库数量字段的值进行初始化）
+	 *   真正可用开始卡号：获取当前填写的卡开始字段的值
+	 * @param erpStoregeIn
+	 * @param userInfo
+	 */
+	public void saveStroregeIn(ErpStoregeIn erpStoregeIn, User userInfo) {
+		// add by Damian 2016-02-07 start
+		String serialNo = DateUtils.DateToStr(Calendar.getInstance().getTime(), "yyyyMMddHHmmss");
+		//新增状态的默认值
+		erpStoregeIn.setSerialNo(serialNo);//序列号
+		erpStoregeIn.setSettleStatus(0);//默认未结算
+		// add by Damian 2016-02-07 end
+		erpStoregeIn.setCreateUserId(userInfo.getId());
+		erpStoregeIn.setCreateTime(new Date());
+		erpStoregeIn.setUseableQuantity(erpStoregeIn.getQuantity()); //获取当前记录的入库数量字段的值进行初始化
+		erpStoregeIn.setIsDeleted(0);
+		erpStoregeIn.setStoregeStatus(1); //入库状态: 1正常入库, 0退货入库; create by Henry.xu 20170317
+		
+		if(StringUtils.isNotEmpty(erpStoregeIn.getCardStart())) {
+			erpStoregeIn.setUserCardNum(erpStoregeIn.getCardStart()); //获取当前填写的卡开始字段的值
+		}
+		
+		erpStoregeInDao.save(erpStoregeIn);
+	}
+
+	/**
+	 * 根据条件分页查询;
+	 * @param params [storegeName: 仓库名称, productName: 产品名称]
+	 */
+	@SuppressWarnings("rawtypes")
+	public void findStoregeInsByPage(Page page, User userInfo,
+			HashMap<String, String> params) {
+		List<Object> objs = new ArrayList<Object>();
+		StringBuilder jdbcSql = this.erpStoregeInDao.dealJdbcSqlByParams(params);
+		
+		//count;
+		long count = this.erpStoregeInDao.findJdbcCount(jdbcSql, objs);
+		page.setTotalCount(count);
+		
+		//list;
+		objs.add(page.getPageNumEndCount());
+		objs.add(page.getPageNumStartCount());
+		BeanPropertyRowMapper<ErpStoregeIn> rowMapper = new BeanPropertyRowMapper<ErpStoregeIn>(ErpStoregeIn.class);
+		List<?> list = this.erpStoregeInDao.findJdbcList(jdbcSql, objs, rowMapper);
+		page.setResults(list);
+	}
+	
+	/**
+	 * 根据条件查询所有数据;
+	 * @param page
+	 * @param params [storegeName: 仓库名称, productName: 产品名称]
+	 */
+	@SuppressWarnings("rawtypes")
+	public void findStoregeInsAll(Page page, HashMap<String, String> params) {
+		//sql语句
+		StringBuilder jdbcSql = this.erpStoregeInDao.dealJdbcSqlByParams(params);
+		//集合
+		BeanPropertyRowMapper<ErpStoregeIn> rowMapper = new BeanPropertyRowMapper<ErpStoregeIn>(ErpStoregeIn.class);
+		//List<?> list = this.erpStoregeInDao.getJdbcTemplate().query(jdbcSql.toString(), rowMapper);
+		
+		//add by leslieTong. 导出excel 显示状态为汉字
+		List<ErpStoregeIn> list = this.erpStoregeInDao.getJdbcTemplate().query(jdbcSql.toString(), rowMapper);
+		for (ErpStoregeIn erpStoregeIn : list) {
+			Integer status = erpStoregeIn.getSettleStatus();
+			String statusStr = "";
+			if(status!=null){
+				if(status==0){
+					statusStr = "未结算";
+				}else if(status==1){
+					statusStr = "已结算";
+				}else{
+					statusStr = "未知状态";
+				}
+			}else{
+				statusStr = "未知状态";
+			}
+			erpStoregeIn.setStatusName(statusStr);
+		}
+		page.setResults(list);
+	}
+
+	/**
+	 * 根据仓库Id和产品名称查询该仓库中入库记录
+	 * @param page
+	 * @param params [id:仓库Id, productName:产品名称]
+	 */
+	@SuppressWarnings("rawtypes")
+	public void findStoregeInByParams(Page page, HashMap<String, String> params) {
+		StringBuilder jdbcSql = this.erpStoregeInDao.dealJdbcSql();
+		
+		String id= params.get("id");
+		String productName = params.get("productName");
+		
+		jdbcSql.append(" and stoIn.Storege_Id ='").append(id).append("' ");
+		
+		if(StringUtils.isNotEmpty(productName)) {
+			jdbcSql.append(" and pro.product_name like '%").append(productName.trim()).append("%' ");
+		}
+		
+		//参数
+		List<Object> objs = new ArrayList<Object>();
+		
+		//count
+		long count = this.erpStoregeInDao.findJdbcCount(jdbcSql, objs);
+		page.setTotalCount(count);
+		
+		//list
+		objs.add(page.getPageNumEndCount());
+		objs.add(page.getPageNumStartCount());
+		
+		BeanPropertyRowMapper<ErpStoregeIn> rowMapper = new BeanPropertyRowMapper<ErpStoregeIn>(ErpStoregeIn.class);
+		List<?> lists = this.erpStoregeInDao.findJdbcList(jdbcSql, objs, rowMapper);
+		
+		page.setResults(lists);
+		
+	}
+
+
+	/**
+	 * 结帐的更新
+	 * @param storegeIn
+	 * @param userInfo
+	 * @author Damian
+	 * @since 2017-02-07
+	 */
+	public void checkOut(ErpStoregeIn storegeIn, User userInfo) {
+		ErpStoregeIn old = this.findStoregeInById(storegeIn.getId()) ;
+
+		old.setSerialNoOA(storegeIn.getSerialNoOA());
+		old.setSettleStatus(storegeIn.getSettleStatus());
+		old.setUpdateTime(Calendar.getInstance().getTime());
+		old.setUpdateUserId(userInfo.getId());
+
+		this.erpStoregeInDao.updateStroregeIn(old);
+	}
+
+}

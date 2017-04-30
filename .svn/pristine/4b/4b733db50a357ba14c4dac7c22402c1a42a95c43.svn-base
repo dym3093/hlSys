@@ -1,0 +1,223 @@
+	<div class="pageFormContent" style=" padding:0"   layoutH="35">
+	<div>
+<div style="float:left">
+<table   class="pageFormContent" width="600" height="200" border="1" bordercolor="#CCCCCC" style="overflow:hidden" >
+
+  <tr height="10px">
+  <th bgcolor="#CCCCCC" style="border:1;" width="500">打分人姓名</th>
+    <td width="500">张磊</td>
+  </tr>
+  <tr>
+    <th bgcolor="#CCCCCC" style="border:1">被质检人</th>
+    <td>102</td>
+  </tr>
+  <tr>
+    <th bgcolor="#CCCCCC" style="border:1">工单编号</th>
+    <td>12400024845858</td>
+  </tr>
+  <tr>
+    <th bgcolor="#CCCCCC" style="border:1">机构名称</th>
+    <td>太保北分</td>
+  </tr>
+  <tr>
+    <th bgcolor="#CCCCCC" style="border:1">产品名称</th>
+    <td>医疗救援卡</td>
+  </tr>
+  <tr>
+    <th bgcolor="#CCCCCC" style="border:1">电话类型</th>
+    <td>服务咨询</td>
+  </tr>
+</table>
+</div>
+
+<div style=" float:left; clear:right"><img src="xinxichuli/tietu/luyin.jpg"  width="530"  height="80"/>
+</div>
+
+<br/>
+<div style=" width:520px; float:left">
+<table   class="pageFormContent" height="120px" width="530px" border="1" bordercolor="#CCCCCC" >
+
+  <tr>
+  <td width="130">00:02:60</td>
+    <td width="130"></td>
+      <td width="130"></td>
+        <td></td>
+  </tr>
+  <tr>
+    <td>00:32:60</td>
+       <td width="25%"></td>
+      <td width="25%"></td>
+        <td width="25%"></td>
+  </tr>
+  <tr>
+    <td>16:24:54</td>
+        <td width="25%"></td>
+      <td width="25%"></td>
+        <td width="25%"></td>
+  </tr>
+
+</table>
+
+
+</div></div>
+<div style="float:left;">
+<div style=" float:left; width:180px; height:163px; padding-top:100px;margin-left:7px;padding-right:7px; background-color:#CCCCCC;text-align:center">
+
+
+<h2>服务态度(22分)</h2>
+
+</div>
+<div style=" float:left; width:200px;height:263px;">
+<table  height="263px" width:"200px" class="pageFormContent" border="1" bordercolor="#CCCCCC" style="overflow:hidden">
+
+  <tr>
+  <td width="120px">开头语与结束语2分</td>
+    <td width="40px">2分</td>
+  </tr>
+  <tr>
+    <td>语气3分</td>
+    <td>2分</td>
+  </tr>
+  <tr>
+    <td>语调3分</td>
+    <td>2分</td>
+  </tr>
+  <tr>
+    <td>语速3分</td>
+    <td>3分</td>
+  </tr>
+  <tr>
+    <td>标准话术5分</td>
+    <td>4分</td>
+  </tr>
+  <tr>
+    <td>敬语3分</td>
+    <td>3分</td>
+  </tr>
+    <tr>
+    <td>禁用语3分</td>
+    <td>2分</td>
+  </tr>
+      <tr>
+    <td>总分</td>
+    <td>18分</td>
+  </tr>
+</table>
+
+</div>
+<div style=" float:left; width:180px; height:163px; padding-top:100px;padding-right:7px; background-color:#CCCCCC;text-align:center">
+
+
+<h2>需求受理(53分)</h2>
+
+</div>
+<div style=" float:left; width:200px;height:263px;">
+<table   height="263px" width:"200px"  class="pageFormContent" border="1" bordercolor="#CCCCCC" >
+
+  <tr height="40">
+  <td width="120px">需求挖掘8分</td>
+    <td  width="40px">6</td>
+  </tr>
+  <tr height="42">
+    <td>需求判断10分</td>
+    <td>7</td>
+  </tr>
+  <tr height="42">
+    <td>业务掌握15分</td>
+    <td>10</td>
+  </tr>
+  <tr height="42">
+    <td>需求解决10分</td>
+    <td>7</td>
+  </tr>
+  <tr height="42">
+    <td>解答针对10分</td>
+    <td>6</td>
+  </tr>
+  <tr height="40">
+    <td>总分</td>
+    <td>36分</td>
+  </tr>
+   
+</table>
+
+</div>
+<div style=" float:left; width:180px; height:163px; padding-top:100px;padding-right:7px; background-color:#CCCCCC;text-align:center">
+
+<h2>服务技巧(25分)</h2>
+
+
+</div>
+<div style=" float:left;height:263px;">
+<table   height="263px"  class="pageFormContent" border="1" bordercolor="#CCCCCC" >
+
+  <tr height="45">
+  <td width="110px">随机应变10分</td>
+    <td width="20px">8</td>
+  </tr>
+  <tr height="45">
+    <td>个性化优质服务5分</td>
+    <td>4</td>
+  </tr>
+  <tr height="45">
+    <td>首问责任5分</td>
+    <td>5</td>
+  </tr>
+  <tr height="45">
+    <td>解决方案5分</td>
+    <td>4</td>
+  </tr>
+
+  <tr height="45">
+    <td>总分</td>
+    <td>17分</td>
+  </tr>
+   
+</table>
+
+</div>
+
+
+</div>
+<div style="clear:both;">
+<div style=" float:left;width:250px">
+<table   class="pageFormContent" border="1" bordercolor="#CCCCCC" >
+
+  <tr>
+  <th bgcolor="#CCCCCC" style="border:1;">录音总得分</th>
+    <td width="50%">71</td>
+  </tr>
+  <tr>
+    <th bgcolor="#CCCCCC" style="border:1">录音优缺点</th>
+    <td>基本解决客户问题</td>
+  </tr>
+
+
+</table>
+</div><div style="float:left;width:880px">
+<table   class="pageFormContent" width="880px" border="1" bordercolor="#CCCCCC" >
+
+  <tr>
+  <th bgcolor="#CCCCCC" style="border:1;width:200px">分享标识</th>
+    <td width="660px"></td>
+  </tr>
+   <tr>
+    <th bgcolor="#CCCCCC" style="border:1;">改进意见</th>
+    <td>应该为客户为太保工作人员介绍两种卡的区别和服务</td>
+  </tr> 
+
+</table>
+</div>
+</div>
+
+</div>
+<div class="formBar">
+			<ul>
+				<!--<li><a class="buttonActive" href="javascript:;"><span>保存</span></a></li>-->
+				<li><div class="buttonActive"><div class="buttonContent"><button >保存</button></div></div></li>
+				<li>
+					<div class="button"><div class="buttonContent"><button type="button">重置</button></div></div>
+				</li>
+
+			</ul>	
+		</div>

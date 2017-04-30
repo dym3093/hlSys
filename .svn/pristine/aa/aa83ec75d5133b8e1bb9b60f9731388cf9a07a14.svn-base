@@ -1,0 +1,752 @@
+package org.hpin.events.web;
+
+import java.math.BigDecimal;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
+import javax.servlet.http.HttpServletRequest;
+
+import net.sf.json.JSONObject;
+
+import org.apache.commons.lang.StringUtils;
+import org.apache.log4j.Logger;
+import org.apache.struts2.ServletActionContext;
+import org.apache.struts2.convention.annotation.Action;
+import org.apache.struts2.convention.annotation.Namespace;
+import org.apache.struts2.convention.annotation.Result;
+import org.apache.struts2.convention.annotation.Results;
+import org.hpin.base.customerrelationship.entity.CustomerRelationShip;
+import org.hpin.base.usermanager.entity.User;
+import org.hpin.common.core.SpringTool;
+import org.hpin.common.core.web.BaseAction;
+import org.hpin.common.util.HttpTool;
+import org.hpin.common.widget.pagination.Page;
+import org.hpin.events.entity.ErpCustomer;
+import org.hpin.events.entity.ErpEvents;
+import org.hpin.events.entity.SampleExpCustomer;
+import org.hpin.events.entity.SampleExpressMgr;
+import org.hpin.events.entity.vo.SampleExpCustomerVo;
+import org.hpin.events.entity.vo.SampleExpressMgrExportVo;
+import org.hpin.events.entity.vo.SampleExpressMgrVo;
+import org.hpin.events.service.ErpCustomerService;
+import org.hpin.events.service.ErpEventsService;
+import org.hpin.events.service.SampleDeliManagerService;
+import org.hpin.events.service.SampleExpressMgrService;
+import org.hpin.warehouse.entity.ErpPreCustomer;
+import org.hpin.warehouse.service.ErpHKPrepCustomerService;
+import org.hpin.webservice.websExt.impl.GeneServiceImplPA;
+import org.hpin.webservice.websExt.impl.GeneServiceImplPAServiceLocator;
+import org.springframework.beans.factory.annotation.Value;
+
+@Namespace("/events")
+@Action("sampleExpressMgr")
+@Results({
+	@Result(name="listSampleExpressMgr",location="/WEB-INF/events/sampleExpress/listSampleExpressMgr.jsp"),
+	@Result(name="addSampleExpressMgr",location="/WEB-INF/events/sampleExpress/addSampleExpressMgr.jsp"),
+	@Result(name="toAddByEvents",location="/WEB-INF/events/sampleExpress/toAddByEvents.jsp"),
+	@Result(name="toAddByCustomer",location="/WEB-INF/events/sampleExpress/toAddByCustomer.jsp"),
+	@Result(name="showSampleExpressMgr",location="/WEB-INF/events/sampleExpress/showSampleExpressMgr.jsp")
+})
+public class SampleExpressMgrAction extends BaseAction{
+	
+	private static final long serialVersionUID = 1L;
+	
+	private static final Logger log = Logger.getLogger(SampleExpressMgrAction.class);
+
+	@Value("${report.upload.pa.address}")
+	private String paAddress ;//测试环境
+	
+	SampleExpressMgrService sampleExpressMgrService = (SampleExpressMgrService) SpringTool.getBean(SampleExpressMgrService.class);
+	SampleDeliManagerService sampleDleiManagerService = (SampleDeliManagerService) SpringTool.getBean(SampleDeliManagerService.class);
+	ErpEventsService eventsService = (ErpEventsService) SpringTool.getBean(ErpEventsService.class);
+	ErpCustomerService customerService = (ErpCustomerService) SpringTool.getBean(ErpCustomerService.class);
+	ErpHKPrepCustomerService HKCustomerService = (ErpHKPrepCustomerService) SpringTool.getBean(ErpHKPrepCustomerService.class);
+	
+	@SuppressWarnings("rawtypes")
+	public String sampleExpressMgr(){
+		//获取快递公司信息
+		findErpExprossComnpanys();
+		Calendar cal   = Calendar.getInstance();
+		cal.add(Calendar.DATE,-7);
+		String yesterday = new SimpleDateFormat( "yyyy-MM-dd ").format(cal.getTime());
+		String today = new SimpleDateFormat( "yyyy-MM-dd ").format(new Date());
+		Map<String,String> paramsMap = new HashMap<String,String>();
+		try{
+			page = new Page(HttpTool.getPageNum(),HttpTool.getPageSize());
+			paramsMap.put("createDate_gest",yesterday);
+			paramsMap.put("createDate_leet",today);
+			sampleExpressMgrService.findSampleExpMgrList(page,paramsMap);
+			this.dealAvg(page);
+		}catch(Exception e){
+			log.error("SampleExpressMgrAction sampleExpressMgr", e);
+		}
+		return "listSampleExpressMgr";
+	}
+	
+	@SuppressWarnings("rawtypes")
+	public String listSampleExpressMgr() {
+		//获取快递公司信息
+		findErpExprossComnpanys();
+		try{
+			page = new Page(HttpTool.getPageNum(),HttpTool.getPageSize());
+			
+			Map<String,String> paramsMap = this.getParams2Map(ServletActionContext.getRequest());
+			sampleExpressMgrService.findSampleExpMgrList(page,paramsMap);
+			this.dealAvg(page);
+		}catch(Exception e){
+			log.error("SampleExpressMgrAction listSampleExpressMgr", e);
+		}
+		return "listSampleExpressMgr";
+	}
+
+	/**
+	 * 跳转明细页面
+	 */
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	public String showSampleExpressMgr() {
+		try{
+			String sampleExpMgrId = HttpTool.getParameter("sampleExpMgrId");
+			page = new Page(HttpTool.getPageNum(), HttpTool.getPageSize());
+			SampleExpressMgr samExpMgr = sampleExpressMgrService.getSamExpMgrById(sampleExpMgrId);
+			sampleExpressMgrService.getSamExpCusByExpId(page, sampleExpMgrId);
+			page.setResults(this.expCus2SampleExpVO(page.getResults()));
+			HttpTool.setAttribute("sampleExpMgrId", sampleExpMgrId);
+			HttpTool.setAttribute("expressNum", samExpMgr.getExpressNum());
+			HttpTool.setAttribute("expressCompanyId", samExpMgr.getExpressCompanyId());
+			HttpTool.setAttribute("weight", samExpMgr.getWeight());
+			HttpTool.setAttribute("totalCost", samExpMgr.getTotalCost());
+			HttpTool.setAttribute("receiveSendDate", samExpMgr.getReceiveSendDate());
+			HttpTool.setAttribute("isbill", samExpMgr.getIsbill());
+			HttpTool.setAttribute("receiveSendType", samExpMgr.getReceiveSendType());
+			HttpTool.setAttribute("expressContent", samExpMgr.getExpressContent());
+			HttpTool.setAttribute("pageType","showSampleExpressMgr");
+			this.findErpExprossComnpanys();
+		}catch(Exception e){
+			log.error("SampleExpressMgrAction showSampleExpressMgr", e);
+		}
+		return "showSampleExpressMgr";
+	
+	}
+	
+	/**
+	 * 跳转添加页面
+	 */
+	public String addSampleExpressMgr() {
+		String navTabId = HttpTool.getParameter("navTabId", "");
+		findErpExprossComnpanys();
+		String sampleExpMgrId = UUID.randomUUID().toString().replace("-", "");
+		HttpTool.setAttribute("sampleExpMgrId", sampleExpMgrId);
+		HttpTool.setAttribute("rootNavTabId", navTabId);
+		HttpTool.setAttribute("pageType","addSampleExpressMgr");
+		return "addSampleExpressMgr";
+	}
+	
+	/**
+	 * 列出会员信息
+	 */
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	public String listCustomers(){
+		Map searchMap = super.buildSearch();
+		searchMap.put("filter_and_isDeleted_EQ_I", 0);
+		searchMap.put("order_createTime", "desc");
+		try{
+			page = new Page(HttpTool.getPageNum(),HttpTool.getPageSize());
+			customerService.findByPage(page, searchMap);
+			page.setResults(this.cus2SampleExpVO(page.getResults()));
+			this.dealRequestParams();
+		}catch(Exception e){
+			log.error("SampleExpressMgrAction listCustomers", e);
+		}
+		return "toAddByCustomer";
+	}
+	
+	/**
+	 * 列出场次信息
+	 */
+	@SuppressWarnings("rawtypes")
+	public String listEvents(){
+		try{
+			page = new Page(HttpTool.getPageNum(),HttpTool.getPageSize());
+			Map<String,String> requestParams = this.getListEveParams2Map(ServletActionContext.getRequest());
+			sampleExpressMgrService.findEveList(page,requestParams);
+			this.dealRequestParams();
+		}catch(Exception e){
+			log.error("SampleExpressMgrAction listEvents", e);
+		}
+		return "toAddByEvents";
+	}
+	
+	/**
+	 * 按批次添加
+	 */
+	public String toAddByEvents(){
+		this.dealRequestParams();
+		return "toAddByEvents";
+	}
+	
+	/**
+	 * 按会员添加
+	 */
+	public String toAddByCustomer(){
+		this.dealRequestParams();
+		return "toAddByCustomer";
+	}
+	
+	/**
+	 * 添加样本快递费-保存
+	 */
+	public String saveSampleExpressMgr(){
+		JSONObject json = new JSONObject();
+		String rootNavTabId = HttpTool.getParameter("rootNavTabId");
+		Boolean isAccept = false;
+		try{
+			User currentUser = (User)HttpTool.getSession().getAttribute("currentUser");
+			//String navTabId = HttpTool.getParameter("navTabId");
+			String sampleExpMgrId = HttpTool.getParameter("sampleExpMgrId");
+			//查询此样本快递ID下是否添加了客户信息
+			List<SampleExpCustomer> samExpCusList = sampleExpressMgrService.getSamExpCusByExpId(sampleExpMgrId);
+			if(samExpCusList.isEmpty()){
+				json.accumulate("statusCode", 300);
+				json.accumulate("message", "请添加客户后再保存！");
+				json.accumulate("navTabId",rootNavTabId);
+				return null;
+			}
+			String expressNum = HttpTool.getParameter("expressNum");
+			String expressCompanyId = HttpTool.getParameter("expressCompanyId");
+			String weight = HttpTool.getParameter("weight");
+			String totalCost = HttpTool.getParameter("totalCost");
+			String receiveSendDate = HttpTool.getParameter("receiveSendDate");
+			String isbill = HttpTool.getParameter("isbill");
+			String receiveSendType = HttpTool.getParameter("receiveSendType");
+			String expressContent = HttpTool.getParameter("expressContent");
+			SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+			Date rsDate = sdf.parse(receiveSendDate); 
+			SampleExpressMgr sem = new SampleExpressMgr();
+			sem.setId(sampleExpMgrId);
+			sem.setExpressNum(expressNum);
+			sem.setExpressCompanyId(expressCompanyId);
+			sem.setReceiveSendType(Integer.valueOf(receiveSendType));
+			sem.setReceiveSendDate(rsDate);
+			sem.setExpressContent(Integer.valueOf(expressContent));
+			sem.setIsbill(Integer.valueOf(isbill));
+			sem.setTotalCost(BigDecimal.valueOf(new Double(totalCost)));
+			sem.setWeight(weight);
+			sem.setCreateUserId(currentUser.getId());
+			sem.setCreateUserName(currentUser.getUserName());
+			sem.setIsdeleted(0);
+			sem.setCreateDate(new Date());
+			
+			
+			sampleExpressMgrService.save(sem);
+			sampleExpressMgrService.updateYmStatus(sampleExpMgrId);
+			/*
+			 * @since 2017年2月17日12:22:41
+			 * @author chenqi
+			 * 添加平安客户且为寄送的推送确认送检
+			 */
+			for(SampleExpCustomer customer : samExpCusList){
+				log.info("准备推送平安客户---");
+				if(null!=customer.getEventsBatchno()){
+					log.info("批次号---"+customer.getEventsBatchno());
+					if(customer.getEventsBatchno().toUpperCase().startsWith("PA") && "2".equals(receiveSendType)){
+						log.info("开始推送平安客户---");
+						List<ErpPreCustomer> preCustomerList = HKCustomerService.getPreCustomerByCustomerId(customer.getCustomerId());
+						if(preCustomerList.size()!=0){
+							ErpPreCustomer preCustomer = preCustomerList.get(0);
+							log.info("平安的客户条码:"+preCustomer.getCode());
+							log.info("平安的履约号:"+preCustomer.getPerformNo());
+							isAccept = isAccept(preCustomer.getPerformNo());
+							if (!isAccept) {
+								json.accumulate("statusCode", 300);
+								json.accumulate("message", "确认受检有误!");
+								json.accumulate("navTabId",rootNavTabId);
+								return null;
+							}
+							log.info("平安的客户:"+preCustomer.getCode()+"推送结束---");
+						}
+					}
+				}
+			}
+			json.accumulate("statusCode", 200);
+			json.accumulate("message", "保存成功");
+			json.accumulate("navTabId",rootNavTabId);
+			json.accumulate("callbackType", "closeCurrent");
+		}catch(Exception e){
+			json.accumulate("statusCode", 300);
+			log.error("SampleExpressMgrAction saveSampleExpressMgr", e);
+		}finally{
+			renderJson(json);
+		}
+		return null;
+	}
+	
+	/**
+	 * @return 调用接口,确认受检
+	 */
+	private Boolean isAccept(String performNo) throws Exception{
+		GeneServiceImplPAServiceLocator push = new GeneServiceImplPAServiceLocator();
+		push.setGeneServiceImplPAPortEndpointAddress(paAddress);
+		GeneServiceImplPA paService = push.getGeneServiceImplPAPort();
+		String info = paService.boxReceived(performNo);
+		log.info("确认受检返回的消息--"+info);
+		org.json.JSONObject object = new org.json.JSONObject(info);
+		return object.getBoolean("success");
+		
+	}
+	
+	/**
+	 * 添加样本快递费-修改
+	 */
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	public String editSampleExpressMgr(){
+		try{
+			String sampleExpMgrId = HttpTool.getParameter("sampleExpMgrId");
+			SampleExpressMgr samExpMgr = sampleExpressMgrService.getSamExpMgrById(sampleExpMgrId);
+			if(samExpMgr!=null){
+				page = new Page(HttpTool.getPageNum(), HttpTool.getPageSize());
+				if(StringUtils.isNotEmpty(sampleExpMgrId)){
+					sampleExpressMgrService.getSamExpCusByExpId(page, sampleExpMgrId);
+					page.setResults(this.expCus2SampleExpVO(page.getResults()));
+				}
+				HttpTool.setAttribute("sampleExpMgrId", sampleExpMgrId);
+				HttpTool.setAttribute("expressNum", samExpMgr.getExpressNum());
+				HttpTool.setAttribute("expressCompanyId", samExpMgr.getExpressCompanyId());
+				HttpTool.setAttribute("weight", samExpMgr.getWeight());
+				HttpTool.setAttribute("totalCost", samExpMgr.getTotalCost());
+				HttpTool.setAttribute("receiveSendDate", samExpMgr.getReceiveSendDate());
+				HttpTool.setAttribute("isbill", samExpMgr.getIsbill());
+				HttpTool.setAttribute("receiveSendType", samExpMgr.getReceiveSendType());
+				HttpTool.setAttribute("expressContent", samExpMgr.getExpressContent());
+			}
+			HttpTool.setAttribute("parentNavTabId", super.navTabId);
+			HttpTool.setAttribute("rootNavTabId", HttpTool.getParameter("rootNavTabId",""));
+			HttpTool.setAttribute("pageType","addSampleExpressMgr");
+			this.findErpExprossComnpanys();
+		}catch(Exception e){
+			log.error("SampleExpressMgrAction editSampleExpressMgr", e);
+		}
+		return "addSampleExpressMgr";
+	}
+	
+	/**
+	 * 按会员保存
+	 */
+	public String saveByCustomer() {
+		JSONObject json = new JSONObject();
+		List<SampleExpCustomer> list = new ArrayList<SampleExpCustomer>();
+		try{
+			String navTabId = HttpTool.getParameter("navTabId");
+			String sampleExpMgrId = HttpTool.getParameter("sampleExpMgrId");
+			String expressNum = HttpTool.getParameter("expressNum");
+			String expressCompanyId = HttpTool.getParameter("expressCompanyId");
+			String weight = HttpTool.getParameter("weight");
+			String totalCost = HttpTool.getParameter("totalCost");
+			String receiveSendDate = HttpTool.getParameter("receiveSendDate");
+			String isbill = HttpTool.getParameter("isbill");
+			String receiveSendType = HttpTool.getParameter("receiveSendType");
+			String expressContent = HttpTool.getParameter("expressContent");
+			String rootNavTabId = HttpTool.getParameter("rootNavTabId");
+			String ids = HttpTool.getParameter("ids");
+			String customerIds[] = ids.split(",");
+			if(customerIds.length>0){
+				for(int i=0 ; i<customerIds.length ; i++){
+					SampleExpCustomer expCustomer = new SampleExpCustomer();
+					ErpCustomer customer = (ErpCustomer) customerService.findById(customerIds[i]);
+					ErpEvents events = eventsService.queryByEventNO(customer.getEventsNo());
+					expCustomer.setSampleExpMgrId(sampleExpMgrId);
+					expCustomer.setCustomerId(customer.getId());
+					expCustomer.setIsdeleted(0);
+					expCustomer.setCreateDate(new Date());
+					expCustomer.setEventsId(events.getId());
+					expCustomer.setEventsBatchno(events.getBatchNo());
+					list.add(expCustomer);
+				}
+			}
+			sampleExpressMgrService.saveSampleExpCustomer(list);//保存
+			HttpServletRequest request = ServletActionContext.getRequest();
+			StringBuffer url = request.getRequestURL();
+			StringBuffer contextUrl = new StringBuffer(url.delete(url.length()-request.getRequestURI().length(), url.length()).append(request.getContextPath()).append("/").toString());
+			StringBuffer subUrl = new StringBuffer("events/sampleExpressMgr!refreshAddSampleExpMgr.action?sampleExpMgrId="+sampleExpMgrId+"&navTabId="+navTabId
+					+"&expressNum="+expressNum+"&expressCompanyId="+expressCompanyId+"&weight="+weight+"&totalCost="+totalCost+"&receiveSendDate="+receiveSendDate
+					+"&isbill="+isbill+"&receiveSendType="+receiveSendType+"&expressContent="+expressContent+"&rootNavTabId="+rootNavTabId+"&pageType=addSampleExpressMgr");
+			String forwardUrl = contextUrl.append(subUrl).toString();
+			HttpTool.setAttribute("navTabId", super.navTabId);
+			HttpTool.setAttribute("pageType","addSampleExpressMgr");
+			json.put("forwardUrl", forwardUrl);
+			json.accumulate("statusCode", 200);
+			json.accumulate("message", "操作成功");
+			json.accumulate("navTabId", super.navTabId);
+		}catch(Exception e){
+			log.error("SampleExpressMgrAction saveByCustomer",e);
+			json.accumulate("statusCode", 300);
+			json.accumulate("message", "操作失败");
+		}finally{
+			renderJson(json);
+		}
+		return null;
+	}
+	
+	/**
+	 * 按场次保存
+	 */
+	public String saveByEvents() {
+		JSONObject json = new JSONObject();
+		List<SampleExpCustomer> list = new ArrayList<SampleExpCustomer>();
+		try{
+			String navTabId = HttpTool.getParameter("navTabId");
+			String rootNavTabId = HttpTool.getParameter("rootNavTabId");
+			String sampleExpMgrId = HttpTool.getParameter("sampleExpMgrId");
+			String expressNum = HttpTool.getParameter("expressNum");
+			String expressCompanyId = HttpTool.getParameter("expressCompanyId");
+			String weight = HttpTool.getParameter("weight");
+			String totalCost = HttpTool.getParameter("totalCost");
+			String receiveSendDate = HttpTool.getParameter("receiveSendDate");
+			String isbill = HttpTool.getParameter("isbill");
+			String receiveSendType = HttpTool.getParameter("receiveSendType");
+			String expressContent = HttpTool.getParameter("expressContent");
+			String ids = HttpTool.getParameter("ids");
+			String eventsIds[] = ids.split(",");
+			if(eventsIds.length>0){
+				for(int i=0 ; i<eventsIds.length ; i++){
+					ErpEvents events = (ErpEvents) eventsService.findById(eventsIds[i]);
+					List<ErpCustomer> customerList = customerService.findCustomerByEventNo(events.getEventsNo());
+					for(ErpCustomer cus : customerList){
+						SampleExpCustomer expCustomer = new SampleExpCustomer();
+						expCustomer.setSampleExpMgrId(sampleExpMgrId);
+						expCustomer.setCustomerId(cus.getId());
+						expCustomer.setIsdeleted(0);
+						expCustomer.setCreateDate(new Date());
+						expCustomer.setEventsId(events.getId());
+						expCustomer.setEventsBatchno(events.getBatchNo());
+						list.add(expCustomer);
+					}
+				}
+			}
+			sampleExpressMgrService.saveSampleExpCustomer(list);//保存
+			HttpServletRequest request = ServletActionContext.getRequest();
+			StringBuffer url = request.getRequestURL();
+			StringBuffer contextUrl = new StringBuffer(url.delete(url.length()-request.getRequestURI().length(), url.length()).append(request.getContextPath()).append("/").toString());
+			StringBuffer subUrl = new StringBuffer("events/sampleExpressMgr!refreshAddSampleExpMgr.action?sampleExpMgrId="+sampleExpMgrId+"&navTabId="+navTabId
+					+"&expressNum="+expressNum+"&expressCompanyId="+expressCompanyId+"&weight="+weight+"&totalCost="+totalCost+"&receiveSendDate="+receiveSendDate
+					+"&isbill="+isbill+"&receiveSendType="+receiveSendType+"&expressContent="+expressContent+"&rootNavTabId="+rootNavTabId+"&pageType=addSampleExpressMgr");
+			String forwardUrl = contextUrl.append(subUrl).toString();
+			HttpTool.setAttribute("navTabId", super.navTabId);
+			HttpTool.setAttribute("pageType","addSampleExpressMgr");
+			json.put("forwardUrl", forwardUrl);
+			json.accumulate("statusCode", 200);
+			json.accumulate("message", "操作成功");
+			json.accumulate("navTabId", super.navTabId);
+		}catch(Exception e){
+			log.error("SampleExpressMgrAction saveByCustomer",e);
+			json.accumulate("statusCode", 300);
+			json.accumulate("message", "操作失败");
+		}finally{
+			renderJson(json);
+		}
+		return null;
+	}
+	
+	/**
+	 * 重定向刷新添加样本费页面
+	 * @throws Exception 
+	 */
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	public String refreshAddSampleExpMgr() {
+		String pageType = HttpTool.getParameter("pageType");
+		HttpTool.setAttribute("pageType",pageType);
+		try{
+			String sampleExpMgrId = HttpTool.getParameter("sampleExpMgrId");
+			page = new Page(HttpTool.getPageNum(), HttpTool.getPageSize());
+			if(StringUtils.isNotEmpty(sampleExpMgrId)){
+				sampleExpressMgrService.getSamExpCusByExpId(page, sampleExpMgrId);
+				page.setResults(this.expCus2SampleExpVO(page.getResults()));
+			}
+			this.dealRequestParams();
+			this.findErpExprossComnpanys();
+		}catch(Exception e){
+			log.error("SampleExpressMgrAction refreshAddSampleExpMgr", e);
+		}
+		return pageType;
+	}
+	
+	/**
+	 * 添加样本快递费-删除客户按钮
+	 */
+	public void delSampleExpCus(){
+		JSONObject json = new JSONObject();
+		String navTabId = HttpTool.getParameter("navTabId");
+		String sampleExpMgrId = HttpTool.getParameter("sampleExpMgrId");
+		String expressNum = HttpTool.getParameter("expressNum");
+		String expressCompanyId = HttpTool.getParameter("expressCompanyId");
+		String weight = HttpTool.getParameter("weight");
+		String totalCost = HttpTool.getParameter("totalCost");
+		String receiveSendDate = HttpTool.getParameter("receiveSendDate");
+		String isbill = HttpTool.getParameter("isbill");
+		String receiveSendType = HttpTool.getParameter("receiveSendType");
+		String expressContent = HttpTool.getParameter("expressContent");
+		String rootNavTabId = HttpTool.getParameter("rootNavTabId");
+		String expCusid = HttpTool.getParameter("expCusid");
+		try{
+			int num = sampleExpressMgrService.delSamExpCus(expCusid);
+			if(0<num){
+				json.accumulate("statusCode", 200);
+			}
+			HttpServletRequest request = ServletActionContext.getRequest();
+			StringBuffer url = request.getRequestURL();
+			StringBuffer contextUrl = new StringBuffer(url.delete(url.length()-request.getRequestURI().length(), url.length()).append(request.getContextPath()).append("/").toString());
+			StringBuffer subUrl = new StringBuffer("events/sampleExpressMgr!refreshAddSampleExpMgr.action?sampleExpMgrId="+sampleExpMgrId+"&navTabId="+navTabId
+					+"&expressNum="+expressNum+"&expressCompanyId="+expressCompanyId+"&weight="+weight+"&totalCost="+totalCost+"&receiveSendDate="+receiveSendDate
+					+"&isbill="+isbill+"&receiveSendType="+receiveSendType+"&expressContent="+expressContent+"&rootNavTabId="+rootNavTabId+"&pageType=addSampleExpressMgr");
+			String forwardUrl = contextUrl.append(subUrl).toString();
+			HttpTool.setAttribute("navTabId", super.navTabId);
+			json.put("forwardUrl", forwardUrl);
+			json.accumulate("message", "操作成功");
+			json.accumulate("navTabId", super.navTabId);
+		}catch(Exception e){
+			log.error("SampleExpressMgrAction delSampleExpCus", e);
+			json.accumulate("statusCode", 300);
+			json.accumulate("message", "操作失败");
+		}finally{
+			renderJson(json);
+		}
+	}
+	
+	/**
+	 * 导出excel
+	 */
+	@SuppressWarnings("rawtypes")
+	public Page exportSampleExpressMgr(Page page,Map paramsMap){
+		try{
+			Map<String,String> paramsp = this.getParams2Map(ServletActionContext.getRequest());
+			sampleExpressMgrService.findSampleExpMgrList(page,paramsp);
+			this.dealExportSamExpMgr(page);
+		}catch(Exception e){
+			log.error("SampleExpressMgrAction exportSampleExpressMgr", e);
+		}
+		return page;
+	}
+	
+	/**
+	 * 查找快递公司数据
+	 */
+	private void findErpExprossComnpanys() {
+		//获取快递公司数据;
+		//List<Map<String, Object>> exprComps = sampleDleiManagerService.findErpExprossComnpanys();
+		List<Map<String, Object>> exprComps = sampleDleiManagerService.findErpExprossComnpanysByDict();
+		HttpTool.setAttribute("exprComps", exprComps);
+	}
+	
+	/**
+	 * 将customer数据PO转VO
+	 */
+	private List<SampleExpCustomerVo> cus2SampleExpVO(List<ErpCustomer> listCustomers){
+		List<SampleExpCustomerVo> listVo = new ArrayList<SampleExpCustomerVo>();
+		for(ErpCustomer customer : listCustomers){
+			SampleExpCustomerVo vo = new SampleExpCustomerVo();
+			ErpEvents eventInfo = eventsService.queryEventNO(customer.getEventsNo());
+			vo.setId(customer.getId());
+			vo.setBatchno(eventInfo.getBatchNo());
+			vo.setEventsNo(customer.getEventsNo());
+			vo.setEventsDate(eventInfo.getEventDate());
+			vo.setCode(customer.getCode());
+			vo.setName(customer.getName());
+			vo.setSex(customer.getSex());
+			vo.setAge(customer.getAge());
+			vo.setSetmealName(customer.getSetmealName());
+			vo.setBranchCompanyId(customer.getBranchCompanyId());
+			vo.setOwnedCompanyId(customer.getOwnedCompanyId());
+			listVo.add(vo);
+		}
+		 return listVo;
+	}
+	
+	/**
+	 * 将ExpCustomer数据转VO
+	 */
+	private List<SampleExpCustomerVo> expCus2SampleExpVO(List<SampleExpCustomer> listeExpCustomers){
+		List<SampleExpCustomerVo> listVo = new ArrayList<SampleExpCustomerVo>();
+		for(SampleExpCustomer expCustomer : listeExpCustomers){
+			SampleExpCustomerVo vo = new SampleExpCustomerVo();
+			ErpCustomer customerInfo = customerService.findCusById(expCustomer.getCustomerId());
+			if(null!=customerInfo){
+				ErpEvents eventInfo = eventsService.queryEventNO(customerInfo.getEventsNo());
+				vo.setId(expCustomer.getId());
+				vo.setCustomerId(customerInfo.getId());
+				vo.setBatchno(eventInfo.getBatchNo());
+				vo.setEventsNo(customerInfo.getEventsNo());
+				vo.setEventsDate(eventInfo.getEventDate());
+				vo.setCode(customerInfo.getCode());
+				vo.setName(customerInfo.getName());
+				vo.setSex(customerInfo.getSex());
+				vo.setAge(customerInfo.getAge());
+				vo.setSetmealName(customerInfo.getSetmealName());
+				vo.setBranchCompanyId(customerInfo.getBranchCompanyId());
+				vo.setOwnedCompanyId(customerInfo.getOwnedCompanyId());
+				listVo.add(vo);
+			}
+		}
+		return listVo;
+	}
+	
+	/**
+	 * 处理请求过程中的参数
+	 * 由于前端框架导致Jquery获取参数值无效，故重新命名。
+	 */
+	private void dealRequestParams(){
+		HttpTool.setAttribute("parentNavTabId", super.navTabId);
+		HttpTool.setAttribute("sampleExpMgrId", HttpTool.getParameter("sampleExpMgrId","").equals("")?HttpTool.getParameter("sampleExpMgrIdCusHidden",""):HttpTool.getParameter("sampleExpMgrId",""));
+		HttpTool.setAttribute("expressNum", HttpTool.getParameter("expressNum","").equals("")?HttpTool.getParameter("expressNumCusHidden",""):HttpTool.getParameter("expressNum",""));
+		HttpTool.setAttribute("expressCompanyId", HttpTool.getParameter("expressCompanyId","").equals("")?HttpTool.getParameter("expressCompanyIdCusHidden",""):HttpTool.getParameter("expressCompanyId",""));
+		HttpTool.setAttribute("weight", HttpTool.getParameter("weight","").equals("")?HttpTool.getParameter("weightCusHidden",""):HttpTool.getParameter("weight",""));
+		HttpTool.setAttribute("totalCost", HttpTool.getParameter("totalCost","").equals("")?HttpTool.getParameter("totalCostCusHidden",""):HttpTool.getParameter("totalCost",""));
+		HttpTool.setAttribute("receiveSendDate", HttpTool.getParameter("receiveSendDate","").equals("")?HttpTool.getParameter("receiveSendDateCusHidden",""):HttpTool.getParameter("receiveSendDate",""));
+		HttpTool.setAttribute("isbill", HttpTool.getParameter("isbill","").equals("")?HttpTool.getParameter("isbillCusHidden",""):HttpTool.getParameter("isbill",""));
+		HttpTool.setAttribute("receiveSendType", HttpTool.getParameter("receiveSendType","").equals("")?HttpTool.getParameter("receiveSendTypeCusHidden",""):HttpTool.getParameter("receiveSendType",""));
+		HttpTool.setAttribute("expressContent", HttpTool.getParameter("expressContent","").equals("")?HttpTool.getParameter("expressContentCusHidden",""):HttpTool.getParameter("expressContent",""));
+		HttpTool.setAttribute("rootNavTabId", HttpTool.getParameter("rootNavTabId",""));
+	}
+	
+	//样本快递费管理页面请求参数组装为Map,同时设值
+	private Map<String,String> getParams2Map(HttpServletRequest request){
+		Map<String,String> paramsMap = new HashMap<String,String>();
+		if(StringUtils.isNotEmpty(request.getParameter("eventsBatchno"))){
+			paramsMap.put("eventsBatchno", request.getParameter("eventsBatchno"));
+			HttpTool.setAttribute("eventsBatchno",request.getParameter("eventsBatchno"));
+		}
+		if(StringUtils.isNotEmpty(request.getParameter("expressNum"))){
+			paramsMap.put("expressNum", request.getParameter("expressNum"));
+			HttpTool.setAttribute("expressNum",request.getParameter("expressNum"));
+		}
+		if(StringUtils.isNotEmpty(request.getParameter("expressCompanyId"))){
+			paramsMap.put("expressCompanyId", request.getParameter("expressCompanyId"));
+			HttpTool.setAttribute("expressCompanyId",request.getParameter("expressCompanyId"));
+		}
+		if(StringUtils.isNotEmpty(request.getParameter("receiveSendType"))){
+			paramsMap.put("receiveSendType", request.getParameter("receiveSendType"));
+			HttpTool.setAttribute("receiveSendType",request.getParameter("receiveSendType"));
+		}
+		if(StringUtils.isNotEmpty(request.getParameter("receiveSendDate_gest"))){
+			paramsMap.put("receiveSendDate_gest", request.getParameter("receiveSendDate_gest"));
+			HttpTool.setAttribute("receiveSendDate_gest",request.getParameter("receiveSendDate_gest"));
+		}
+		if(StringUtils.isNotEmpty(request.getParameter("receiveSendDate_leet"))){
+			paramsMap.put("receiveSendDate_leet", request.getParameter("receiveSendDate_leet"));
+			HttpTool.setAttribute("receiveSendDate_leet",request.getParameter("receiveSendDate_leet"));
+		}
+		if(StringUtils.isNotEmpty(request.getParameter("expressContent"))){
+			paramsMap.put("expressContent", request.getParameter("expressContent"));
+			HttpTool.setAttribute("expressContent",request.getParameter("expressContent"));
+		}
+		if(StringUtils.isNotEmpty(request.getParameter("isbill"))){
+			paramsMap.put("isbill", request.getParameter("isbill"));
+			HttpTool.setAttribute("isbill",request.getParameter("isbill"));
+		}
+		return paramsMap;
+	}
+	
+	//样本快递费管理页面请求参数组装为Map,同时设值
+	private Map<String,String> getListEveParams2Map(HttpServletRequest request){
+		Map<String,String> paramsMap = new HashMap<String,String>();
+		if(StringUtils.isNotEmpty(request.getParameter("eventsBatchno"))){
+			paramsMap.put("eventsBatchno", request.getParameter("eventsBatchno"));
+			HttpTool.setAttribute("eventsBatchno",request.getParameter("eventsBatchno"));
+		}
+		if(StringUtils.isNotEmpty(request.getParameter("samplingDateGest"))){
+			paramsMap.put("samplingDateGest", request.getParameter("samplingDateGest"));
+			HttpTool.setAttribute("samplingDateGest",request.getParameter("samplingDateGest"));
+		}
+		if(StringUtils.isNotEmpty(request.getParameter("samplingDateLeet"))){
+			paramsMap.put("samplingDateLeet", request.getParameter("samplingDateLeet"));
+			HttpTool.setAttribute("samplingDateLeet",request.getParameter("samplingDateLeet"));
+		}
+		return paramsMap;
+	}
+	
+	/**
+	 * 求平均数
+	 * @param page
+	 */
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	private void dealAvg(Page page) {
+		List<SampleExpressMgrVo> list = page.getResults();
+		for(SampleExpressMgrVo vo : list){
+			int expCountHead = sampleExpressMgrService.getCountExpHeadByMgrId(vo.getId());
+			BigDecimal cost = vo.getTotalCost().divide(new BigDecimal(expCountHead),5,4);//保留5位小数,四舍五入模式
+			BigDecimal avgCot = cost.multiply(new BigDecimal(vo.getExpHead()));
+			vo.setAvgCost(avgCot.setScale(2, BigDecimal.ROUND_HALF_UP));
+		}
+	}
+	
+	/**
+	 * 导出表格
+	 * @throws Exception 
+	 */
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	public void dealExportSamExpMgr(Page page) throws Exception{
+		List<Map<String, Object>> exprComps = sampleDleiManagerService.findErpExprossComnpanys();
+		List<SampleExpressMgrVo> mgrLists = page.getResults();
+		List<SampleExpressMgrExportVo> listExportVo = new ArrayList<SampleExpressMgrExportVo>();
+		SimpleDateFormat sdf=new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+		//获取快递公司信息
+		for(SampleExpressMgrVo expMgrVo : mgrLists){
+			SampleExpressMgrExportVo exportVo = new SampleExpressMgrExportVo();
+			exportVo.setExpressNum(expMgrVo.getExpressNum());
+			exportVo.setExpressCompanyId(this.getExpressCompanyName(exprComps,expMgrVo.getExpressCompanyId()));
+			exportVo.setTotalCost(String.valueOf(expMgrVo.getTotalCost()));
+			exportVo.setReceiveSendType(expMgrVo.getReceiveSendType()==1?"收样":"寄样");
+			exportVo.setReceiveSendDate(expMgrVo.getReceiveSendDate());
+			exportVo.setExpressContent(this.judgeExpressContent(expMgrVo.getExpressContent()));
+			exportVo.setIsbill(expMgrVo.getIsbill()==1?"有":"无");
+			exportVo.setEventsNo(expMgrVo.getEventsNo());
+			exportVo.setEventBatchno(expMgrVo.getEventBatchno());
+			exportVo.setEventDate(sdf.format(expMgrVo.getEventDate()));
+			CustomerRelationShip ship = sampleExpressMgrService.getBranchCompanyObjById(expMgrVo.getBranchCompanyId());
+			exportVo.setBranchCompanyId(ship.getBranchCommany());
+			exportVo.setOwnedCompanyId(ship.getCustomerNameSimple());
+			exportVo.setHasInHead(String.valueOf(expMgrVo.getHasInHead()));
+			exportVo.setExpHead(String.valueOf(expMgrVo.getExpHead()));
+			int expCountHead = sampleExpressMgrService.getCountExpHeadByMgrId(expMgrVo.getId());
+			BigDecimal cost = expMgrVo.getTotalCost().divide(new BigDecimal(expCountHead),5,4);//保留5位小数,四舍五入模式
+			BigDecimal avgCot = cost.multiply(new BigDecimal(expMgrVo.getExpHead()));
+			exportVo.setAvgCost(String.valueOf(avgCot.setScale(2, BigDecimal.ROUND_HALF_UP)));
+			listExportVo.add(exportVo);
+		}
+		page.setResults(listExportVo);
+	}
+	
+	/**
+	 * 获取快递公司名称
+	 */
+	private String getExpressCompanyName(List<Map<String, Object>> expList,String expId){
+		for(Map<String, Object> expMap : expList){
+			if(String.valueOf(expMap.get("id")).equals(expId)){
+				return String.valueOf(expMap.get("companyName"));
+			}
+		}
+		return null;
+	}
+	
+	/**
+	 * 判断包裹内容
+	 */
+	private String judgeExpressContent(Integer type){
+		String content = null;
+		switch (type) {
+		case 1: content="样本同意书";
+			break;
+		case 2: content="样本";
+			break;
+		case 3: content="同意书";
+			break;
+		}
+		return content;
+		
+	}
+	
+}

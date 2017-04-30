@@ -1,0 +1,107 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"%>
+<%@ include file="/common/taglibs.jsp"%>
+
+<%
+	String path = request.getContextPath();
+	String userRoles = (String) request.getAttribute("userRoles");
+	String userId = (String) request.getAttribute("userId");
+%>
+<div class="tip">
+	<span>查询</span>
+</div>
+<div class="pageHeader">
+	<form id="pagerFindForm" onsubmit="if(this.action != '${path}/resource/preSalesmanMgr!showAmlPreSalesMan.action')
+		{this.action = '${path}/resource/preSalesmanMgr!showAmlPreSalesMan.action';}; return navTabSearch(this);" 
+		action="${path}/resource/preSalesmanMgr!showAmlPreSalesMan.action" method="post"  rel="pagerForm">
+	<div class="searchBar">
+		<table class="searchContent">
+			<tbody>
+				<tr>
+					<td>
+						<label>营销员工号：</label>
+						<input type="text" name="filter_and_employeeNo_EQ_S" value="${filter_and_employeeNo_EQ_S}" />
+					</td>
+					<td>
+						<label>营销员姓名：</label>
+						<input type="text" name="filter_and_salesman_EQ_S" value="${filter_and_salesman_EQ_S}" />
+					</td>
+					<td></td>
+				</tr>
+				<tr>
+					<td>
+						<label>导入起始日期：</label> 
+						<input type="text" name="filter_and_createTime_GEST_T"  id="d1" style="width: 170px;" onFocus="WdatePicker({minDate:'2010-01-01',maxDate:'#F{$dp.$D(\'d2\')}'})"  readonly="readonly" value="${filter_and_createTime_GEST_T}" /><a class="inputDateButton" href="javascript:;" >选择</a>
+					</td>
+					<td>
+						<label>导入结束日期：</label> 
+						<input type="text" name="filter_and_createTime_LEET_T" id="d2" style="width: 170px;" onFocus="WdatePicker({minDate:'#F{$dp.$D(\'d1\')}'})" readonly="readonly" value="${filter_and_createTime_LEET_T}" /><a class="inputDateButton" href="javascript:;">选择</a>
+					</td>
+					<td>
+						<div class="subBar">
+							<ul style="float: left">
+								<li><div class="buttonActive"><div class="buttonContent"><button type="submit">查询</button></div></div></li>
+							</ul>
+						</div>
+					</td>
+				</tr>
+			</tbody>
+		</table>
+		
+	</div>
+	</form>
+</div>
+
+<div class="pageContent j-resizeGrid">
+	<div class="panelBar">
+		<ul class="toolBar">
+			<web:exportExcelTag pagerFormId="pagerFindForm" 
+								pagerMethodName="findByPage" 
+								actionAllUrl="org.hpin.base.customerrelationship.web.PreSalesManMgrAction" 
+								informationTableId="exportExcelTable"
+								fileName="PreSalesMan"></web:exportExcelTag>
+		</ul>
+		<jsp:include page="/common/pagination.jsp" />
+	</div>
+		<table class="list" width="98.5%" layoutH="150" id="exportExcelTable">
+			<thead>
+				<tr>
+					<th style="width: 45px; ">序号</th>
+					<th nowrap="nowrap" export = "true" columnEnName = "employeeNo" columnChName = "营销员工号" >营销员工号</th>
+					<th nowrap="nowrap" export = "true" columnEnName = "salesman" columnChName = "营销员姓名" >营销员姓名</th>
+					<th nowrap="nowrap" export = "true" columnEnName = "employeePhone" columnChName = "营销员电话" >营销员电话</th>
+					<th nowrap="nowrap" export = "true" columnEnName = "employeeCompany" columnChName = "营销员所在支公司" >营销员所在支公司</th>
+					<th nowrap="nowrap" export = "true" columnEnName = "employeeCityCompany" columnChName = "营销员所在市公司" >营销员所在市公司</th>
+					<th nowrap="nowrap" export = "true" columnEnName = "employeeHeadOffice" columnChName = "营销员所在总公司" >营销员所在总公司</th>
+					<th nowrap="nowrap" export = "true" columnEnName = "ymCompany" columnChName = "远盟支公司名称" >远盟支公司名称</th>
+					<th nowrap="nowrap" export = "true" columnEnName = "ymOwncompany" columnChName = "远盟总公司名称" >远盟总公司名称</th>
+					<th nowrap="nowrap" export = "true" columnEnName = "mark" columnChName = "渠道" >渠道</th>
+					<th nowrap="nowrap" export = "true" columnEnName = "createTime" columnChName = "创建日期" >创建日期</th>
+				</tr>
+			</thead>
+			<tbody>
+				<c:forEach items="${page.results}" var="salesManVo" varStatus="status">
+					<tr target="sid_user" rel="${ salesManVo.id }">
+						<td align="center"><input type="checkbox" name="ids" value="${ salesManVo.id }">${ status.count }</td>
+						<td align="center" nowrap="nowrap">${salesManVo.employeeNo}</td>
+						<td align="center" nowrap="nowrap">${salesManVo.salesman}</td>
+						<td align="center" nowrap="nowrap">${salesManVo.employeePhone}</td>
+						<td align="center" nowrap="nowrap">${salesManVo.employeeCompany }</td>
+						<td align="center" nowrap="nowrap">${salesManVo.employeeCityCompany }</td>
+						<td align="center" nowrap="nowrap">${salesManVo.employeeHeadOffice }</td>
+						<td align="center" nowrap="nowrap">${salesManVo.ymCompany }</td>
+						<td align="center" nowrap="nowrap">${salesManVo.ymOwncompany }</td>
+						<td align="center" nowrap="nowrap">${salesManVo.mark }</td>
+						<td align="center" nowrap="nowrap"><fmt:formatDate value='${salesManVo.createTime }' pattern='yyyy-MM-dd'/></td>
+				 	</tr>
+				</c:forEach>
+			</tbody>
+		</table>
+	</div>
+	</div>
+</div>
+
+
+
+
+
+

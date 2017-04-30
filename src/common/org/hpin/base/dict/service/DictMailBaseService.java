@@ -1,0 +1,238 @@
+package org.hpin.base.dict.service;
+
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+
+import org.apache.commons.lang.StringUtils;
+import org.hpin.base.dict.dao.DictMailBaseDao;
+import org.hpin.base.dict.entity.DictMailBase;
+import org.hpin.base.dict.entity.DictMailSysdict;
+import org.hpin.base.usermanager.entity.User;
+import org.hpin.common.core.orm.BaseService;
+import org.hpin.common.widget.pagination.Page;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.BeanPropertyRowMapper;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+/**
+ * 用户邮箱字典service
+ * @author wuhao
+ *
+ */
+@Service(value="org.hpin.base.dict.service.DictMailBaseService")
+@Transactional()
+public class DictMailBaseService extends BaseService{
+
+	@Autowired
+	private DictMailBaseDao dictMailBaseDao;
+
+	
+	/**
+	 * 条件查询
+	 * @param page
+	 * @param params
+	 */
+	@SuppressWarnings("rawtypes")
+	public void findDictMailByPage(Page page, HashMap<String, String> params) {
+		//list查询参数;
+		List<Object> objs = new ArrayList<Object>();
+
+		//sql
+		//查询参数处理
+		StringBuilder jdbcsql = this.dictMailBaseDao.dealDictMailSql(params);
+
+		//根据创建时间排序,降序;
+		jdbcsql.append(" order by m.CREATE_TIME desc, m.id  ");
+
+
+		//count
+		long count = this.dictMailBaseDao.findJdbcCount(jdbcsql, objs);
+		page.setTotalCount(count);
+
+		//list
+		objs.add(page.getPageNumEndCount());
+		objs.add(page.getPageNumStartCount());
+		BeanPropertyRowMapper<DictMailBase> rowMapper = new BeanPropertyRowMapper<DictMailBase>(DictMailBase.class);
+		List<?> list = this.dictMailBaseDao.findJdbcList(jdbcsql, objs, rowMapper);
+		page.setResults(list);
+		
+	}
+
+	
+	/**
+	 * 当存在数据重复返回true, 否则返回false标示没有重复;
+	 * @param id
+	 * @param mailAddress
+	 * @return
+	 */
+	public boolean exitsObject(String id, String mailAddress) {
+		
+		List<Object> objs = new ArrayList<Object>();
+		StringBuilder sql = new StringBuilder("select count(1) from DICT_MAIL_BASE where is_deleted='0' and MAIL_ADDR = ? ");
+		objs.add(mailAddress);
+
+		//新增的时候id为空; 修改的时候id不为空
+		if(StringUtils.isNotEmpty(id)) {
+			sql.append(" and id not in (?) ");
+			objs.add(id);
+		}
+		
+		int count = this.dictMailBaseDao.getJdbcTemplate().queryForInt(sql.toString(), objs.toArray());
+		
+		//当count> 0标示数据中存在重名;
+		if(count > 0) {
+			return true;
+		}
+		
+		return false;
+	}
+
+	/**
+	 * 新增用户邮箱字典
+	 * @param dictMailBase 用户邮箱基本信息
+	 * @param userInfo user对象
+	 * @param dictMailSysdicts 邮箱对应字典
+	 */
+	public void saveProCombo(DictMailBase dictMailBase, User userInfo,
+			List<DictMailSysdict> dictMailSysdicts) {
+		dictMailBase.setCreateTime(new Date());
+		dictMailBase.setCreateUserId(userInfo.getId());
+		dictMailBase.setIsDeleted(0); //默认为0有效, 1删除
+		//dictMailBase.setIsStatus(0); //默认为0启用, 1关闭;
+		//保存用户邮箱数据;
+		this.dictMailBaseDao.saveDictMailBase(dictMailBase);
+		
+		//保存中间表
+		String mailBaseId = dictMailBase.getId();
+		if(dictMailSysdicts != null && dictMailSysdicts.size() > 0) {
+			
+			for(int i=0; i<dictMailSysdicts.size(); i++) {
+				DictMailSysdict dictMailSysdict = dictMailSysdicts.get(i);
+				if(dictMailSysdict != null) {
+					dictMailSysdict.setMailBaseId(mailBaseId);
+					//dictMailSysdict.setId(null);
+					this.dictMailBaseDao.saveDictMailSysdict(dictMailSysdict);
+				}
+				
+			}
+		}
+		
+	}
+
+
+	/**
+	 * 修改用户邮箱字典
+	 * @param dictMailBase 用户邮箱基本信息
+	 * @param userInfo user对象
+	 * @param dictMailSysdicts 邮箱对应字典
+	 */
+	public void updateProCombo(DictMailBase dictMailBase, User userInfo,
+			List<DictMailSysdict> dictMailSysdicts) {
+		//获取原有数据;
+				DictMailBase old = (DictMailBase)this.dictMailBaseDao.findById(DictMailBase.class, dictMailBase.getId());
+				//修改主数据;
+				old.setUpdateTime(new Date());
+				old.setUpdateUserId(userInfo.getId());
+				old.setMailAddress(dictMailBase.getMailAddress());
+				old.setUserName(dictMailBase.getUserName());
+				old.setIsStatus(dictMailBase.getIsStatus());
+				this.dictMailBaseDao.updateDictMailBase(old);
+				
+				//删除原有关联数据;
+				this.dictMailBaseDao.deleteDictMailBase(dictMailBase.getId());
+				
+				//重新保存; 保存中间表
+				String mailBaseId = dictMailBase.getId();
+				if(dictMailSysdicts != null && dictMailSysdicts.size() > 0) {
+					
+					for(int i=0; i<dictMailSysdicts.size(); i++) {
+						DictMailSysdict dictMailSysdict = dictMailSysdicts.get(i);
+						if(dictMailSysdict != null) {
+							dictMailSysdict.setMailBaseId(mailBaseId);
+							//dictMailSysdict.setId(null);
+							this.dictMailBaseDao.saveDictMailSysdict(dictMailSysdict);
+						}
+						
+					}
+				}
+		
+	}
+
+
+	/**
+	 * 查询用户邮箱id对应中间表
+	 * @param id
+	 * @return
+	 */
+	public List<DictMailSysdict> findDictMailSysdictsByMailId(String id) {
+		String jdbcsql = "select id, SYS_DICTTYPE_DICTID sysDicttyoeDictId from DICT_MAIL_SYSDICT where MAIL_BASE_ID = '"+id+"'";
+		BeanPropertyRowMapper<DictMailSysdict> rowMapper = new BeanPropertyRowMapper<DictMailSysdict>(DictMailSysdict.class);
+		return this.dictMailBaseDao.getJdbcTemplate().query(jdbcsql.toString(), rowMapper);
+	}
+
+
+	/**
+	 * 判断是否启用，并删除
+	 * @param ids
+	 * @param userInfo
+	 * @return
+	 */
+	public boolean deleteValid(String ids, User userInfo) {
+		//参数;
+				
+				if(StringUtils.isEmpty(ids)) {
+					return false;
+				}
+				String[] arrs = ids.split(",");
+				//拼接sql条件
+				StringBuilder sb=new StringBuilder();
+				for (int i = 0; i < arrs.length; i++) {
+					sb.append("'"+arrs[i].trim()+"'");
+					if (i!=arrs.length-1) {
+						sb.append(",");
+					}
+				}
+				//查询启用中的邮箱数量
+				String sqlUse = "select count(1) from DICT_MAIL_BASE where id in ("+sb.toString()+") and IS_STATUS=0 ";
+				int count = this.dictMailBaseDao.getJdbcTemplate().queryForInt(sqlUse);
+				if (count!=0) {//存在启用中的邮箱
+					return false;
+				}else {//全部关闭才能删除
+					String sql = "update DICT_MAIL_BASE set is_deleted=1, update_user_id=?, update_time=sysdate where id in ("+sb.toString()+") ";
+					this.dictMailBaseDao.getJdbcTemplate().update(sql, new Object[]{userInfo.getId()});
+				}
+			//	String id = "";
+				/*for(int i =0; i<arrs.length; i++) {
+					id = arrs[i];
+					if(StringUtils.isNotEmpty(id)) {
+						
+						//获取数据查看是否被使用;
+						String sqlUse = "select count(1) from DICT_MAIL_BASE where id = ? and IS_STATUS=0 ";
+						int count = this.dictMailBaseDao.getJdbcTemplate().queryForInt(sqlUse, id.trim());
+						//当count为0标示可以删除; 否则不能删除;
+						if(count == 0) {
+							//如果没有被使用则删除;否则返回false;
+							String sql = "update DICT_MAIL_BASE set is_deleted=1, update_user_id=?, update_time=sysdate where id=? ";
+							this.dictMailBaseDao.getJdbcTemplate().update(sql, new Object[]{userInfo.getId(), id.trim().toString()});					
+						} else {
+							return false;
+						}
+						if (count!=0) {
+							return false;
+						}
+					}
+				}*/
+				/*for(int i =0; i<arrs.length; i++) {
+					id = arrs[i];
+					
+							String sql = "update DICT_MAIL_BASE set is_deleted=1, update_user_id=?, update_time=sysdate where id=? ";
+							this.dictMailBaseDao.getJdbcTemplate().update(sql, new Object[]{userInfo.getId(), id.trim().toString()});					
+						
+				
+				}*/
+				
+				return true;
+	}
+}

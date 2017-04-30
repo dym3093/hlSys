@@ -1,0 +1,305 @@
+package org.hpin.reportdetail.service;
+
+import java.util.Date;
+import java.util.List;
+
+import org.hpin.base.customerrelationship.entity.CustomerRelationShipPro;
+import org.hpin.common.core.orm.daoWrapper.DaoSupport;
+import org.hpin.events.entity.ErpCustomer;
+import org.hpin.events.entity.ErpEvents;
+import org.hpin.reportdetail.entity.ErpComboRelation;
+import org.hpin.reportdetail.entity.ErpCustomerTempWuChuang;
+import org.hpin.reportdetail.entity.ErpPrintTaskContent;
+import org.hpin.reportdetail.entity.ErpReportMatchBean;
+import org.hpin.reportdetail.entity.ErpReportPATask;
+import org.hpin.reportdetail.entity.ErpReportUnMatch;
+import org.hpin.reportdetail.entity.ErpReportdetailImgtask;
+import org.hpin.reportdetail.entity.ErpReportdetailPDFContent;
+import org.springframework.jdbc.core.BeanPropertyRowMapper;
+import org.springframework.transaction.annotation.Transactional;
+
+
+/**
+ * @author Carly
+ * @since 2017年3月6日17:09:38
+ * 匹配报告线程(ErpPdfMatchThread)的service
+ */
+@Transactional()
+@SuppressWarnings("unchecked")
+public class ErpReportThreadService {
+
+	private DaoSupport reportThreadDao;
+	
+	/**
+	 * @author Carly
+	 * @since 2017年3月6日17:08:56
+	 * @param batchno 批次号
+	 * @return 根据批次号获取需要匹配的客户信息
+	 */
+	public List<ErpReportdetailPDFContent> getListPdfContentDO(String batchno, int matchState) throws Exception {
+		String contentHql = "from ErpReportdetailPDFContent where batchno =? and matchstate=? and isrepeat=0 and isrecord=1";
+		List<ErpReportdetailPDFContent> listPdfContent = reportThreadDao.getHibernateTemplate().find(contentHql, batchno, matchState);
+		return listPdfContent;
+	}
+	public List<ErpReportdetailPDFContent> getListPdfContentDO(String batchno, String code, int matchState) throws Exception {
+		StringBuilder sql = new StringBuilder();
+		sql.append("SELECT	erp.ID, erp.CODE, erp.SETMEAL_NAME, erp.USERNAME, erp.SEX, erp.AGE, erp.FILEPATH, erp.FILESIZE, erp.PRINTBTHNO, erp.PS, ")
+			.append("erp.REPORTTYPE , erp.PDFNAME , erp.CONVERTION_FILE_TYPE FROM ERP_REPORTDETAIL_PDFCONTENT erp ")
+			.append("where erp.BATCHNO ='").append(batchno).append("' AND erp.CODE IN(").append(code).append(") AND erp.MATCHSTATE='").append(matchState)
+			.append("' AND erp.ISREPEAT=0 AND erp.ISRECORD=1");
+		List<ErpReportdetailPDFContent> listPdfContent = reportThreadDao.getJdbcTemplate().query(sql.toString(), new BeanPropertyRowMapper(ErpReportdetailPDFContent.class));
+		return listPdfContent;
+	}
+	
+	/**
+	 * @author Carly
+	 * @since 2017年3月6日18:21:29
+	 * @param batchNo 批次号
+	 * @param matchState 匹配状态(目前可用的状态是0:初始状态,2:匹配正常,3:未匹配成功,
+	 * 7:没有对应的远盟套餐,8:没有找到对应的套餐,9:没有对应的申友套餐,10:文件名有误,12:匹配成功但是是该客户其他的报告)
+	 * @return 获取各匹配状态的数量
+	 */
+	public int countFileTaskNum(String batchNo, int matchState) throws Exception {
+		StringBuilder matchStateSql = new StringBuilder("select count(1) from ERP_REPORTDETAIL_PDFCONTENT where batchno=? ");
+		switch (matchState) {
+		case 2:
+			matchStateSql.append("and matchstate in (?,12)");
+			break;
+
+		default:
+			matchStateSql.append( "and matchstate=?");
+			break;
+		}
+		return reportThreadDao.getJdbcTemplate().queryForInt(matchStateSql.toString(), batchNo, matchState);
+	}
+	
+	/**
+	 * @author Carly
+	 * @since 2017年3月6日18:16:56
+	 * @param matchArray 匹配状态的数组
+	 * @param batchNo 批次号
+	 * @param date 更新时间
+	 * 更新匹配状态的数量
+	 */
+	public void updateFileTaskMatchNumber(int[] matchArray,String batchNo) throws Exception {
+		String taskHql = "update ERP_REPORTDETAIL_PDFTASK set companynum=?, updatenum=?, unmatchnum=?, abnormalnnum=?,"
+				+ "cusmorenum=?, noYMCombo=?, noCustomerCombo2SY=?, noSYcombo=?, errorPdfName=?, stopcombo=?, stopreport=?,"
+				+ " ismatch=?, updatedate=? where batchno = ?";
+		
+		reportThreadDao.getJdbcTemplate().update(taskHql, matchArray[0], matchArray[1], matchArray[2], matchArray[3], matchArray[4], 
+				matchArray[5], matchArray[6], matchArray[7], matchArray[8], matchArray[9], matchArray[10], matchArray[11], new Date(), batchNo);
+	}
+	
+	/**
+	 * @author Carly
+	 * @since 2017年3月6日18:33:42
+	 * @param bean 组装好的pdf信息
+	 * @return 获取客户信息
+	 */
+	public List<ErpCustomer> getListCustomerDO(ErpReportMatchBean bean) throws Exception {
+		String code = bean.getCode() == null ? "" : bean.getCode().toUpperCase();
+		String name = bean.getName().replaceAll(" ", "");
+		String gender = bean.getSex();
+		String customerHql = "from ErpCustomer where upper(code) = ?  and replace(name,' ','')=? and sex=? and isDeleted=0 order by setmealName asc";
+		return reportThreadDao.getHibernateTemplate().find(customerHql, code, name, gender);
+	}
+	
+	/**
+	 * @author Carly
+	 * @since 2017年3月6日18:41:04
+	 * @param matchState 匹配状态
+	 * @param date 更新时间
+	 * @param pdfId 
+	 */
+	public void updatePdfMatchState(int matchState, Date date, String pdfId) throws Exception {
+		String beanHql = "update erp_reportdetail_pdfcontent set matchstate=?,updatedate=? where id=?"; 
+		reportThreadDao.getJdbcTemplate().update(beanHql,matchState,date,pdfId);
+	}
+	
+	/**
+	 * @author Carly
+	 * @since 2017年3月6日18:45:13
+	 * @param pdfcusBean 没有匹配成功的bean
+	 * 保存没有匹配成功的报告
+	 */
+	public void saveUnMatchPdfDO(ErpReportUnMatch pdfcusBean) throws Exception {
+		reportThreadDao.getHibernateTemplate().save(pdfcusBean);
+	}
+	
+	/**
+	 * @author Carly
+	 * @since 2017年3月7日11:23:35
+	 * @param bean 组装好的pdf信息
+	 * @return 查询是否是打印套餐
+	 */
+	public boolean getExistedPrintCombo(ErpReportMatchBean bean) throws Exception {
+		String isPrintByYMSql = "select count(1) from hl_jy_combo where combo_name=? and is_delete=0 and print_type='0' ";
+		int count = reportThreadDao.getJdbcTemplate().queryForInt(isPrintByYMSql, bean.getCombo());
+		return count == 0 ? false : true;
+	}
+	
+
+	/**
+	 * @author Carly
+	 * @since 2017年3月7日11:33:10
+	 * @param bean 组装好的pdf信息
+	 * @return 是否是不打印客户
+	 */
+	public boolean getExistedUnPrintCustomer(ErpReportMatchBean bean) throws Exception {
+		String sql = "select count(1) from erp_reportdetail_management where upper(code)=? and name=? and gender=? and state='1'";
+		int count = reportThreadDao.getJdbcTemplate().queryForInt(sql,bean.getCode(), bean.getName(), bean.getSex());
+		return count == 0 ? false : true;
+	}
+
+	/**
+	 * @author Carly
+	 * @since 2017年3月7日11:42:41
+	 * @param bean 组装好的pdf信息
+	 * @param customer 客户信息
+	 * @return 该项目下是否有该打印套餐
+	 */
+	public boolean getExistedProjectPrint(ErpReportMatchBean bean, ErpCustomer customer) throws Exception {
+		StringBuilder sql = new StringBuilder();
+		sql.append("SELECT COUNT(1) FROM ERP_RELATIONSHIPPRO_COMBO a WHERE ")
+			.append("EXISTS (SELECT 1 FROM  hl_jy_combo hjc WHERE hjc.COMBO_NAME=?  and hjc.IS_DELETE = 0 AND a.COMBO_ID=hjc.id) ")
+			.append("AND ")
+			.append("EXISTS (SELECT 1 FROM  ERP_EVENTS ee WHERE ee.EVENTS_NO=? AND a.CUSTOMER_RELATIONSHIP_PRO_ID=ee.CUSTOMERRELATIONSHIPPRO_ID) " )
+			.append("AND NVL(a.PRINT_TYPE,1) =1 ");
+		int count = reportThreadDao.getJdbcTemplate().queryForInt(sql.toString(), bean.getCombo(), customer.getEventsNo());
+		return count == 0 ? false : true;
+	}
+	
+	/**
+	 * @author Carly
+	 * @since 2017年3月7日11:58:50
+	 * @param printTaskContent 需要保存的打印任务
+	 */
+	public void savePrintTaskContent(ErpPrintTaskContent printTaskContent) throws Exception {
+		reportThreadDao.getHibernateTemplate().save(printTaskContent);
+	}
+
+	/**
+	 * @author Carly
+	 * @since 2017年3月7日12:01:13
+	 * @param paReportTask 需要保存的平安上传报告
+	 */
+	public void savePAReportTask(ErpReportPATask paReportTask) throws Exception {
+		reportThreadDao.getHibernateTemplate().save(paReportTask);
+	}
+	
+	/**
+	 * @author Carly
+	 * @since 2017年3月7日14:28:40
+	 * @param customer 客户信息
+	 * 更新已存在该客户的其他已匹配报告的状态
+	 */
+	public void updateExistedCustomerPdf(ErpCustomer customer) throws Exception {
+		String sql = "update erp_reportdetail_pdfcontent set matchstate=12 where customerid=?  and matchstate=2 and pdfname like '%pdf' ";
+		reportThreadDao.getJdbcTemplate().update(sql,customer.getId());
+		
+	}
+
+	/**
+	 * @author Carly
+	 * @since 2017年3月7日14:40:23
+	 * @param bean 组装好的pdf信息
+	 * @param customer 客户信息
+	 * @param printTaskContent 组装好的分批表信息
+	 * @param ymPrint ps状态
+	 * @param matchSate 匹配状态 
+	 * @param now 时间
+	 * 补充pdf的剩余信息
+	 */
+	public void updatePdfContentInfo(ErpReportMatchBean bean, ErpCustomer customer, ErpPrintTaskContent printTaskContent,
+			String ymPrint, int matchSate, Date now) throws Exception {
+		
+		String contentSql = "update erp_reportdetail_pdfcontent set customerid=?,provice=?,city=?,branch_company=?,"
+				+ "events_no=?,age=?,sales_man=?,ps=?,dept=?,projectcode=?,matchstate=?,setmeal_name=?,updatedate=? where id=?";
+		reportThreadDao.getJdbcTemplate().update(contentSql,customer.getId(), customer.getProvice(),customer.getCity(), customer.getBranchCompanyId(),
+				customer.getEventsNo(), customer.getAge(),customer.getSalesMan(), ymPrint,printTaskContent.getDept(), printTaskContent.getProjectCode(),
+				matchSate, bean.getCombo(), now, bean.getId());
+	}
+	
+	/**
+	 * @author Carly
+	 * @since 2017年3月7日14:55:20
+	 * @param bean 组装好的pdf信息
+	 * @param statusYM 客户的状态
+	 * @param customerId 客户id
+	 * 更新客户报告可查看路径和状态
+	 */
+	public void updateCustomerInfo(ErpReportMatchBean bean, int statusYM, String customerId) throws Exception {
+		String pdfNewPath = bean.getFilePath().replace("/home/ftp/transact","http://img.healthlink.cn:8099/ymReport");
+		String sql = "update erp_customer set pdffilepath=?,status_ym = ? where id = ?";
+		reportThreadDao.getJdbcTemplate().update(sql, pdfNewPath, statusYM, customerId);
+	}
+
+	/**
+	 * @author Carly
+	 * @since 2017年3月7日15:17:32
+	 * @param imgTask 需要转图片的报告
+	 * 保存需要转图片的报告
+	 */
+	public void saveReport2ImgTask(ErpReportdetailImgtask imgTask) throws Exception {
+		reportThreadDao.getHibernateTemplate().save(imgTask);
+		
+	}
+
+	/** 
+	 * @author Carly 
+	 * @since 2017年3月7日15:39:04
+	 * @param customer 客户信息
+	 * @return 获取场次信息
+	 */
+	public List<ErpEvents> getListEventDO(ErpCustomer customer) throws Exception {
+		String eventSql = "from ErpEvents where events_no=?";
+		List<ErpEvents> listEvent = reportThreadDao.getHibernateTemplate().find(eventSql, customer.getEventsNo());
+		return listEvent;
+	}
+	
+	/**
+	 * @author Carly
+	 * @since 2017年3月7日15:47:49
+	 * @param 支公司项目id
+	 * @return 获取支公司的项目信息
+	 * @throws Exception
+	 */
+	public CustomerRelationShipPro getCompanyProjectDO(String companyProjectId) throws Exception {
+		CustomerRelationShipPro companyProject = reportThreadDao.getHibernateTemplate().get(CustomerRelationShipPro.class, companyProjectId);
+		return companyProject;
+	}
+	
+	/**
+	 * @author Carly
+	 * @since 2017年3月7日16:23:20
+	 * @param bean
+	 * @return 获取无创的客户信息
+	 */
+	public List<ErpCustomerTempWuChuang> getListWCCustomer(ErpReportMatchBean bean) throws Exception {
+		String hql = "from ErpCustomerTempWuChuang where code =? ";	
+		List<ErpCustomerTempWuChuang> listWCCustomer = reportThreadDao.getHibernateTemplate().find(hql,bean.getCode());
+		return listWCCustomer;
+	}
+	
+	/**
+	 * @author Carly
+	 * @since 2017年3月7日16:23:20
+	 * @param bean
+	 * @return 套餐对应关系
+	 * @throws Exception
+	 */
+	public List<ErpComboRelation> getListComboRelation(ErpReportMatchBean bean) throws Exception {
+		String hql = "from ErpComboRelation where isDelete='0' and syCombo=? ";
+		List<ErpComboRelation> listComboRelation = reportThreadDao.getHibernateTemplate().find(hql,bean.getCombo());
+		return listComboRelation;
+	}
+	
+	public DaoSupport getReportThreadDao() {
+		return reportThreadDao;
+	}
+	
+	public void setReportThreadDao(DaoSupport reportThreadDao) {
+		this.reportThreadDao = reportThreadDao;
+	}
+
+}

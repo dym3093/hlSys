@@ -1,0 +1,540 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+	pageEncoding="UTF-8"%>
+<%@ include file="/common/taglibs.jsp"%>
+<style>
+.press {
+	display: block;
+	line-height: 1.5em;
+	overflow: visible;
+	font-size: 22px;
+	text-shadow: #f3f3f3 1px 1px 0px, #b2b2b2 1px 2px 0;
+	text-align: center;
+}
+</style>
+<script type="text/javascript">
+	$(document).ready(function() {
+		$(".idno", navTab.getCurrentPanel()).addClass("required");
+	});
+
+	var idtype;
+	$("#documentType", navTab.getCurrentPanel()).change(function() {
+		idtype = $(this).val();
+		if (idtype == '1010101') {
+			$(".idno", navTab.getCurrentPanel()).addClass("required");
+			$(".idno").val('');
+			$(".idno").focus();
+		} else {
+			$(".idno", navTab.getCurrentPanel()).removeClass("required");
+		}
+	});
+
+	function validatemobile() {
+		var mobile = $(".phone").val();
+		if (mobile != '') {
+			if (mobile.length != 11) {
+				alert('手机号码位数错误！');
+				$(".phone").val('');
+				$(".phone").focus();
+				return;
+			}
+
+			var myreg = /^(((13[0-9]{1})|150|151|152|153|155|156|157|158|159|177|180|181|182|183|185|186|187|188|189)+\d{8})$/;
+			if (!myreg.test(mobile)) {
+				alert('请输入有效的手机号码！');
+				$(".phone").val('');
+				$(".phone").focus();
+				return;
+			}
+		}
+	}
+	function IdentityCodeValid(code) {
+		var city = {
+			11 : "北京",
+			12 : "天津",
+			13 : "河北",
+			14 : "山西",
+			15 : "内蒙古",
+			21 : "辽宁",
+			22 : "吉林",
+			23 : "黑龙江 ",
+			31 : "上海",
+			32 : "江苏",
+			33 : "浙江",
+			34 : "安徽",
+			35 : "福建",
+			36 : "江西",
+			37 : "山东",
+			41 : "河南",
+			42 : "湖北 ",
+			43 : "湖南",
+			44 : "广东",
+			45 : "广西",
+			46 : "海南",
+			50 : "重庆",
+			51 : "四川",
+			52 : "贵州",
+			53 : "云南",
+			54 : "西藏 ",
+			61 : "陕西",
+			62 : "甘肃",
+			63 : "青海",
+			64 : "宁夏",
+			65 : "新疆",
+			71 : "台湾",
+			81 : "香港",
+			82 : "澳门",
+			91 : "国外 "
+		};
+		var tip = "";
+		var pass = true;
+
+		if (!code
+				|| !/^\d{6}(18|19|20)?\d{2}(0[1-9]|1[12])(0[1-9]|[12]\d|3[01])\d{3}(\d|X)$/i) {
+			tip = "身份证号格式错误";
+			pass = false;
+		}
+
+		else if (!city[code.substr(0, 2)]) {
+			tip = "地址编码错误";
+			pass = false;
+		} else {
+			//18位身份证需要验证最后一位校验位
+			if (code.length == 18) {
+				code = code.split('');
+				//∑(ai×Wi)(mod 11)
+				//加权因子
+				var factor = [ 7, 9, 10, 5, 8, 4, 2, 1, 6, 3, 7, 9, 10, 5, 8,
+						4, 2 ];
+				//校验位
+				var parity = [ 1, 0, 'X', 9, 8, 7, 6, 5, 4, 3, 2 ];
+				var sum = 0;
+				var ai = 0;
+				var wi = 0;
+				for (var i = 0; i < 17; i++) {
+					ai = code[i];
+					wi = factor[i];
+					sum += ai * wi;
+				}
+				var last = parity[sum % 11];
+				if (parity[sum % 11] != code[17]) {
+					tip = "校验位错误";
+					pass = false;
+				}
+			}
+		}
+		if (!pass)
+			alert(tip);
+		return pass;
+	}
+	//验证台湾的身份证  -- 10位
+	function checkTaiwan(code){
+		var city = {
+				A :"台北市10", 
+				B :"台中市11", 
+				C :"基隆市12",
+				D :"台南市13", 
+				E :"高雄市14", 
+				F :"台北县15", 
+				G :"宜兰县16", 
+				H :"桃园县17 ",
+				I :"嘉义市34", 
+				J :"新竹县18", 
+				K :"苗栗县19", 
+				L :"台中县20", 
+				M :"南投县21", 
+				N :"彰化县22", 
+				O :"新竹市35", 
+				P :"云林县23", 
+				Q :"嘉义县24", 
+				R :"台南县25", 
+				S :"高雄县26", 
+				T :"屏东县27", 
+				U :"花莲县28", 
+				V :"台东县29", 
+				W :"金门县30", 
+				X :"澎湖县31", 
+				Y :"阳明山32", 
+				Z :"连江县33", 
+			};
+			var tip = "";
+			var pass = true;
+
+			if (!code
+					|| !/^[A-Z]\d{9}$/i) {
+				tip = "身份证号格式错误";
+				pass = false;
+			} else {
+				//10位身份证需要验证最后一位校验位
+				var x = city[code.substring(0,1)].substring(3,5);
+				code = x + code.substring(1,10);
+				code = code.split('');
+				//∑(ai×Wi)(mod 11)
+				//加权因子
+				var factor = [1,9,8,7,6,5,4,3,2,1];
+				var sum = 0;
+				var ai = 0;
+				var wi = 0;
+				for (var i = 0; i < 10; i++) {
+					ai = code[i];
+					wi = factor[i];
+					sum += ai * wi;
+				}
+				var last = 10 - (sum % 10);
+				if (last != code[10]) {
+					tip = "校验位错误";
+					pass = false;
+				}
+			}
+			if (!pass)
+				alert(tip);
+			return pass;
+	}
+	function strSum(str) {
+		var sum = 0;
+		var size = str.length;
+		//substr
+		for (var i = 0; i < size; i++) {
+			sum = sum + parseInt(str.substr(i, 1));
+		}
+		return sum;
+	}
+	function barcode() {
+		var barcode = $(".code").val();
+		if (strSum(barcode.substring(0, 5)) % 2 == 0) {
+			alert("条形码不满足规则，请核对！");
+			$(".code").focus();
+			return false;
+		}
+		if (strSum(barcode.substring(6, 11)) % 2 == 1) {
+			alert("条形码不满足规则，请核实！");
+			$(".code").focus();
+			return false;
+		}
+		barcode = barcode.substring(0, 5) + barcode.substring(6, 11);
+		if (strSum(barcode) % 11 != 1) {
+			alert("条形码不满足规则，请核实！");
+			$(".code").focus();
+			return false;
+		}
+
+	}
+
+	function myIdno() {
+		var idCard = $(".idno").val();
+		idCard = idCard.trim();
+		if (idtype == '1010106') {
+			return;
+		}
+		if (idCard.length != 18 && idCard.length != 15 && idCard.length != 10 && idCard != '') {
+			alert('位数错误');
+			$(".idno").val('');
+			$(".idno").focus();
+			$(".idno").select();
+
+			return;
+		}
+		
+		if(idCard.length == 15){
+			idCard = transformatIdFrom15To18(idCard);
+		}
+		if (idCard.length == 18) {
+			var isno = IdentityCodeValid(idCard);
+			if (isno) {
+				var sex;
+				//获取性别
+				if (parseInt(idCard.substr(16, 1)) % 2 == 1) {
+					sex = "男";
+				} else {
+					sex = "女";
+				}
+				var radiovar = document.getElementsByName("customer.sex");
+				for (var i = 0; i < radiovar.length; i++) {
+					if (radiovar[i].value == sex)//这个2即为你所要找的input的值
+						radiovar[i].checked = "checked";
+				}
+				//$("input[type='radio'][value=sex]").attr("checked","checked" );
+				//$("#sex").val(sex);
+				//获取年龄
+				var myDate = new Date();
+				var month = myDate.getMonth() + 1;
+				var day = myDate.getDate();
+				var age = myDate.getFullYear() - idCard.substring(6, 10) - 1;
+				if (idCard.substring(10, 12) < month
+						|| idCard.substring(10, 12) == month
+						&& idCard.substring(12, 14) <= day) {
+					age++;
+				}
+				$("input[name='customer.age']").val(age);
+				//IdentityCodeValid(idCard);
+			}else {
+				$(".idno").val('');
+				$(".idno").focus();
+			}
+		}else if(idCard.length == 10){
+			var flag = checkTaiwan(idCard);
+			console.log(idCard);
+			if (flag) {
+				var sex;
+				//获取性别
+				if (parseInt(idCard.substr(1, 1)) == 1) {
+					sex = "男";
+				} else {
+					sex = "女";
+				}
+				var radiovar = document.getElementsByName("customer.sex");
+				for (var i = 0; i < radiovar.length; i++) {
+					if (radiovar[i].value == sex)//这个2即为你所要找的input的值
+						radiovar[i].checked = "checked";
+				}
+			}else {
+				$(".idno").val('');
+				$(".idno").focus();
+			}
+	   }
+	}
+
+	/* $(".code").bind('input propertychange',function() {mybarcode();}); */
+	function mybarcode() {
+		var code = $(".code").val();
+
+		if (code.length == 5) {
+			if (strSum(code) % 2 == 0) {
+				alert("条形码不满足规则，请核对！");
+			}
+			$(".code").val(code + '-');
+		}
+	}
+	function mySubmit(_form) {
+		alert();
+		_form.onsubmit = validateCallback(form, navTabAjaxDone);
+		_form.submit();
+		$("#pagerFindForm", navTab.getCurrentPanel()).submit();
+	}
+
+	function submitForm() {
+		/*var flag = false;
+		$(".required",navTab.getCurrentPanel()).each(function(){
+			if($(this).val()==""){
+				$(this).focus();
+				flag = true;
+			}
+		});
+		
+		if(flag){
+			alert("您有必选项没有填写请确认");
+			return false;
+		}*/
+
+		document.form1.isBtn.value = "2";
+		$(".pageForm", navTab.getCurrentPanel()).submit();
+
+	}
+	function transformatIdFrom15To18(idCardNo) {
+		var v = new Array(2, 4, 8, 5, 10, 9, 7, 3, 6, 1, 2, 4, 8, 5, 10, 9, 7);
+		var vs = "10X98765432";
+		if (idCardNo == null || idCardNo.length != 15) {
+			return "";
+		}
+		// 将15位的号码转换位17位
+		var cardID17 = idCardNo.substring(0, 6) + "19" + idCardNo.substring(6);
+		var N = 0;
+		var R = -1;
+		var T = '0';// 储存最后一个数字
+		var j = 0;
+		var cardID18 = "";
+		// 计数出第18位数字
+		for (var i = 16; i >= 0; i--) {
+			N += parseInt(cardID17.substring(i, i + 1)) * v[j];
+			j++;
+		}
+		R = N % 11;
+		T = vs.charAt(R);
+		cardID18 = cardID17 + T;
+		return cardID18;
+	}
+	String.prototype.trim=function() {
+	    return this.replace(/(^\s*)|(\s*$)/g,'');
+	}
+</script>
+<div class="pageContent">
+	<form id="form1" name="form1" class="pageForm required-validate"
+		onsubmit="return validateCallback(this, navTabAjaxDone);"
+		action="${path}/events/erpCustomer!addCustomer.action" method="post">
+		<input type="hidden" name="navTabId" id="navTabId"
+			value="${navTabId }" />
+		<!--<input type = "hidden" name = "navTabId" id = "navTabId" value="_navTabId" />-->
+		<input type="hidden" value="1" name="isBtn">
+		<div class="pageFormContent" layoutH="56">
+			<h1 class="press">客户信息录入</h1>
+			<div class="divider"></div>
+			<div class="tip">
+				<span>场次信息</span>
+			</div>
+			<p>
+				<label>场次号：</label> <input name="customer.eventsNo" type="hidden"
+					value="${events.eventsNo }" /> <input name="id" type="hidden"
+					value="${events.id }" /> <span>${events.eventsNo }</span>
+			</p>
+			<p>
+				<label>场次日期：</label> <span>${fn:substring(events.eventDate,0,14)}00:00</span>
+			</p>
+			<p>
+				<label>场次地址：</label> <span>${events.address}</span>
+			</p>
+			<p>
+				<label>支公司：</label> <span>${events.branchCompany }</span>
+			</p>
+			<p>
+				<label>级别：</label> <span><hpin:id2nameDB
+						id='${events.level2 }'
+						beanId='org.hpin.base.dict.dao.SysDictTypeDao' /></span>
+			</p>
+			<p>
+				<label>默认套餐</label> <span>${events.comboName }</span>
+			</p>
+			<p>
+				<label>预定人数：</label> <span>${events.headcount }</span>
+			</p>
+			<p>
+				<label>录入人数：</label> <span>${events.nowHeadcount }</span>
+			</p>
+
+			<div class="divider"></div>
+			<div class="tip">
+				<span>客户信息录入</span>
+			</div>
+
+			<div class="searchBar">
+				<table width="80%">
+
+					<tr>
+						<td width="15%"><label>条形码：</label></td>
+
+						<td width="35%"><input tabindex="1" name="customer.code"
+							type="text" class="required code" value="${customer.code }" /> <%--<input tabindex="1" name="customer.code" type="text" class="required code "  minlength="11" maxlength="11" onchange="barcode()"  value="${customer.code }"/> --%>
+						</td>
+
+						<td width="15%"><label>证件类型：</label></td>
+
+						<td>身份证<input type="radio" name="customer.documentType"
+							id="documentType" checked="checked" value="1010101" /> &nbsp;其他<input
+							type="radio" name="customer.documentType" id="documentType"
+							value="1010106" />
+
+						</td>
+					</tr>
+					<tr>
+						<td><label>证件号码：</label></td>
+
+						<td><input tabindex="2" type="text" name="customer.idno"
+							class="idno" maxlength="18" onBlur="myIdno()"
+							value="${customer.idno}" /></td>
+						<td><label>性别：</label></td>
+
+						<td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;男<input
+							type="radio" name="customer.sex" id="sex" class="required sex"
+							value="男" /> &nbsp;&nbsp;&nbsp; 女<input type="radio"
+							name="customer.sex" id="sex" class="required sex" value="女" />
+						</td>
+					</tr>
+					<tr>
+						<td><label>姓名：</label></td>
+
+						<td><input tabindex="3" name="customer.name" type="text"
+							value="${customer.name }" class="required name" /></td>
+
+						<td><label>年龄：</label></td>
+
+						<td><input name="customer.age" type="text"
+							value="${customer.age}" class="required digits" /></td>
+					</tr>
+					<tr>
+						
+
+						<td><label>远盟对接人：</label></td>
+						<td><input tabindex="4"  type="text"  name="customer.ymSalesman" value="${events.ymSalesman}" /></td>
+						<td><label>套餐名：</label></td>
+
+						<td><select id="comboselect" class="required comboSelect"
+							name="customer.setmealName" rel="iselect"
+							loadUrl="${path}/resource/customerRelationShip!findComboByEventNo.action?eventsno=${events.eventsNo}">
+								<option value="${events.comboName}"></option>
+						</select></td>
+					</tr>
+					<tr>
+						<td><label>家族疾病史：</label></td>
+
+						<td><input tabindex="5" type="text"
+							name="customer.familyHistory" value="${customer.familyHistory}" />
+						</td>
+						<td><label>样本类型：</label></td>
+
+						<td><select id="sampleType" name="customer.sampleType"
+							rel="iselect"
+							loadUrl="${path}/hpin/sysDictType!treeRegion.action?defaultID=10106">
+								<option value="1010601"></option>
+						</select>
+						<%-- <input type="hidden" name="customer.ownedCompany" value="${currentUser.deptName}" /> --%>
+						 <input type="hidden" name="customer.ownedCompany" value="${events.ownedCompany}" /> <!-- zong公司 -->
+						 <input type="hidden" name="customer.ownedCompanyId" value="${events.ownedCompanyId}" />
+						 <input type="hidden" name="customer.branchCompany" value="${events.branchCompany}" /><!-- zhi公司 -->
+						 <input type="hidden" name="customer.branchCompanyId" value="${events.branchCompanyId}" />
+						 <input type="hidden" name="customer.provice" value="${events.provice}" /> 
+						 <input type="hidden" name="customer.city" value="${events.city}" />
+						 
+					
+						</td>
+
+					</tr>
+					<tr>
+						<td><label>营销员：</label></td>
+
+						<td><input tabindex="6" type="text" name="customer.salesMan" value="${customer.salesMan}" /></td>
+
+						<td><label>采样时间：</label></td>
+
+						<td><input id="customerDate" name="customer.samplingDate"
+							datefmt="yyyy-MM-dd HH:mm:ss"
+							value="${fn:substring(events.eventDate,0,14)}00:00" type="text"
+							class="date required" /> <a class="inputDateButton"
+							href="javascript:;">选择</a></td>
+					</tr>
+					<tr>
+						<td><label>手机：</label></td>
+						<td><input tabindex="7" name="customer.phone" type="text" class="phone" onBlur="validatemobile()" value="${customer.phone }" /></td>
+						<td><label>部门：</label></td>
+						<td><input tabindex="6" type="text" name="customer.department" value="${customer.department}" /></td>
+					</tr>
+					<tr>
+						<td><label>备注：</label></td>
+						<td><input tabindex="6" type="text" name="customer.note" value="${customer.note}" /></td>
+						<td><label>营销员工号：</label></td>
+						<td><input name="customer.salesManNo" type="text" value="${customer.salesManNo }" /></td>
+					</tr>
+					<tr>
+						<td colspan=4 align=right>
+							<div class="subBar" style="float:right; ">
+								<li>
+									<div class="buttonActive">
+										<div class="buttonContent">
+											<button type="submit">下一条</button>
+										</div>
+										<!-- onclick="submitForm()" -->
+									</div>
+								</li>
+								<li>
+									<div class="button">
+										<div class="buttonContent">
+											<button type="button" onclick="submitForm()">保存</button>
+										</div>
+									</div>
+								</li>
+							</div>
+						</td>
+					</tr>
+				</table>
+
+			</div>
+		</div>
+	</form>
+</div>

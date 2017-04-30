@@ -1,0 +1,52 @@
+package org.hpin.reportdetail.util;
+
+/**
+ * @author Carly
+ * @since 2017年4月12日11:08:21
+ * 报告大小判断该报告是否是异常报告
+ */
+public class FileSizeConstant {
+	
+	/**
+	 * 无创生物电套餐一
+	 */
+	public static final double ZK_COMBO_ONE_START = 5.4 * 1024 * 1024 ;
+	public static final double ZK_COMBO_ONE_END = 6.4 * 1024 * 1024 ;
+	/**
+	 * 无创生物电套餐二
+	 */
+	public static final double ZK_COMBO_TWO_START = 9 * 1024 * 1024 ;
+	public static final double ZK_COMBO_TWO_END = 11.2 * 1024 * 1024 ;
+	/**
+	 * 无创生物电套餐三
+	 */
+	public static final double ZK_COMBO_THREE_START = 9 * 1024 * 1024 ;
+	public static final double ZK_COMBO_THREE_END = 11.2 * 1024 * 1024 ;
+	/**
+	 * 无创生物电套餐四
+	 */
+	public static final double ZK_COMBO_FOUR_START = 9 * 1024 * 1024 ;
+	public static final double ZK_COMBO_FOUR_END = 11.2 * 1024 * 1024 ;
+	
+	
+	/**
+	 * 生命反馈系统检测一
+	 */
+	public static final double JSL_COMBO_ONE_START = 0.4 * 1024 * 1024 ;
+	public static final double JSL_COMBO_ONE_END = 0.7 * 1024 * 1024 ;
+	/**
+	 * 生命反馈系统检测二
+	 */
+	public static final double JSL_COMBO_TWO_START = 0.4 * 1024 * 1024 ;
+	public static final double JSL_COMBO_TWO_END = 1 * 1024 * 1024 ;
+	/**
+	 * 生命反馈系统检测三
+	 */
+	public static final double JSL_COMBO_THREE_START = 0.4 * 1024 * 1024 ;
+	public static final double JSL_COMBO_THREE_END = 1.1 * 1024 * 1024 ;
+	/**
+	 * 生命反馈系统检测四
+	 */
+	public static final double JSL_COMBO_FOUR_START = 0.4 * 1024 * 1024 ;
+	public static final double JSL_COMBO_FOUR_END = 1.5 * 1024 * 1024 ;
+}

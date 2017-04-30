@@ -1,0 +1,144 @@
+package org.hpin.statistics.briefness.web;
+
+import java.text.ParseException;
+import java.util.Date;
+import java.util.Map;
+
+import net.sf.json.JSONObject;
+
+import org.apache.commons.httpclient.util.DateUtil;
+import org.apache.commons.lang.StringUtils;
+import org.apache.log4j.Logger;
+import org.apache.struts2.convention.annotation.Action;
+import org.apache.struts2.convention.annotation.Namespace;
+import org.apache.struts2.convention.annotation.Result;
+import org.apache.struts2.convention.annotation.Results;
+import org.hpin.common.core.SpringTool;
+import org.hpin.common.core.web.BaseAction;
+import org.hpin.common.util.HttpTool;
+import org.hpin.common.widget.pagination.Page;
+import org.hpin.statistics.briefness.service.CustomerTempService;
+import org.hpin.statistics.briefness.service.ValidityDayService;
+import org.springframework.beans.factory.annotation.Autowired;
+
+/**
+ * 后面报表数据查询;
+ * @author Henry
+ *
+ */
+@Namespace("/report")
+@Action("reportQuery")
+@Results({
+	@Result(name = "reportValidQuery", location = "/WEB-INF/report/reportValidQuery.jsp"),
+	@Result(name = "reportVenue", location = "/WEB-INF/report/reportVenue.jsp")
+})
+public class ReportQueryAction  extends BaseAction{
+	private Logger log = Logger.getLogger(ReportQueryAction.class);
+
+	private static final long serialVersionUID = 2011116935730806833L;
+	private static final String VALIDQUERY = "reportValidQuery"; //报告时效性日期查询;
+	private static final String VENUE = "reportVenue"; //会场查询;
+	
+	private ValidityDayService validityDayService = (ValidityDayService)SpringTool.getBean(ValidityDayService.class); //报告时效性日期查询
+	
+	@Autowired
+	private CustomerTempService customerTempService; //无创临时信息修改;
+	
+	/**
+	 * 修改表erp_customer_temp_wuchuang, 和erp_customer_receive;
+	 * 将当前这条数据的证件号和手机号的值调整为证件号-close和手机号-close
+	 * <p>Description: </p>
+	 * @author herny.xu
+	 * @date 2017年3月24日
+	 */
+	public void ajaxCloseUserInfo() {
+		JSONObject json = new JSONObject();
+		String code = HttpTool.getParameter("code", "");
+		String result = "false";
+		if(StringUtils.isNotEmpty(code)) {
+			//调用service处理
+			try {
+				customerTempService.updateCustomerInfo(code);
+				result = "true";
+			} catch (Exception e) {
+				log.error("关闭错误!", e);
+				result = "false";
+			}
+		}
+		json.put("result", result);
+		renderJson(json);
+	}
+	
+	/**
+	 * 时效性进入页面;时效性分页查询;
+	 * @return
+	 */
+	@SuppressWarnings("rawtypes")
+	public String reportValidQuery() {
+		//参数; 日期;
+		String endDate = HttpTool.getParameter("endDate", DateUtil.formatDate(new Date(), "yyyy-MM-dd"));
+		
+		//分页查询;
+		try {
+			page = new Page(HttpTool.getPageNum(), HttpTool.getPageSize());
+		} catch (ParseException e) {
+			log.error("分页获取错吴ReportQueryAction.reportValidQuery", e);
+		}
+		validityDayService.findValidQueryByPage(page) ;
+		
+		HttpTool.setAttribute("company", HttpTool.getParameter("company", ""));
+		HttpTool.setAttribute("code", HttpTool.getParameter("code", ""));
+		HttpTool.setAttribute("batchNum", HttpTool.getParameter("batchNum", ""));
+		HttpTool.setAttribute("combo", HttpTool.getParameter("combo", ""));
+		HttpTool.setAttribute("endDate", endDate);
+		return VALIDQUERY;
+	}
+	
+	/**
+	 * 导出时候invoke调用;
+	 * @param page
+	 * @param paramsMap
+	 * @return
+	 */
+	@SuppressWarnings("rawtypes")
+	public Page findValidQueryByPage(Page page , Map paramsMap) {
+		validityDayService.findValidQueryByPage(page) ;
+		return page;
+	}
+	
+	/**
+	 * 会场查询
+	 * @return
+	 */
+	@SuppressWarnings("rawtypes")
+	public String reportVenue() {
+		//分页查询;
+		try {
+			page = new Page(HttpTool.getPageNum(), HttpTool.getPageSize());
+		} catch (ParseException e) {
+			log.error("分页获取错吴ReportQueryAction.reportValidQuery", e);
+		}
+		validityDayService.findVenueByPage(page) ;
+		
+		HttpTool.setAttribute("startDate", HttpTool.getParameter("startDate", ""));
+		HttpTool.setAttribute("endDate", HttpTool.getParameter("endDate", ""));
+		HttpTool.setAttribute("branchCompanyName", HttpTool.getParameter("branchCompanyName", ""));
+		HttpTool.setAttribute("province", HttpTool.getParameter("province", ""));
+		HttpTool.setAttribute("city", HttpTool.getParameter("city", ""));
+
+		return VENUE;
+	}
+
+	/**
+	 * 导出时候invoke调用;
+	 * @param page
+	 * @param paramsMap
+	 * @return
+	 */
+	@SuppressWarnings("rawtypes")
+	public Page findVenueByPage(Page page , Map paramsMap) {
+		validityDayService.findVenueByPage(page) ;
+		return page;
+	}
+	
+}

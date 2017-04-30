@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:jaxws="http://cxf.apache.org/jaxws"
+	xmlns:ns2="http://cxf.apache.org/bindings"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.5.xsd     
+	http://www.springframework.org/schema/context 
+	http://www.springframework.org/schema/context/spring-context-2.5.xsd     
+	http://www.springframework.org/schema/tx
+	http://www.springframework.org/schema/tx/spring-tx-2.5.xsd   
+	http://cxf.apache.org/jaxws 
+	http://cxf.apache.org/schemas/jaxws.xsd">
+	<description>Spring公共配置文件</description>
+	<context:property-placeholder location="classpath:application.properties" />
+
+	<bean id="dataSource" class="com.mchange.v2.c3p0.ComboPooledDataSource"	destroy-method="close">
+		<property name="driverClass" value="${jdbc.driverClassName}" />
+		<property name="jdbcUrl" value="${jdbc.url}" />
+		<property name="user" value="${jdbc.username}" />
+		<property name="password" value="${jdbc.password}" />
+		<property name="minPoolSize" value="${jdbc.minPoolSize}" />
+		<property name="maxPoolSize" value="${jdbc.maxPoolSize}" />
+		<property name="initialPoolSize" value="${jdbc.initialPoolSize}" />
+		<property name="idleConnectionTestPeriod" value="${jdbc.idleConnectionTestPeriod}" />
+	</bean>	
+
+	<bean id="sessionFactory"
+		class="org.springframework.orm.hibernate3.LocalSessionFactoryBean">
+		<property name="dataSource" ref="dataSource">
+		</property>
+		<property name="mappingLocations">
+			<list>
+				<value>classpath:/org/hpin/**/**/entity/*.hbm.xml</value>
+				<value>classpath:/org/hpin/**/entity/*.hbm.xml</value>
+				<value>classpath:/org/ymjy/**/**/entity/*.hbm.xml</value>
+				<value>classpath:/org/ymjy/**/entity/*.hbm.xml</value>
+				<value>classpath:/org/hpin/**/**/model/*.hbm.xml</value>
+				<value>classpath:/com/hpin/**/model/*.hbm.xml</value>
+			</list>
+		</property>
+		<property name="hibernateProperties">
+			<props>
+				<prop key="hibernate.dialect">${hibernate.dialect}</prop>
+				<prop key="hibernate.show_sql">${hibernate.show_sql}</prop>
+				<prop key="hibernate.format_sql">${hibernate.format_sql}</prop>
+			<!--	<prop key="hibernate.connection.SetBigStringTryClob">true</prop>
+			  	<prop key="hibernate.hbm2ddl.auto">${hibernate.hbm2ddl_auto}</prop>-->
+				<prop key="hibernate.generate_statistics">${hibernate.generate_statistics}</prop>
+				<prop key="hibernate.cache.use_query_cache">true</prop>
+				<prop key="hibernate.cache.use_second_level_cache">true</prop>
+				<prop key="hibernate.cache.provider_class">org.hibernate.cache.EhCacheProvider</prop>
+				<prop key="hibernate.cache.provider_configuration_file_resource_path">ehcache.xml</prop>
+			</props>
+		</property>
+	</bean>
+
+	<bean id="nativeJdbcExtractor"
+		class="org.springframework.jdbc.support.nativejdbc.C3P0NativeJdbcExtractor" />
+
+	<!--  HibernateDaoSupport -->
+	<bean id="HibernateDaoSupport"
+		class="org.hpin.common.core.orm.daoWrapper.HibernateDaoSupportWrapper">
+		<property name="sessionFactory">
+			<ref local="sessionFactory" />
+		</property>
+	</bean>
+	<!--  JdbcDaoSupport -->
+	<bean id="JdbcDaoSupport"
+		class="org.hpin.common.core.orm.daoWrapper.JdbcDaoSupportWrapper">
+		<property name="dataSource">
+			<ref local="dataSource" />
+		</property>
+	</bean>
+	<!--  HibernateDaoSupport and JdbcDaoSupport -->
+	<bean id="DaoSupport" class="org.hpin.common.core.orm.daoWrapper.DaoSupport">
+		<property name="hibernateDaoSupport">
+			<ref local="HibernateDaoSupport" />
+		</property>
+		<property name="jdbcDaoSupport">
+			<ref local="JdbcDaoSupport" />
+		</property>
+	</bean>
+	<bean id="org.hpin.common.core.orm.GenericDao" class="org.hpin.common.core.orm.GenericDao" />
+	<!-- 事务配置 -->
+	<bean id="transactionManager"
+		class="org.springframework.orm.hibernate3.HibernateTransactionManager">
+		<property name="sessionFactory" ref="sessionFactory" />
+	</bean>
+	<!-- 使用annotation 自动注册bean,并检查@Required,@Autowired的属性已被注入 -->
+	<context:component-scan base-package="com.hpin"/>
+	
+	<context:component-scan base-package="org.hpin"/>
+	<context:component-scan base-package="org.ymjy"/>
+	<context:component-scan base-package="com.ymjy"/>
+	<context:component-scan base-package="cn.yuanmeng"/>
+	
+	<!-- 使用annotation定义事务 -->
+	<tx:annotation-driven transaction-manager="transactionManager"
+		proxy-target-class="true" />
+		
+	<!-- ************************************************** -->	
+	<!-- spring定时器 -->
+	<bean id="startQuertz" lazy-init="false" autowire="no" class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+		<property name="triggers">
+			<list>
+			<!-- 	<ref bean ="callTalkTimeTriggers"/>  -->
+				<ref bean="jobCallTalkTime"/>
+			</list>
+		</property>
+	</bean>
+	
+    <!-- 第一步: 配置好要定时调用的业务类 --> 
+     <bean id="callTalkTimeBean" class="cn.yuanmeng.labelprint.test.TestExcelProcess" /> 
+
+	<!-- 第二步: 定义好具体要使用类的哪一个业务方法 -->
+        <bean id="callTalkTimeJob"  class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean"> 
+             <property name="targetObject" ref="callTalkTimeBean" /> <!-- 目标bean -->
+             <property name="targetMethod" value="startTimmer" />   <!-- 要执行目标bean的哪一个业务方法 --> 
+             <property name="concurrent" value="false"/> <!-- 是否并发 -->  
+    </bean>  
+     <!-- 第三步: 定义好调用模式: 如每天的23点30分调用一次 --> 
+      <bean id="jobCallTalkTime" class="org.springframework.scheduling.quartz.CronTriggerBean"> 
+             <property name="jobDetail" ref="callTalkTimeJob" />
+             <property name="cronExpression" value="0 30 23 * * ?" /> 
+             <!-- <property name="cronExpression" value="0 0/3 * * * ?" />  -->
+    </bean> 
+      
+    <!-- 启动定时器 -->  	
+	<!-- ************************************************** -->		
+	
+	<!-- spring定时器 
+	<bean id="startQuertz" lazy-init="false" autowire="no"
+		class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+		<property name="triggers">
+			<list>-->
+				<!-- <ref bean ="callTalkTimeTriggers"/> 
+				<ref bean="jobCallTalkTime"/>
+			</list>
+		</property>
+	</bean>-->
+	
+    <!-- 第一步: 配置好要定时调用的业务类 --> 
+    <!-- <bean id="callTalkTimeBean" class="org.hpin.expeditor.service.InfoRecordService" /> -->
+
+	<!-- 第二步: 定义好具体要使用类的哪一个业务方法 -->
+      <!--  <bean id="callTalkTimeJob"  class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">  -->
+            <!--   <property name="targetObject" ref="callTalkTimeBean" />-->  <!-- 目标bean -->
+            <!--   <property name="targetMethod" value="getCallTalkTime" /> -->  <!-- 要执行目标bean的哪一个业务方法 --> 
+           <!--    <property name="concurrent" value="false"/>  --><!-- 是否并发 -->  
+    <!--</bean>  -->
+     <!-- 第三步: 定义好调用模式: 如每隔2秒钟调用一次或每天的哪个时间调用一次等 --> 
+         <!--  <bean id="jobCallTalkTime" class="org.springframework.scheduling.quartz.CronTriggerBean">  -->
+            <!--   <property name="jobDetail" ref="callTalkTimeJob" />  -->
+            <!--   <property name="cronExpression" value="0 0/30 * * * ?" />  --><!--每30分钟-->
+   <!--  </bean>  -->
+      
+    <!-- 启动定时器 -->  
+
+    
+   
+</beans>

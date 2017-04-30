@@ -1,0 +1,229 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+    pageEncoding="UTF-8"%>
+<%@ include file="/common/taglibs.jsp"%>
+
+<%
+String path = request.getContextPath();
+String userRoles = (String)request.getAttribute("userRoles");
+String userId = (String)request.getAttribute("userId");
+%>
+
+<script type="text/javascript" language="javascript">
+$(document).ready(function(){
+	var payModeValue=$("#payModeValue01").val();
+	var payBankValue=$("#payBankValue01").val();
+	var collectionCompanyValue = $("#collectionCompanyValue01").val();
+	if(payBankValue=='招行富力103'){
+		$("#payBank01 option[value='招行富力103']").attr("selected",true);
+	}else if(payBankValue=='招行富力303'){
+		$("#payBank01 option[value='招行富力303']").attr("selected",true);
+	}else if(payBankValue=='招行万达408'){
+		$("#payBank01 option[value='招行万达408']").attr("selected",true);
+	}else if(payBankValue=='其他'){
+		$("#payBank01 option[value='其他']").attr("selected",true);
+	}
+
+	if(payModeValue=='网银'){
+		$("#payMode01 option[value='网银']").attr("selected",true);
+	}else if(payModeValue=='支票'){
+		$("#payMode01 option[value='支票']").attr("selected",true);
+	}else if(payModeValue=='其他'){
+		$("#payMode01 option[value='其他']").attr("selected",true);
+	}
+
+	if(collectionCompanyValue=='上海申友生物技术有限责任公司'){
+		$("#collectionCompany01 option[value='上海申友生物技术有限责任公司']").attr("selected",true);
+	}else if(collectionCompanyValue=='南京申友生物技术有限公司'){
+		$("#collectionCompany01 option[value='南京申友生物技术有限公司']").attr("selected",true);
+	}else if(collectionCompanyValue=='北京上诺佰益生物技术有限公司'){
+		$("#collectionCompany01 option[value='北京上诺佰益生物技术有限公司']").attr("selected",true);
+	}else if(collectionCompanyValue=='广州市金埻网络科技有限公司'){
+		$("#collectionCompany01").find("option[value='广州市金埻网络科技有限公司']").attr("selected",true);
+	}else if(collectionCompanyValue=='知康科技（北京）有限公司'){
+		$("#collectionCompany01").find("option[value='知康科技（北京）有限公司']").attr("selected",true);
+	}else if(collectionCompanyValue=='其他'){
+		$("#collectionCompany01").find("option[value='其他']").attr("selected",true);
+	}
+});
+
+//获取form
+$.fn.serializeJson=function(){  
+	var serializeObj={};  
+	var array=this.serializeArray();  
+	$(array).each(function(){  
+		if(serializeObj[this.name]!=null&&serializeObj[this.name]!=""&&serializeObj[this.name]!=undefined){
+			if($.isArray(serializeObj[this.name])){  
+				serializeObj[this.name].push(this.value.trim());  
+			}else{  
+				serializeObj[this.name]=[serializeObj[this.name],this.value.trim()];  
+			}  
+		}else{  
+			serializeObj[this.name]=this.value.trim();   
+		}  
+	});  
+	return serializeObj;  
+}; 
+
+//继续付款按钮
+$("#formSumbitTwo").click(function(){
+	var select = $("select[id='payMode'][option:selected]").val();
+	var select2 = $("select[id='payBank'][option:selected]").val();
+	var select3 = $("select[id='collectionCompany'][option:selected]").val();
+	var OANo = $("#OANo01").val();
+	if(select==''||select2==''||select3==''||OANo==''){
+		alert("请完善信息");
+		return;
+	}
+	
+	var data = $("#settleTaskDetailForm").serializeJson();
+	$.ajax({
+		type: "post",
+		cache :false,
+		dataType: "json",
+		url: "${path}/settlementManagement/erpSettlementTaskJY!UpdateSettlementDetail.action",
+		data: {'data': JSON.stringify(data)},
+		success: function(data){
+			if(data.status=="200"){
+				alertMsg.correct(data.message);
+				$.pdialog.closeCurrent();
+				return navTabSearch(this);
+			}else{
+				alertMsg.error(data.message);
+			}	
+		},
+		error :function(data){
+			alert("服务发生异常，请稍后再试！");
+		}
+	});
+});
+
+</script>
+
+<div class="tip"><span>付款详细修改</span></div>
+<div class="pageHeader">
+	<form id="settleTaskDetailForm" 
+	action="${path}/settlementManagement/erpSettlementTaskJY!listSettlementByProperties.action" method="post"  rel="pagerForm" id="pagerFindForm">
+	<div class="searchBar">
+		<table class="pageFormContent">
+			<tr>
+				<td>
+					<!-- 默认选中信息 -->
+					<input type="hidden" name="payModeValue01" id="payModeValue01" value="${settleTaskDetail.payMode}"/>
+					<input type="hidden" name="payBankValue01" id="payBankValue01" value="${settleTaskDetail.payBank}"/>
+					<input type="hidden" name="collectionCompanyValue01" id="collectionCompanyValue01" value="${settleTaskDetail.collectionCompany}"/>
+					<input type="hidden" name="payTimeValue" id="payTimeValue" value="${settleTaskDetail.payTime}"/>
+					<input type="hidden" name="id" id="id" value="${settleTaskDetail.id}"/>
+					<label>基因公司：</label> 
+					<input type="text" name="geCompany"  readonly="readonly" value="${settleTaskDetail.geCompany}"/>
+				</td>  
+				<td><label>付款时间：</label> 
+					<input type="text" name="payTime" id="payTime" readonly="readonly" value="${settleTaskDetail.payTime}"/>
+				</td>
+			</tr>
+			<tr>
+				<td>
+					<label>未付款：</label> 
+					<input type="text" name="noPayAmount" id="noPayAmount" readonly="readonly" value="${settleTaskDetail.noPayAmount}"/>
+				</td>
+				<td>
+					<label>付款银行：</label> 
+					<select name="payBank"  id="payBank01" style="width:198px;margin-top:5px;">
+						<option value=''>---请选择---</option>
+						<option value='招行富力103'>招行富力103</option>
+						<option value='招行富力303'>招行富力303</option>
+						<option value='招行万达408'>招行万达408</option>
+						<option value='其他'>其他</option>
+		 			</select>
+				</td>
+			</tr>
+			<tr>
+				
+				<td><label>本次付款金额：</label> 
+					<input type="text" name="currentAmount" id="currentAmount" readonly="readonly" value="${settleTaskDetail.currentAmount}"/>
+				</td>
+				<td>
+					<label>付款方式：</label> 
+					<select name="payMode"  id="payMode01" style="width:198px;margin-top:5px;" >
+						<option value=''>---请选择---</option>
+						<option value='网银'>网银</option>
+						<option value='支票'>支票</option>
+						<option value='其他'>其他</option>
+		 			</select>
+				</td>
+			</tr>
+			<tr>
+				<td><label>OA编号：</label> 
+					<input type="text" name="OANo" id="OANo01" value="${settleTaskDetail.OANo}" class="required"/>
+				</td>
+				<td>
+					<label>收款公司：</label> 
+					
+					<c:choose>
+						<c:when test="${settlementTaskJY.geCompany=='南方基因公司'}">
+							<select name="collectionCompany" id="collectionCompany" style="width:198px;margin-top:5px;" class="required">
+								<option value=''>---请选择---</option>
+								<option value='上海申友生物技术有限责任公司'>上海申友生物技术有限责任公司</option>
+								<option value='南京申友生物技术有限公司'>南京申友生物技术有限公司</option>
+		 					</select>
+						</c:when>
+						
+						<c:when test="${settlementTaskJY.geCompany=='北方基因公司'}">
+							<select name="collectionCompany"  id="collectionCompany" style="width:198px;margin-top:5px;" class="required">
+								<option value=''>---请选择---</option>
+								<option value='北京上诺佰益生物技术有限公司'>北京上诺佰益生物技术有限公司</option>
+		 					</select>
+						</c:when>
+						
+						<c:when test="${settlementTaskJY.geCompany=='金域基因公司'}">
+							<select name="collectionCompany"  id="collectionCompany" style="width:198px;margin-top:5px;" class="required">
+								<option value=''>---请选择---</option>
+								<option value='广州市金埻网络科技有限公司'>广州市金埻网络科技有限公司</option>
+		 					</select>
+						</c:when>
+						
+						<c:when test="${settlementTaskJY.geCompany=='知康基因公司'}">
+							<select name="collectionCompany"  id="collectionCompany" style="width:198px;margin-top:5px;" class="required">
+								<option value=''>---请选择---</option>
+								<option value='知康科技（北京）有限公司'>知康科技（北京）有限公司</option>
+		 					</select>
+						</c:when>
+						
+						<c:otherwise>
+							<select name="collectionCompany"  id="collectionCompany" style="width:198px;margin-top:5px;" class="required">
+							<option value=''>---请选择---</option>
+							<option value='其他'>其他</option>
+		 				</select>
+						</c:otherwise>
+					</c:choose>
+					
+					<%-- <c:if test="${settleTaskDetail.geCompany=='南方基因公司'}">
+						<select name="collectionCompany" id="collectionCompany01" style="width:198px;margin-top:5px;" class="required">
+							<option value=''>---请选择---</option>
+							<option value='上海申友生物技术有限责任公司'>上海申友生物技术有限责任公司</option>
+							<option value='南京申友生物技术有限公司'>南京申友生物技术有限公司</option>
+		 				</select>
+					</c:if>
+					<c:if test="${settleTaskDetail.geCompany=='北方基因公司'}">
+						<select name="collectionCompany"  id="collectionCompany01" style="width:198px;margin-top:5px;" class="required">
+							<option value=''>---请选择---</option>
+							<option value='北京上诺佰益生物技术有限公司'>北京上诺佰益生物技术有限公司</option>
+		 				</select>
+					</c:if> --%>
+					
+				</td>
+			</tr>
+			<tr>
+				<td>
+					<label>入账说明：</label> 
+					<input type="text" name="note" id="note" value="${settleTaskDetail.note}" width="20px"/>
+				</td>
+			</tr>
+			<tr>
+				<td><div class="buttonActive" style="margin-left: 350px;"><div class="buttonContent"><button type="button" id="formSumbitTwo">修改</button></div></div>
+					<!-- <div class="buttonActive"><div class="buttonContent" id="formSumbitOnce"><button type="button" >保存</button></div></div> -->
+				</td>
+			</tr>
+		</table>
+	</div>
+	</form>
+</div>

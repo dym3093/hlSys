@@ -1,0 +1,71 @@
+package org.hpin.venueStaffSettlement.dao;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import org.apache.commons.lang.StringUtils;
+import org.hpin.base.customerrelationship.entity.ProjectType;
+import org.hpin.common.core.orm.BaseDao;
+import org.hpin.common.widget.pagination.Page;
+import org.hpin.venueStaffSettlement.entity.ErpNonConference;
+import org.springframework.jdbc.core.BeanPropertyRowMapper;
+import org.springframework.stereotype.Repository;
+
+/**
+ * @author Carly
+ * @since 2017年1月22日10:33:18
+ */
+@Repository()
+public class ErpNonConferenceDao extends BaseDao {
+
+	public void getNonConferenceList(Page<ErpNonConference> page,ErpNonConference nonConference) {
+		StringBuilder sql = new StringBuilder();
+		sql.append("select cn.id, cn.projectCode,cn.projectUser,cn.projectName,pt.project_type_name projectType,cn.startTime,cn.endTime,cn.month,cn.fees,cn.note ");
+		sql.append("from erp_nonconference cn,t_project_type pt where cn.isdeleted=0 and pt.project_type=cn.projecttype ");
+		if(null!=nonConference){
+			sql.append(dealQuerySql(nonConference));
+		}
+		sql.append("order by cn.createTime desc");
+		List<Object> params = new ArrayList<Object>();
+		page.setTotalCount(this.findJdbcCount(sql, params));
+		params.add(page.getPageNumEndCount());
+		params.add(page.getPageNumStartCount());
+		BeanPropertyRowMapper<ErpNonConference> rowMapper = new BeanPropertyRowMapper<ErpNonConference>(ErpNonConference.class);
+		page.setResults(this.findJdbcList(sql, params, rowMapper));
+		
+	}
+	
+	private StringBuilder dealQuerySql(ErpNonConference nonConference){
+		StringBuilder sqlBuilder = new StringBuilder();
+		sqlBuilder.append("");
+		if(StringUtils.isNotEmpty(nonConference.getProjectCode())){//项目编码
+			sqlBuilder.append("and cn.projectCode like '%"+nonConference.getProjectCode()+"%' ");
+		}
+		if(StringUtils.isNotEmpty(nonConference.getProjectUser())){//项目负责人
+			sqlBuilder.append("and cn.projectUser like '%"+nonConference.getProjectUser()+"%' ");
+		}
+		if(StringUtils.isNotEmpty(nonConference.getProjectType())){//项目类型
+			sqlBuilder.append("and cn.projectType ='"+nonConference.getProjectType()+"' ");
+		}
+		if(StringUtils.isNotEmpty(nonConference.getMonth())){//月份
+			sqlBuilder.append("and cn.month='"+nonConference.getMonth()+"' ");
+		}
+		return sqlBuilder;
+	}
+
+	/**
+	 * @param id
+	 * @return 删除会议
+	 */
+	public int deleteNonConference(String id) {
+		String sql = "update erp_nonconference set isdeleted=1 where id =?";
+		return this.getJdbcTemplate().update(sql,id);
+	}
+
+	public ProjectType getProjectInfo(String projectType) {
+		return this.getHibernateTemplate().get(ProjectType.class, projectType);
+	}
+    
+    
+	
+}

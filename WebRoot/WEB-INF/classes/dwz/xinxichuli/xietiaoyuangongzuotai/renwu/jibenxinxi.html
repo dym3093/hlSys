@@ -1,0 +1,163 @@
+<style type="text/css">
+#table2 td{
+	
+	TEXT-ALIGN: center; BACKGROUND-COLOR: #f7f7f7;padding:4,4,4,4;
+	}
+#table2 table{
+	 FONT-SIZE:12pt;
+	  cellspacing: 10; cellpadding: 10;padding:30,30,30,30;
+	wilabelh:100%;
+	}
+	#table2 input{
+	BACKGROUND-COLOR: #f7f7f7;
+	border:none;
+	}
+</style>
+
+<script type="text/javascript">
+function sel(){
+var i=document.getElementById("caozuo").value;
+	if(i=="danbaohan"){
+	document.getElementById("danbaohan").style.display="";
+	document.getElementById("xianjin").style.display="none";
+	document.getElementById("caozuo2").value="danbaohan";
+
+	}
+	else{
+	document.getElementById("danbaohan").style.display="none";
+	document.getElementById("xianjin").style.display="";
+	}
+}
+function sel2(){
+var i=document.getElementById("caozuo2").value;
+	if(i=="xianjin"&&document.getElementById("xianjin").style.display=="none"){
+	document.getElementById("danbaohan").style.display="none";
+	document.getElementById("xianjin").style.display="";
+	document.getElementById("caozuo").value="xianjin";
+	}
+}
+function sel3(){
+var i=document.getElementById("huikuan").value;
+	if(i=="wangyiyuan"){
+	document.getElementById("wangyiyuan").style.display="";
+	document.getElementById("wangren").style.display="none";
+
+	}
+	else if(i=="wangren"){
+		document.getElementById("wangren").style.display="";
+	document.getElementById("wangyiyuan").style.display="none";
+
+	}
+	else alert('请选择汇款类型!');
+}
+</script>
+<div class="pageContent">
+	<form method="post" action="demo/common/ajaxDone.html" class="pageForm required-validate" onsubmit="return validateCallback(this, navTabAjaxDone);">
+<div class="pageFormContent" layoutH="83">
+<div class="tip"><span>主单信息</span></div>
+<div id="table2">
+
+<p>
+
+				<label>工单主题：</label><input type="text"  style=" border:none;" wilabelh="500" readonly="readonly" value="派发任务工单"/>
+</p><p>
+
+
+				<label>工单流水号：</label><input type="text" name="keyword" size="30" readonly="readonly" value="BJ-010-130305-00001"/>
+
+		
+
+
+				<!--<input type="text" class="required" name="orgLookup.orgName" value="" suggestFields="orgNum,orgName" suggestUrl="demo/database/db_lookupSuggest.html" lookupGroup="orgLookup" />
+				<a class="btnLook" href="demo/database/dwzOrgLookup.html" lookupGroup="orgLookup">查找带回</a>		-->
+</p><div class="divider"></div><p>
+
+
+
+				<label>客户名称：</label><input type="text" name="keyword" size="30" readonly="readonly" value="中国平安财产保险股份有限公司"/></p><p>
+
+				<label>产品名称：</label><input type="text" name="keyword" size="30" readonly="readonly" value="平安健康安心卡"/></p><p>
+				<label>产品编号：</label>
+				<input type="text" name="keyword" size="30" readonly="readonly" value="0582631535"/>
+
+		</p><div class="divider" style="clear:both"></div><p><label>任务描述：</label><input type="text" name="keyword" size="30" readonly="readonly" value="要求协助查询"/>
+	</p>
+	
+
+	</div>		
+
+<div class="divider" style="clear:both"></div>
+
+<div id="xianjin"  style="display:; margin-top:200">
+<div>
+<div class="tip"><span>工单操作</span></div>
+<p><label><b>选择操作环节：</b></label>
+<select id="caozuo" onchange="sel();">
+				
+					<option value="xianjin" selected>处理完成</option>
+					<option value="danbaohan">驳回</option>
+
+				</select>
+</p><div class="divider"></div>
+	<p>
+				<label>处理时间：</label>
+				<input type="text" name="startDate" class="date" size="27" /><a class="inputDateButton" href="javascript:;">选择</a>
+		</p>
+	<p>	<label>处理内容：</label>
+				<input type="text" name="keyword" size="93" value=""/>
+				</p>
+	
+			
+
+</div>
+</div>
+<div id="danbaohan" style="display:none;">
+<div>
+<div class="tip"><span>工单操作</span></div>
+<p><label><b>选择操作环节：</b></label>
+<select id="caozuo2" onchange="sel2();">
+				
+					<option value="xianjin" >处理完成</option>
+					<option value="danbaohan" selected>驳回</option>
+
+				</select>
+</p>
+	<div class="divider"></div>
+	<p><label>操作时间：</label>
+							<input type="text" name="startDate" class="date" size="27" /><a class="inputDateButton" href="javascript:;">选择</a>
+		</p>
+	<p>	<label>驳回意见：</label>
+				<input type="text" size="93" />
+				</p>
+
+
+		<p class="nowrap">
+			<label>备注：</label>
+			<textarea name="textarea1" cols="80" rows="2"></textarea>
+		</p>
+
+</div>
+</div>
+<div  style="display:; clear:left; float:left">
+
+	<p class="nowrap">
+			<label>派往角色：</label>
+			<a class="required button" href="xitongguanli/zuzhiguanli/paidantree.html" target="dialog" width="300"  height="300"><span>选择派往角色</span></a>
+	</p>
+
+</div>
+
+		</div>		
+		<div class="formBar">
+			<ul>
+				<!--<li><a class="buttonActive" href="javascript:;"><span>保存</span></a></li>-->
+				<li><div class="buttonActive"><div class="buttonContent"><button >派单</button></div></div></li>
+				<li>
+					<div class="button"><div class="buttonContent"><button type="button">重置</button></div></div>
+				</li>
+	
+			</ul>	
+		</div>
+
+
+</div>

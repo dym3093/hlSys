@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping>
+    <class name="org.hpin.warehouse.entity.ErpStoregeOut" table="ERP_STOREGE_OUT">
+        <id name="id" type="java.lang.String">
+			<column name="ID" />
+			<generator class="uuid" />
+		</id>
+        
+        <property name="storegeInId" type="java.lang.String">
+            <column name="STOREGE_IN_ID"/>
+        </property>
+        <property name="applicationId" type="java.lang.String">
+            <column name="APPLICATION_ID"/>
+        </property>
+        <property name="productId" type="java.lang.String">
+            <column name="PRODUCT_ID"/>
+        </property>
+        <property name="productName" type="java.lang.String">
+            <column name="PRODUCT_NAME"/>
+        </property>
+        <property name="standard" type="java.lang.String">
+            <column name="STANDARD"/>
+        </property>
+        <property name="price" type="java.math.BigDecimal">
+            <column name="PRICE"/>
+        </property>
+        <property name="quantity" type="java.lang.Integer">
+            <column name="QUANTITY"/>
+        </property>
+        <property name="amount" type="java.math.BigDecimal">
+            <column name="AMOUNT"/>
+        </property>
+        <property name="expressNo" type="java.lang.String">
+            <column name="EXPRESS_NO"/>
+        </property>
+        <property name="expressName" type="java.lang.String">
+            <column name="EXPRESS_NAME"/>
+        </property>
+        <property name="expressMoney" type="java.math.BigDecimal">
+            <column name="EXPRESS_MONEY"/>
+        </property>
+        <property name="cost" type="java.math.BigDecimal">
+            <column name="COST"/>
+        </property>
+        <property name="cardStart" type="java.lang.String">
+            <column name="CARD_START"/>
+        </property>
+        <property name="cardEnd" type="java.lang.String">
+            <column name="CARD_END"/>
+        </property>
+        
+        <!-- 默认字段 -->
+        <property name="remark" type="java.lang.String">
+            <column name="REMARK"/>
+        </property>
+        <property name="createUserId" type="java.lang.String">
+            <column name="CREATE_USER_ID"/>
+        </property>
+        <property name="createTime" type="java.util.Date">
+            <column name="CREATE_TIME"/>
+        </property>
+        <property name="updateUserId" type="java.lang.String">
+            <column name="UPDATE_USER_ID"/>
+        </property>
+        <property name="updateTime" type="java.util.Date">
+            <column name="UPDATE_TIME" />
+        </property>
+        <property name="isDeleted" type="java.lang.Integer">
+            <column name="IS_DELETED" precision="4" scale="0" />
+        </property>
+    </class>
+</hibernate-mapping>

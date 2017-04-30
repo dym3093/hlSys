@@ -1,0 +1,159 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"%>
+<%@ include file="/common/taglibs.jsp"%>
+
+<%
+	String path = request.getContextPath();
+	request.setAttribute("path", path);
+%>
+<script src="${path}/jquery/ajaxfileupload.js" type="text/javascript"></script>
+<script type="text/javascript" language="javascript">
+function importMoreCodes(){
+	var filePath = $("#affix",navTab.getCurrentPanel()).val();
+	if ("" == filePath) {
+		alertMsg.info("请先选择文件!");
+		return ;
+	}
+	$.ajaxFileUpload({
+		url:'${path}/report/reportFileTask!importCodesByExcel.action',
+        type:'post',
+        data:{"filePath":filePath},
+       	secureuri: false,
+        fileElementId: 'affix',
+        dataType: 'json',
+		success:function(data,status){
+			if(data.result=="success"){
+				alertMsg.correct("导入成功！");
+				$("#queryCodes",navTab.getCurrentPanel()).val(data.codes);
+				$("#queryCodes",navTab.getCurrentPanel()).attr("name","filter_and_code_IN_S");
+			}else{
+				alert.warn("导入失败！");
+			}
+		},
+		error:function (data,status,e){
+        	alertMsg.error("服务发生异常，请稍后再试！");
+        }	
+	});	
+}
+</script>
+<div class="tip"><span>任务查询</span></div>
+<div class="pageHeader">
+	<form id="pagerFindForm" onsubmit="if(this.action!='${path}/report/reportFileTask!toMatchDetailAll.action'){this.action='${path}/report/reportFileTask!toMatchDetailAll.action';};return navTabSearch(this);" action="${path}/report/reportFileTask!toMatchDetailAll.action" method="post" rel="pagerForm">
+		<%-- <form id="pagerFindForm" onsubmit="return iframeCallback(this,navTabAjaxDone);" action="${path}/report/reportFileTask!toMatchDetailAll.action" method="post" enctype="multipart/form-data"> --%>
+		<div class="searchBar">
+		<table class="pageFormContent">
+			<tr>
+				<td>
+					<label>批次号：</label>
+					<input type="text" name="filter_and_batchno_LIKE_S" value="${filter_and_batchno_LIKE_S}"/>
+				</td>
+				<td>
+					<label>状态</label>
+					<select name="filter_and_matchstate_EQ_I" rel="iselect" id="matchstate">
+						<option value="">请选择</option>
+						
+						<option value="2" <c:if test="${filter_and_matchstate_EQ_I==2 || filter_and_matchstate_EQ_I==12 }">selected="selected"</c:if>>匹配成功</option>
+						<option value="3" <c:if test="${filter_and_matchstate_EQ_I==3 }">selected="selected"</c:if>>未匹配成功</option>
+						<option value="4" <c:if test="${filter_and_matchstate_EQ_I==4 }">selected="selected"</c:if>>异常数据</option>
+						<option value="5" <c:if test="${filter_and_matchstate_EQ_I==5 }">selected="selected"</c:if>>会员信息多条</option>
+						<option value="7" <c:if test="${filter_and_matchstate_EQ_I==7 }">selected="selected"</c:if>>没有和远盟对应的套餐</option>
+						<option value="8" <c:if test="${filter_and_matchstate_EQ_I==8 }">selected="selected"</c:if>>套餐不匹配</option>
+						<option value="9" <c:if test="${filter_and_matchstate_EQ_I==9 }">selected="selected"</c:if>>没有对应的申友套餐</option>
+						<option value="10" <c:if test="${filter_and_matchstate_EQ_I==10 }">selected="selected"</c:if>>文件名有误</option>
+						<option value="0" <c:if test="${filter_and_isrepeat_EQ_I==0 }">selected="selected"</c:if>>本批次重复</option>
+						<option value="1" <c:if test="${filter_and_isrepeat_EQ_I==1 }">selected="selected"</c:if>>与其他批次重复</option>
+					</select> 
+				</td>
+			</tr>
+			<tr>
+				<td>
+					<label>条形码：</label>
+                    <c:choose>
+                    	<c:when test="${fn:contains(codes,',')}">
+							<input type="text" id="queryCodes" name="filter_and_code_IN_S" value="${codes}"/>
+                   		</c:when>
+                        <c:otherwise>
+                        	<input type="text" id="queryCodes" name="filter_and_code_LIKE_S" value="${codes}"/>
+                        </c:otherwise>
+                    </c:choose>  
+				</td>
+				<td>
+					<input type="file" id="affix" name="affix"/>
+                    <input type="button" onclick="importMoreCodes()" value="导入条码">
+				</td>
+			</tr>
+			<tr>
+				<td><label>起始日期：</label> 
+					<input type="text" name="filter_and_createdate_GEST_T"  id="d1" style="width: 170px;" onFocus="WdatePicker({minDate:'2010-01-01',maxDate:'#F{$dp.$D(\'d2\')}'})"  readonly="readonly" value="${filter_and_createdate_GEST_T}" /><a class="inputDateButton" href="javascript:;" >选择</a>
+				</td>
+				<td><label>结束日期：</label> 
+					<input type="text" name="filter_and_createdate_LEET_T" id="d2" style="width: 170px;" onFocus="WdatePicker({minDate:'#F{$dp.$D(\'d1\')}'})" readonly="readonly" value="${filter_and_createdate_LEET_T}" /><a class="inputDateButton" href="javascript:;">选择</a>
+				</td>
+				<td><input type="hidden" name="id" value="${reportFileTask.id }"/>
+					<div class="buttonActive"><div class="buttonContent"><button type="submit" >查找</button></div></div>
+					<div class="buttonActive"><div class="buttonContent"><button type="button" id="clearText">重置</button></div></div>
+				</td>
+			</tr>
+				
+		</table>
+	</div>
+	</form>
+</div>	
+	
+<div class="pageContent">
+	<div class="panelBar">
+		 <ul class="toolBar">
+			<web:exportExcelTag pagerFormId="pagerFindForm"
+								pagerMethodName="exportContentByExl"
+								actionAllUrl="org.hpin.reportdetail.web.ErpReportFileTaskAction"
+								informationTableId="exportExcelTable"
+								fileName="ErpReportFileTaskAction"></web:exportExcelTag>
+		</ul> 
+		<jsp:include page="/common/pagination.jsp" />
+	</div>
+</div>
+	<table class="list" width="100%" layoutH="200" id="exportExcelTable"> 
+		<thead>
+			<tr>
+				<th nowrap="nowrap" width="40">序号</th>
+				<th nowrap="nowrap" export="true" columnEnName="username" columnChName ="姓名">姓名</th>
+				<th nowrap="nowrap" export="true" columnEnName="sex" columnChName ="性别">性别</th>
+				<th nowrap="nowrap" export="true" columnEnName="age" columnChName ="年龄">年龄</th>
+				<th nowrap="nowrap" export="true" columnEnName="code" columnChName ="条码">条码</th>
+				<th nowrap="nowrap" export="true" columnEnName="pdfname" columnChName ="报告名称">报告名称</th>
+				<th nowrap="nowrap" export="true" columnEnName="matchstateView" columnChName ="状态">状态</th>
+				<th nowrap="nowrap" export="true" columnEnName="createdate" columnChName ="创建日期">创建日期</th>
+			</tr>
+		</thead>
+		<tbody>
+			<c:forEach items="${page.results}" var="details" varStatus="status">
+				<tr target="sid_user" rel="${details.id}">
+					<td nowrap="nowrap" align="center">${status.count}</td>
+					<td nowrap="nowrap" align="center">${details.username}</td>
+					<td nowrap="nowrap" align="center">${details.sex}</td>
+					<td nowrap="nowrap" align="center">${details.age}</td>
+					<td nowrap="nowrap" align="center">${details.code}</td>
+					<td nowrap="nowrap" align="center">${details.pdfname}</td>
+					<td nowrap="nowrap" align="center">
+						<c:if test="${details.isrecord==0}">
+							未读取成功
+						</c:if>
+						<c:if test="${details.isrecord==1}">
+                        	<c:if test="${details.matchstate==1}">与系统重复</c:if>
+							<c:if test="${details.matchstate==2 || details.matchstate==12}">匹配成功</c:if>
+							<c:if test="${details.matchstate==3}">未匹配成功</c:if>
+							<c:if test="${details.matchstate==5}">会员信息多条</c:if>
+							<c:if test="${details.matchstate==7}">没有对应的远盟套餐</c:if>
+							<c:if test="${details.matchstate==8}">套餐不匹配</c:if>
+							<c:if test="${details.matchstate==9}">没有对应的申友套餐</c:if>
+							<c:if test="${details.matchstate==10}">文件名有误</c:if>
+							<c:if test="${details.isrepeat==1}">批次内重复</c:if>
+							<c:if test="${details.isrepeat==2}">与其他批次重复</c:if>
+						</c:if>
+					</td>
+					<td nowrap="nowrap" align="center">${fn:substring(details.createdate,0,17)}00</td>
+				</tr>
+			</c:forEach>
+		</tbody>
+	</table>
+	</div> 
+</div>

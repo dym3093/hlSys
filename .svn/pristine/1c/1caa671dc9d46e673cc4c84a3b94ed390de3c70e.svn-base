@@ -1,0 +1,119 @@
+/**
+ * @author DengYouming
+ * @since 2016-5-23 下午2:59:49
+ */
+package org.hpin.settlementManagement.dao;
+
+import java.util.List;
+import java.util.Map;
+
+import org.hibernate.Criteria;
+import org.hibernate.Session;
+import org.hibernate.Transaction;
+import org.hibernate.criterion.MatchMode;
+import org.hibernate.criterion.Restrictions;
+import org.hpin.common.core.orm.BaseDao;
+import org.hpin.settlementManagement.entity.ErpCustomerEventsPrice;
+import org.springframework.stereotype.Repository;
+
+/**
+ * 
+ * @author DengYouming
+ * @since 2016-5-23 下午2:59:49
+ */
+@Repository
+public class ErpCustomerEventsPriceDao extends BaseDao{
+
+	/**
+	 * 根据参数查询
+	 * @param params 
+	 * @param exact 是否精确查找，true:是， false:否
+	 * @return List
+	 * @throws Exception
+	 * @author DengYouming
+	 * @since 2016-5-23 下午3:01:24
+	 */
+	public List<ErpCustomerEventsPrice> listByProps(Map<String, Object> params, boolean exact) throws Exception{
+		List<ErpCustomerEventsPrice> list = null;
+		Session session = this.getHibernateTemplate().getSessionFactory().openSession();
+		Criteria criteria = session.createCriteria(ErpCustomerEventsPrice.class);
+
+		if(!params.isEmpty()){
+			//会员名
+			if(params.get(ErpCustomerEventsPrice.F_CUSTOMER)!=null){
+				String customer = (String) params.get(ErpCustomerEventsPrice.F_CUSTOMER);
+				if(exact){
+					criteria.add(Restrictions.eq(ErpCustomerEventsPrice.F_CUSTOMER, customer));
+				}else{
+					criteria.add(Restrictions.like(ErpCustomerEventsPrice.F_CUSTOMER, customer, MatchMode.ANYWHERE));
+				}
+			}
+			//场次号
+			if(params.get(ErpCustomerEventsPrice.F_EVENTSNO)!=null){
+				String eventsNo = (String) params.get(ErpCustomerEventsPrice.F_EVENTSNO);
+				if(exact){
+					criteria.add(Restrictions.eq(ErpCustomerEventsPrice.F_EVENTSNO, eventsNo));
+				}else{
+					criteria.add(Restrictions.like(ErpCustomerEventsPrice.F_EVENTSNO, eventsNo, MatchMode.ANYWHERE));
+				}
+			}
+			//场次ID
+			if(params.get(ErpCustomerEventsPrice.F_EVENTSID)!=null){
+				String eventsId = (String) params.get(ErpCustomerEventsPrice.F_EVENTSID);
+				if(exact){
+					criteria.add(Restrictions.eq(ErpCustomerEventsPrice.F_EVENTSID, eventsId));
+				}else{
+					criteria.add(Restrictions.like(ErpCustomerEventsPrice.F_EVENTSID, eventsId, MatchMode.ANYWHERE));
+				}
+			}
+			//套餐
+			if(params.get(ErpCustomerEventsPrice.F_COMBO)!=null){
+				String combo = (String) params.get(ErpCustomerEventsPrice.F_COMBO);
+				if(exact){
+					criteria.add(Restrictions.eq(ErpCustomerEventsPrice.F_COMBO, combo));
+				}else{
+					criteria.add(Restrictions.like(ErpCustomerEventsPrice.F_COMBO, combo, MatchMode.ANYWHERE));
+				}
+			}
+			//套餐ID
+			if(params.get(ErpCustomerEventsPrice.F_COMBOID)!=null){
+				String comboId = (String) params.get(ErpCustomerEventsPrice.F_COMBOID);
+				if(exact){
+					criteria.add(Restrictions.eq(ErpCustomerEventsPrice.F_COMBOID, comboId));
+				}else{
+					criteria.add(Restrictions.like(ErpCustomerEventsPrice.F_COMBOID, comboId, MatchMode.ANYWHERE));
+				}
+			}
+		}
+		
+		list = criteria.list();
+		return list;
+	}
+	
+	/**
+	 *  保存会员场次的价格
+	 * @param entity
+	 * @return boolean
+	 * @throws Exception
+	 * @author DengYouming
+	 * @since 2016-5-23 下午3:17:07
+	 */
+	public boolean save(ErpCustomerEventsPrice entity) throws Exception{
+		boolean flag = false;
+		if(null!=entity){
+			Session session = this.getHibernateTemplate().getSessionFactory().openSession();
+			Transaction tx = session.beginTransaction();
+			tx.begin();
+			session.saveOrUpdate(entity);
+			session.flush();
+			session.clear();
+			tx.commit();
+			if(null!=session){
+				session.close();
+			}
+			flag = true;
+		}
+		return flag;
+	}
+	
+}
