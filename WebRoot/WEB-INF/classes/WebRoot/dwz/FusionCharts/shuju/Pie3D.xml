@@ -1,6 +1,0 @@
-﻿<graph showNames='1'  decimalPrecision='0' baseFontSize="12">
-   <set name='可用线数' value='1200' />
-	<set name='最大占用数' value='900'  />
-    <set name='最大呼入占用数' value='400' />
-    <set name='最大呼出占用数' value='600' />
-</graph>
